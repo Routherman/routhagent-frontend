@@ -7,7 +7,7 @@ import InfoContact from './infoContact';
 import MassivePanel from './massivePanel';
 
 // Dynamic backend URL
-const API_URL = 'http://localhost:4000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api` : 'http://localhost:4000/api';
 
 export default function MessagesPanel() {
   const [view, setView] = useState('chat'); // 'chat' or 'massive'

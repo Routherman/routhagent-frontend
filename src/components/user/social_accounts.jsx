@@ -47,7 +47,7 @@ export default function SocialAccounts() {
     window.FB.login(function(response) {
       if (response.authResponse) {
         const code = response.authResponse.code;
-        fetch('http://localhost:4000/api/auth/meta', {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/meta`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
