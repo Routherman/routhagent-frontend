@@ -47,7 +47,14 @@ export default function ListChats({ contacts, onStartMassive, onSelectContact, a
             </div>
             <div className="flex-1 min-w-0 flex flex-col justify-center">
               <div className="flex justify-between items-baseline mb-1">
-                <h3 className="font-semibold text-[14px] text-gray-900 truncate group-hover:text-black">{c.name}</h3>
+                <div className="flex items-center gap-2 overflow-hidden">
+                  <h3 className="font-semibold text-[14px] text-gray-900 truncate group-hover:text-black">{c.name}</h3>
+                  {c.categoria && c.categoria !== 'general' && (
+                    <span className="bg-gray-100 text-gray-600 text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider">
+                      {c.categoria}
+                    </span>
+                  )}
+                </div>
                 <span className="text-[11px] text-gray-400 whitespace-nowrap ml-2">{c.time}</span>
               </div>
               <div className="flex justify-between items-center gap-2">

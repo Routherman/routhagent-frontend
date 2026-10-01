@@ -1,7 +1,7 @@
 import { ClerkProvider, ClerkLoaded, ClerkLoading } from "@clerk/nextjs";
-import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { Toaster } from "sonner";
 import Loading from "./loading";
 import "./globals.css";
 
@@ -28,24 +28,8 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       >
         <body className="min-h-full flex flex-col">
-          <Script id="fb-init" strategy="lazyOnload">
-            {`
-              window.fbAsyncInit = function() {
-                FB.init({
-                  appId      : '${process.env.NEXT_PUBLIC_META_APP_ID}',
-                  cookie     : true,
-                  xfbml      : true,
-                  version    : 'v21.0'
-                });
-              };
-            `}
-          </Script>
-          <Script
-            src="https://connect.facebook.net/es_LA/sdk.js"
-            strategy="lazyOnload"
-            crossOrigin="anonymous"
-          />
           <ThemeProvider>
+            <Toaster richColors position="top-right" />
             <ClerkLoading>
               <Loading />
             </ClerkLoading>

@@ -1,6 +1,43 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
-export default function InfoContact({ contact }) {
+const API_URL = process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api` : 'http://localhost:8080/api';
+
+export default function InfoContact({ contact, codigoEmpresa }) {
+  const [roles, setRoles] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (codigoEmpresa) {
+        fetch(`${API_URL}/empresas/${codigoEmpresa}/roles`)
+            .then(res => res.json())
+            .then(data => setRoles(data || []))
+            .catch(err => console.error(err));
+        
+        fetch(`${API_URL}/empresas/${codigoEmpresa}/users`)
+            .then(res => res.json())
+            .then(data => setUsers(data || []))
+            .catch(err => console.error(err));
+    }
+  }, [codigoEmpresa]);
+
+  const handleAssign = async (rolName, userId) => {
+      setLoading(true);
+      try {
+          await fetch(`${API_URL}/contacts/${contact.id}/assign`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ rol_asignado: rolName, usuario_asignado_id: userId })
+          });
+          alert('Asignación actualizada correctamente');
+      } catch (err) {
+          console.error(err);
+          alert('Error al actualizar asignación');
+      } finally {
+          setLoading(false);
+      }
+  };
+
   if (!contact) return null;
 
   return (
@@ -12,8 +49,44 @@ export default function InfoContact({ contact }) {
            <img src={contact.avatar} alt={contact.name} className="w-full h-full object-cover" />
         </div>
         <h2 className="text-[18px] font-bold text-gray-900">{contact.name}</h2>
-        <p className="text-[13px] text-gray-500 mt-1 font-medium">{contact.name.toLowerCase().replace(' ', '_')}255@gmail.com</p>
-        <p className="text-[13px] text-gray-500 mt-1 font-medium">+62 813-4545-210</p>
+        <p className="text-[13px] text-gray-500 mt-1 font-medium">{contact.telefono}</p>
+      </div>
+
+      {/* Asignación Section */}
+      <div className="p-6 border-b border-gray-100">
+        <div className="flex justify-between items-center mb-4">
+          <h4 className="font-semibold text-gray-800 text-[14px]">Delegar Chat</h4>
+        </div>
+        <div className="flex flex-col gap-3">
+            <div>
+                <label className="block text-xs text-gray-500 mb-1">Rol Asignado</label>
+                <select 
+                   className="w-full text-sm text-gray-900 bg-white border-gray-200 rounded-md focus:ring-black focus:border-black p-2 border"
+                   onChange={(e) => handleAssign(e.target.value, contact.usuario_asignado_id)}
+                   value={contact.categoria || 'General'}
+                   disabled={loading}
+                >
+                    <option value="General">General</option>
+                    {roles.map(r => (
+                        <option key={r.id} value={r.nombre}>{r.nombre}</option>
+                    ))}
+                </select>
+            </div>
+            <div>
+                <label className="block text-xs text-gray-500 mb-1">Usuario Específico (Opcional)</label>
+                <select 
+                   className="w-full text-sm text-gray-900 bg-white border-gray-200 rounded-md focus:ring-black focus:border-black p-2 border"
+                   onChange={(e) => handleAssign(contact.categoria, e.target.value || null)}
+                   value={contact.usuario_asignado_id || ''}
+                   disabled={loading}
+                >
+                    <option value="">Cualquiera con el rol</option>
+                    {users.map(u => (
+                        <option key={u.clerk_id} value={u.clerk_id}>{u.email}</option>
+                    ))}
+                </select>
+            </div>
+        </div>
       </div>
       
       {/* Media Section */}
@@ -28,58 +101,6 @@ export default function InfoContact({ contact }) {
           <div className="w-full aspect-square bg-gray-800 rounded-xl flex items-center justify-center text-white text-[13px] font-bold shadow-sm cursor-pointer hover:bg-gray-700 transition">
             +5
           </div>
-        </div>
-      </div>
-
-      {/* Files Section */}
-      <div className="p-6 border-b border-gray-100">
-        <div className="flex justify-between items-center mb-4">
-          <h4 className="font-semibold text-gray-800 text-[14px]">Files</h4>
-          <span className="text-[11px] font-medium text-gray-400 hover:text-gray-600 cursor-pointer">Show More</span>
-        </div>
-        <div className="flex flex-col gap-5">
-           {/* File 1 */}
-           <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-yellow-100 rounded-xl flex items-center justify-center text-yellow-600 text-[10px] font-bold shadow-sm">ZIP</div>
-              <div className="flex-1 min-w-0">
-                 <p className="text-[13px] font-semibold text-gray-800 truncate">Logo Company</p>
-                 <p className="text-[11px] font-medium text-gray-400 mt-0.5">2.1 Mb · Today</p>
-              </div>
-              <button className="w-6 h-6 border border-gray-200 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-50 flex-shrink-0">
-                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-              </button>
-           </div>
-           {/* File 2 */}
-           <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-500 text-[10px] font-bold shadow-sm">PDF</div>
-              <div className="flex-1 min-w-0">
-                 <p className="text-[13px] font-semibold text-gray-800 truncate">New Customer Guide</p>
-                 <p className="text-[11px] font-medium text-gray-400 mt-0.5">1.7 Mb · Feb 21, 2021</p>
-              </div>
-              <button className="w-6 h-6 border border-gray-200 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-50 flex-shrink-0">
-                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-              </button>
-           </div>
-        </div>
-      </div>
-      
-      {/* Links Section */}
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h4 className="font-semibold text-gray-800 text-[14px]">Links</h4>
-          <span className="text-[11px] font-medium text-gray-400 hover:text-gray-600 cursor-pointer">Show More</span>
-        </div>
-        <div className="flex flex-col gap-4">
-           {/* Link 1 */}
-           <div className="flex gap-3">
-              <div className="w-10 h-10 bg-gray-100 rounded-xl flex-shrink-0 overflow-hidden shadow-sm">
-                <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=100&h=100&fit=crop" className="w-full h-full object-cover opacity-80" />
-              </div>
-              <div className="flex-1 min-w-0">
-                 <p className="text-[13px] font-semibold text-gray-800 truncate">Social Web Components</p>
-                 <p className="text-[11px] text-gray-500 mt-1 line-clamp-2 leading-tight">11 Screens, Published on Dribbble with... https://dribbble.com/shots/14774353</p>
-              </div>
-           </div>
         </div>
       </div>
 

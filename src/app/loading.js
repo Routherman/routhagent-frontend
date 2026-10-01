@@ -8,6 +8,9 @@ export default function Loading() {
         <h1 className="text-4xl font-bold text-gray-900 tracking-tight">
           Routh Agent
         </h1>
+        <h3 className='text-2xl font-bold text-gray-600 tracking-tight'>
+          For Business
+        </h3>
         <Loader2 className="w-8 h-8 text-gray-500 animate-spin" />
       </div>
     </div>
