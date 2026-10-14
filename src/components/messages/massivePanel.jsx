@@ -18,6 +18,7 @@ export default function MassivePanel({ contacts = [], onCancel, codigoEmpresa, o
   const [selectedContacts, setSelectedContacts] = useState([]);
   const [manualNumbers, setManualNumbers] = useState("");
   const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
 
   // States for Step 2
   const [templates, setTemplates] = useState([]);
@@ -84,22 +85,37 @@ export default function MassivePanel({ contacts = [], onCancel, codigoEmpresa, o
   const importNumbers = async (nums) => {
       if (!codigoEmpresa || nums.length === 0) return;
       setImporting(true);
+      setImportProgress(0);
       try {
-          const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/import-contacts`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ numbers: nums })
-          });
-          const data = await res.json();
-          if (data.success && data.importedIds) {
-              setSelectedContacts(prev => [...new Set([...prev, ...data.importedIds])]);
-              alert(`${data.importedIds.length} contactos importados/seleccionados con éxito.`);
+          const CHUNK_SIZE = 500;
+          let allImportedIds = [];
+          
+          for (let i = 0; i < nums.length; i += CHUNK_SIZE) {
+              const chunk = nums.slice(i, i + CHUNK_SIZE);
+              const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/import-contacts`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ numbers: chunk })
+              });
+              const data = await res.json();
+              if (data.success && data.importedIds) {
+                  allImportedIds.push(...data.importedIds);
+              }
+              setImportProgress(Math.round(((i + chunk.length) / nums.length) * 100));
+          }
+          
+          if (allImportedIds.length > 0) {
+              setSelectedContacts(prev => [...new Set([...prev, ...allImportedIds])]);
+              alert(`${allImportedIds.length} contactos importados/seleccionados con éxito.`);
+          } else {
+              alert('No se importaron contactos (puede que el formato sea incorrecto).');
           }
       } catch (err) {
           console.error(err);
           alert('Error al importar contactos');
       } finally {
           setImporting(false);
+          setImportProgress(0);
       }
   };
 
@@ -249,7 +265,7 @@ export default function MassivePanel({ contacts = [], onCancel, codigoEmpresa, o
                        disabled={importing || !manualNumbers.trim()}
                        className="w-full bg-black text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50"
                     >
-                       {importing ? 'Importando...' : 'Importar Números'}
+                       {importing ? `Importando... ${importProgress}%` : 'Importar Números'}
                     </button>
                   </div>
 
@@ -262,7 +278,7 @@ export default function MassivePanel({ contacts = [], onCancel, codigoEmpresa, o
                     <h4 className="font-semibold text-gray-900">Cargar Excel / CSV</h4>
                     <p className="text-xs text-gray-500 mt-1 mb-3">Sube un archivo .csv o .txt con una columna de números.</p>
                     <label className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg py-2 text-sm font-medium flex items-center justify-center cursor-pointer transition-colors text-center">
-                       {importing ? 'Importando...' : 'Seleccionar Archivo'}
+                       {importing ? `Importando... ${importProgress}%` : 'Seleccionar Archivo'}
                        <input type="file" accept=".csv, .txt" className="hidden" onChange={handleFileUpload} disabled={importing} />
                     </label>
                   </div>
