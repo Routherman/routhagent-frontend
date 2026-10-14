@@ -14,15 +14,18 @@ export default function MassivePanel({ contacts = [], onCancel, codigoEmpresa, o
   const [currentStep, setCurrentStep] = useState(1);
 
   // States for Step 1
+  const [allContacts, setAllContacts] = useState(contacts);
   const [selectedContacts, setSelectedContacts] = useState([]);
   const [manualNumbers, setManualNumbers] = useState("");
   const [importing, setImporting] = useState(false);
-  const [importProgress, setImportProgress] = useState(0);
+  const [uploadingExcel, setUploadingExcel] = useState(false);
+  const [aiAnalysisResult, setAiAnalysisResult] = useState(null);
 
   // States for Step 2
   const [templates, setTemplates] = useState([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [useContactName, setUseContactName] = useState(true);
 
   // States for Step 3
   const [campaignName, setCampaignName] = useState('');
@@ -32,26 +35,31 @@ export default function MassivePanel({ contacts = [], onCancel, codigoEmpresa, o
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
-      if (currentStep === 2 && templates.length === 0) {
-          fetchTemplates();
-      }
+    setAllContacts(contacts);
+  }, [contacts]);
+
+  useEffect(() => {
+    if (currentStep === 2 && templates.length === 0) {
+      fetchTemplates();
+    }
   }, [currentStep]);
 
   const fetchTemplates = async () => {
-      if (!codigoEmpresa) return;
-      setLoadingTemplates(true);
-      try {
-          const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/templates`);
-          const data = await res.json();
-          if (Array.isArray(data)) {
-              // Filtrar solo las aprobadas
-              setTemplates(data.filter(t => t.status === 'APPROVED'));
-          }
-      } catch(err) {
-          console.error(err);
-      } finally {
-          setLoadingTemplates(false);
+    if (!codigoEmpresa) return;
+    setLoadingTemplates(true);
+    try {
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/templates`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setTemplates(data.filter(t => t.status === 'APPROVED'));
       }
+    } catch(err) {
+      console.error(err);
+    } finally {
+      setLoadingTemplates(false);
+    }
   };
 
   const toggleContact = (id) => {
@@ -60,109 +68,149 @@ export default function MassivePanel({ contacts = [], onCancel, codigoEmpresa, o
     );
   };
 
+  const selectAll = () => {
+    if (selectedContacts.length === allContacts.length) {
+      setSelectedContacts([]);
+    } else {
+      setSelectedContacts(allContacts.map(c => c.id));
+    }
+  };
+
   const handleImportManual = async () => {
-      if (!manualNumbers.trim()) return;
-      const nums = manualNumbers.split(/[\n,]+/).map(n => n.trim()).filter(Boolean);
-      await importNumbers(nums);
-      setManualNumbers("");
-  };
-
-  const handleFileUpload = (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = async (evt) => {
-          const text = evt.target.result;
-          const nums = text.split(/[\n,]+/).map(n => n.trim()).filter(Boolean);
-          await importNumbers(nums);
-      };
-      reader.readAsText(file);
-      e.target.value = "";
-  };
-
-  const importNumbers = async (nums) => {
-      if (!codigoEmpresa || nums.length === 0) return;
-      setImporting(true);
-      setImportProgress(0);
-      try {
-          const CHUNK_SIZE = 500;
-          let allImportedIds = [];
-          
-          for (let i = 0; i < nums.length; i += CHUNK_SIZE) {
-              const chunk = nums.slice(i, i + CHUNK_SIZE);
-              const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/import-contacts`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ numbers: chunk })
-              });
-              const data = await res.json();
-              if (data.success && data.importedIds) {
-                  allImportedIds.push(...data.importedIds);
-              }
-              setImportProgress(Math.round(((i + chunk.length) / nums.length) * 100));
-          }
-          
-          if (allImportedIds.length > 0) {
-              setSelectedContacts(prev => [...new Set([...prev, ...allImportedIds])]);
-              alert(`${allImportedIds.length} contactos importados/seleccionados con éxito.`);
-          } else {
-              alert('No se importaron contactos (puede que el formato sea incorrecto).');
-          }
-      } catch (err) {
-          console.error(err);
-          alert('Error al importar contactos');
-      } finally {
-          setImporting(false);
-          setImportProgress(0);
+    if (!manualNumbers.trim()) return;
+    const nums = manualNumbers.split(/[\n,]+/).map(n => n.trim()).filter(Boolean);
+    setImporting(true);
+    try {
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/import-contacts`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
+        body: JSON.stringify({ numbers: nums })
+      });
+      const data = await res.json();
+      if (data.success && data.importedIds) {
+        setSelectedContacts(prev => [...new Set([...prev, ...data.importedIds])]);
+        alert(`${data.importedIds.length} números importados y seleccionados con éxito.`);
+        setManualNumbers("");
       }
+    } catch (err) {
+      alert('Error importando números');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  // Carga de Excel / CSV procesada con IA
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !codigoEmpresa) return;
+
+    setUploadingExcel(true);
+    setAiAnalysisResult(null);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/upload-contacts-excel`, {
+        method: 'POST',
+        headers: { 'ngrok-skip-browser-warning': 'true' },
+        body: formData
+      });
+      const data = await res.json();
+
+      if (data.success && data.contacts) {
+        setAiAnalysisResult({
+          mapping: data.mappingDetected,
+          total: data.totalRows,
+          valid: data.validCount,
+          invalid: data.invalidCount
+        });
+
+        // Formatear para la lista local
+        const newFormatted = data.contacts.map(c => ({
+          id: c.id,
+          name: c.nombre,
+          telefono: c.telefono,
+          email: c.email
+        }));
+
+        // Actualizar lista de contactos
+        setAllContacts(prev => {
+          const map = new Map();
+          [...newFormatted, ...prev].forEach(item => map.set(item.id, item));
+          return Array.from(map.values());
+        });
+
+        // Marcar todos los importados como seleccionados
+        setSelectedContacts(prev => [...new Set([...prev, ...newFormatted.map(c => c.id)])]);
+      } else {
+        alert(data.error || 'Error al procesar el archivo Excel.');
+      }
+    } catch (err) {
+      console.error('Error subiendo archivo:', err);
+      alert('Error de conexión al subir el archivo Excel.');
+    } finally {
+      setUploadingExcel(false);
+      e.target.value = "";
+    }
   };
 
   const goToNextStep = () => {
-      if (currentStep === 1 && selectedContacts.length === 0) {
-          alert('Debes seleccionar o cargar contactos antes de continuar.');
-          return;
-      }
-      if (currentStep === 2 && !selectedTemplate) {
-          alert('Debes seleccionar una plantilla.');
-          return;
-      }
-      if (currentStep === 3 && !campaignName.trim()) {
-          alert('Debes asignarle un nombre a la campaña.');
-          return;
-      }
-      if (currentStep < 4) setCurrentStep(c => c + 1);
+    if (currentStep === 1 && selectedContacts.length === 0) {
+      alert('Debes seleccionar o cargar al menos un contacto antes de continuar.');
+      return;
+    }
+    if (currentStep === 2 && !selectedTemplate) {
+      alert('Debes seleccionar una plantilla.');
+      return;
+    }
+    if (currentStep === 3 && !campaignName.trim()) {
+      alert('Debes asignarle un nombre a la campaña.');
+      return;
+    }
+    if (currentStep < 4) setCurrentStep(c => c + 1);
   };
 
   const startCampaign = async () => {
-      setSending(true);
-      try {
-          const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/massive`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                  contactIds: selectedContacts,
-                  templateName: selectedTemplate.name,
-                  languageCode: selectedTemplate.language,
-                  campaignName,
-                  messagesPerMinute
-              })
-          });
-          const data = await res.json();
-          if (data.success) {
-              alert('Campaña iniciada con éxito!');
-              if (onCampaignStarted) onCampaignStarted();
-              onCancel(); // Close panel
-          } else {
-              alert(data.error || 'Error al iniciar campaña');
-          }
-      } catch (err) {
-          console.error(err);
-          alert('Error de conexión');
-      } finally {
-          setSending(false);
+    setSending(true);
+    try {
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/massive`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
+        body: JSON.stringify({
+          contactIds: selectedContacts,
+          templateName: selectedTemplate.name,
+          languageCode: selectedTemplate.language,
+          campaignName,
+          messagesPerMinute,
+          useContactName
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('🚀 ¡Campaña iniciada con éxito! Los mensajes se están enviando dosificados en segundo plano.');
+        if (onCampaignStarted) onCampaignStarted();
+        onCancel();
+      } else {
+        alert(data.error || 'Error al iniciar campaña');
       }
+    } catch (err) {
+      console.error(err);
+      alert('Error de conexión con el servidor.');
+    } finally {
+      setSending(false);
+    }
   };
+
+  const templateHasVariables = selectedTemplate?.components?.some(
+    c => c.type === 'BODY' && /\{\{\d+\}\}/.test(c.text)
+  );
 
   return (
     <div className="flex flex-col w-full h-full bg-[#eae8e1] relative rounded-[32px] overflow-hidden text-gray-800 font-sans p-6">
@@ -178,7 +226,10 @@ export default function MassivePanel({ contacts = [], onCancel, codigoEmpresa, o
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          <h2 className="text-2xl font-bold tracking-tight">Envío Masivo</h2>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Envío Masivo</h2>
+            <p className="text-xs text-gray-500">Campañas con IA y dosificación anti-bloqueo</p>
+          </div>
         </div>
 
         {/* Pill Tabs */}
@@ -187,7 +238,7 @@ export default function MassivePanel({ contacts = [], onCancel, codigoEmpresa, o
             <button
               key={step.id}
               onClick={() => {
-                  if (step.id < currentStep) setCurrentStep(step.id);
+                if (step.id < currentStep) setCurrentStep(step.id);
               }}
               className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
                 currentStep === step.id 
@@ -209,77 +260,139 @@ export default function MassivePanel({ contacts = [], onCancel, codigoEmpresa, o
           {/* STEP 1: Contactos */}
           {currentStep === 1 && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="mb-4">
-                <h3 className="text-xl font-bold">¿A quién le enviamos el mensaje?</h3>
-                <p className="text-gray-500 text-sm">Selecciona o importa los destinatarios de tu campaña.</p>
+              <div className="mb-4 flex justify-between items-end">
+                <div>
+                  <h3 className="text-xl font-bold">Destinatarios de la Campaña</h3>
+                  <p className="text-gray-500 text-sm">Sube tu Excel o selecciona de tus contactos guardados.</p>
+                </div>
+                {allContacts.length > 0 && (
+                  <button 
+                    onClick={selectAll} 
+                    className="text-xs font-semibold text-gray-700 bg-white px-3 py-1.5 rounded-full shadow-sm hover:bg-gray-50"
+                  >
+                    {selectedContacts.length === allContacts.length ? 'Deseleccionar todos' : 'Seleccionar todos'}
+                  </button>
+                )}
               </div>
+
+              {/* Banner de resultado de IA si se subió Excel */}
+              {aiAnalysisResult && (
+                <div className="mb-6 bg-white border border-[#c6f432] p-4 rounded-[20px] shadow-sm flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[#c6f432] flex items-center justify-center shrink-0 text-black font-bold text-sm">
+                    ✨
+                  </div>
+                  <div className="flex-1 text-sm">
+                    <p className="font-semibold text-gray-900">
+                      Excel analizado con IA con éxito ({aiAnalysisResult.mapping?.detectedBy || 'Groq'})
+                    </p>
+                    <p className="text-gray-600 text-xs mt-0.5">
+                      Columnas detectadas: <strong>Teléfono</strong> ({aiAnalysisResult.mapping?.telefono})
+                      {aiAnalysisResult.mapping?.nombre ? `, Nombre (${aiAnalysisResult.mapping?.nombre})` : ''}
+                      {aiAnalysisResult.mapping?.email ? `, Email (${aiAnalysisResult.mapping?.email})` : ''}.
+                    </p>
+                    <p className="text-xs text-green-700 font-medium mt-1">
+                      ✅ {aiAnalysisResult.valid} contactos válidos importados y normalizados. 
+                      {aiAnalysisResult.invalid > 0 && ` (${aiAnalysisResult.invalid} filas ignoradas por formato incorrecto).`}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 
                 {/* Contact Selection Card */}
                 <div className="md:col-span-2 bg-white rounded-[24px] p-6 shadow-sm">
                   <div className="flex justify-between items-center mb-4">
-                    <h4 className="font-semibold text-lg">Contactos Activos</h4>
-                    <span className="text-xs font-medium bg-gray-100 px-2 py-1 rounded-lg">{selectedContacts.length} seleccionados</span>
+                    <h4 className="font-semibold text-lg">Contactos Disponibles</h4>
+                    <span className="text-xs font-medium bg-black text-white px-2.5 py-1 rounded-full">
+                      {selectedContacts.length} seleccionados
+                    </span>
                   </div>
-                  <div className="space-y-2 max-h-[350px] overflow-y-auto pr-2">
-                    {contacts.map(c => (
+                  
+                  <div className="space-y-2 max-h-[380px] overflow-y-auto pr-2">
+                    {allContacts.map(c => (
                       <label key={c.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer border border-transparent hover:border-gray-100 transition-colors">
                         <input 
                           type="checkbox" 
                           checked={selectedContacts.includes(c.id)}
                           onChange={() => toggleContact(c.id)}
-                          className="w-4 h-4 text-black rounded border-gray-300 focus:ring-black"
+                          className="w-4 h-4 text-black rounded border-gray-300 focus:ring-black accent-black cursor-pointer"
                         />
-                        <img src={c.avatar || `https://ui-avatars.com/api/?name=${c.name}`} alt={c.name} className="w-10 h-10 rounded-full object-cover" />
-                        <div className="flex-1">
-                          <p className="font-medium text-sm">{c.name}</p>
-                          <p className="text-xs text-gray-400">{c.telefono}</p>
+                        <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-700 text-sm">
+                          {(c.name || c.nombre || 'U')[0].toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm text-gray-900 truncate">{c.name || c.nombre}</p>
+                          <div className="flex items-center gap-2 text-xs text-gray-400">
+                            <span>{c.telefono}</span>
+                            {c.email && <span className="truncate">· {c.email}</span>}
+                          </div>
                         </div>
                       </label>
                     ))}
-                    {contacts.length === 0 && <p className="text-gray-400 text-sm py-4 text-center">No hay contactos disponibles.</p>}
+                    {allContacts.length === 0 && (
+                      <div className="text-center py-10 text-gray-400">
+                        <p className="text-sm font-medium">Aún no hay contactos cargados.</p>
+                        <p className="text-xs mt-1">Sube un Excel a la derecha para importar tu lista.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Import Actions Card */}
                 <div className="space-y-4">
-                  <div className="bg-white rounded-[24px] p-6 shadow-sm">
-                    <div className="w-10 h-10 bg-[#c6f432] rounded-full flex items-center justify-center mb-4">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-black">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  {/* Excel Upload with AI Card */}
+                  <div className="bg-white rounded-[24px] p-6 shadow-sm border-2 border-dashed border-gray-200 hover:border-black transition-all">
+                    <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center mb-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                       </svg>
                     </div>
-                    <h4 className="font-semibold text-gray-900">Agregar manualmente</h4>
-                    <p className="text-xs text-gray-500 mt-1 mb-3">Ingresa números separados por coma o salto de línea.</p>
-                    <textarea 
-                       className="w-full text-sm border-gray-200 rounded-lg p-2 focus:ring-black focus:border-black mb-2" 
-                       rows="3" 
-                       placeholder="Ej: 549112345678, 549119876543"
-                       value={manualNumbers}
-                       onChange={(e) => setManualNumbers(e.target.value)}
-                    ></textarea>
-                    <button 
-                       onClick={handleImportManual}
-                       disabled={importing || !manualNumbers.trim()}
-                       className="w-full bg-black text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50"
-                    >
-                       {importing ? `Importando... ${importProgress}%` : 'Importar Números'}
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="font-semibold text-gray-900">Cargar Excel / CSV</h4>
+                      <span className="text-[10px] bg-[#c6f432] text-black font-bold px-1.5 py-0.5 rounded-md">IA</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1 mb-4">
+                      Sube tu archivo (.xlsx, .xls, .csv). La IA detectará automáticamente nombres, teléfonos y correos.
+                    </p>
+                    
+                    <label className={`w-full ${uploadingExcel ? 'bg-gray-200' : 'bg-black hover:bg-gray-800 text-[#c6f432]'} rounded-xl py-3 text-sm font-semibold flex items-center justify-center cursor-pointer transition-all text-center shadow-sm`}>
+                      {uploadingExcel ? (
+                        <div className="flex items-center gap-2 text-gray-700">
+                          <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                          <span>Analizando con IA...</span>
+                        </div>
+                      ) : (
+                        <span>Seleccionar Archivo Excel</span>
+                      )}
+                      <input 
+                        type="file" 
+                        accept=".xlsx, .xls, .csv, .txt" 
+                        className="hidden" 
+                        onChange={handleFileUpload} 
+                        disabled={uploadingExcel} 
+                      />
+                    </label>
                   </div>
 
+                  {/* Manual entry card */}
                   <div className="bg-white rounded-[24px] p-6 shadow-sm">
-                    <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center mb-4">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-white">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                      </svg>
-                    </div>
-                    <h4 className="font-semibold text-gray-900">Cargar Excel / CSV</h4>
-                    <p className="text-xs text-gray-500 mt-1 mb-3">Sube un archivo .csv o .txt con una columna de números.</p>
-                    <label className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg py-2 text-sm font-medium flex items-center justify-center cursor-pointer transition-colors text-center">
-                       {importing ? `Importando... ${importProgress}%` : 'Seleccionar Archivo'}
-                       <input type="file" accept=".csv, .txt" className="hidden" onChange={handleFileUpload} disabled={importing} />
-                    </label>
+                    <h4 className="font-semibold text-gray-900 text-sm">Ingreso manual rápido</h4>
+                    <p className="text-xs text-gray-500 mt-1 mb-2">Pega teléfonos separados por comas o saltos de línea:</p>
+                    <textarea 
+                      className="w-full text-xs border border-gray-200 rounded-xl p-3 focus:ring-1 focus:ring-black focus:border-black mb-2" 
+                      rows="3" 
+                      placeholder="Ej: 1123456789, 5491198765432"
+                      value={manualNumbers}
+                      onChange={(e) => setManualNumbers(e.target.value)}
+                    ></textarea>
+                    <button 
+                      onClick={handleImportManual}
+                      disabled={importing || !manualNumbers.trim()}
+                      className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl py-2 text-xs font-semibold disabled:opacity-50 transition-colors"
+                    >
+                      {importing ? 'Normalizando...' : 'Agregar a la lista'}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -288,31 +401,68 @@ export default function MassivePanel({ contacts = [], onCancel, codigoEmpresa, o
 
           {/* STEP 2: Mensaje (Plantillas Meta) */}
           {currentStep === 2 && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-               <div className="mb-4">
-                <h3 className="text-xl font-bold">Selecciona una Plantilla</h3>
-                <p className="text-gray-500 text-sm">Elige una plantilla aprobada por Meta WhatsApp.</p>
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+              <div>
+                <h3 className="text-xl font-bold">Selecciona una Plantilla Aprobada</h3>
+                <p className="text-gray-500 text-sm">Elige la plantilla oficial de WhatsApp para este envío.</p>
               </div>
 
               {loadingTemplates ? (
-                  <p className="text-center py-10 text-gray-500">Cargando plantillas de Meta...</p>
+                <div className="text-center py-12 bg-white rounded-[24px]">
+                  <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                  <p className="text-sm text-gray-500">Cargando plantillas de Meta WhatsApp...</p>
+                </div>
               ) : templates.length === 0 ? (
-                  <p className="text-center py-10 text-gray-500 bg-white rounded-xl">No tienes plantillas aprobadas disponibles en tu cuenta de WhatsApp.</p>
+                <div className="p-8 text-center bg-white rounded-[24px]">
+                  <p className="text-gray-600 font-medium">No se encontraron plantillas aprobadas en tu Business Account.</p>
+                  <p className="text-xs text-gray-400 mt-1">Crea y aprueba una plantilla en el Administrador de WhatsApp de Meta para usarla aquí.</p>
+                </div>
               ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    {templates.map((tpl) => (
-                      <button 
-                        key={tpl.id}
-                        onClick={() => setSelectedTemplate(tpl)}
-                        className={`p-6 rounded-[24px] text-left transition-all border-2 ${selectedTemplate?.id === tpl.id ? 'bg-white border-black shadow-md' : 'bg-white/50 border-transparent hover:bg-white'}`}
-                      >
-                        <h4 className="font-semibold text-gray-900 mb-2">{tpl.name} <span className="text-xs font-normal text-gray-400">({tpl.language})</span></h4>
-                        <div className="text-sm text-gray-600 line-clamp-3 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                            {tpl.components.find(c => c.type === 'BODY')?.text || 'Sin cuerpo de texto'}
-                        </div>
-                      </button>
-                    ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {templates.map((tpl) => (
+                    <button 
+                      key={tpl.id}
+                      onClick={() => setSelectedTemplate(tpl)}
+                      className={`p-6 rounded-[24px] text-left transition-all border-2 ${
+                        selectedTemplate?.id === tpl.id 
+                          ? 'bg-white border-black shadow-md' 
+                          : 'bg-white/60 border-transparent hover:bg-white'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-semibold text-gray-900">{tpl.name}</h4>
+                        <span className="text-[10px] bg-green-100 text-green-800 font-bold px-2 py-0.5 rounded-full uppercase">
+                          {tpl.language}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-600 line-clamp-3 bg-gray-50 p-3 rounded-xl border border-gray-100 font-mono">
+                        {tpl.components?.find(c => c.type === 'BODY')?.text || 'Sin texto'}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Personalización con Variables */}
+              {selectedTemplate && (
+                <div className="bg-white p-5 rounded-[24px] shadow-sm flex items-center justify-between border border-gray-100">
+                  <div className="pr-4">
+                    <p className="font-semibold text-sm text-gray-900">Personalizar plantilla con el Nombre del Contacto</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Si tu plantilla tiene variables dinámicas como <code className="bg-gray-100 px-1 py-0.5 rounded font-bold font-mono">{"{{1}}"}</code>, 
+                      se reemplazará automáticamente con el nombre importado del cliente.
+                    </p>
                   </div>
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input 
+                      type="checkbox" 
+                      checked={useContactName} 
+                      onChange={(e) => setUseContactName(e.target.checked)}
+                      className="sr-only peer" 
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-black"></div>
+                  </label>
+                </div>
               )}
             </div>
           )}
@@ -320,35 +470,46 @@ export default function MassivePanel({ contacts = [], onCancel, codigoEmpresa, o
           {/* STEP 3: Parámetros */}
           {currentStep === 3 && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-               <div className="mb-4">
-                <h3 className="text-xl font-bold">Parámetros</h3>
-                <p className="text-gray-500 text-sm">Configura la velocidad y detalles de la campaña.</p>
+              <div className="mb-4">
+                <h3 className="text-xl font-bold">Parámetros de la Campaña</h3>
+                <p className="text-gray-500 text-sm">Controla el nombre y la velocidad para proteger tu línea contra baneos.</p>
               </div>
 
               <div className="space-y-6 max-w-xl mx-auto">
                 <div className="bg-white rounded-[24px] p-6 shadow-sm">
-                  <label className="block font-semibold text-gray-900 mb-2">Nombre de la campaña</label>
+                  <label className="block font-semibold text-gray-900 mb-2">Nombre de la Campaña</label>
                   <input 
                     type="text"
                     value={campaignName}
                     onChange={(e) => setCampaignName(e.target.value)}
-                    placeholder="Ej. Promoción Verano 2024"
+                    placeholder="Ej. Promoción 100 Clientes Octubre"
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black"
                   />
                 </div>
 
                 <div className="bg-white rounded-[24px] p-6 shadow-sm">
-                  <label className="block font-semibold text-gray-900 mb-2">Mensajes por minuto</label>
-                  <p className="text-xs text-gray-500 mb-4">Ajusta la velocidad para evitar bloqueos por parte de Meta.</p>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="font-semibold text-gray-900">Velocidad de Envío (Anti-Bloqueo)</label>
+                    <span className="font-bold text-base bg-[#c6f432] text-black px-2.5 py-0.5 rounded-lg">
+                      {messagesPerMinute} msjs / min
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-4">
+                    La cola BullMQ espaciará los envíos automáticamente para simular un envío humano natural.
+                  </p>
                   <input 
                     type="range"
-                    min="1"
+                    min="2"
                     max="60"
                     value={messagesPerMinute}
                     onChange={(e) => setMessagesPerMinute(Number(e.target.value))}
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mb-2 accent-black"
                   />
-                  <div className="text-center font-bold text-lg">{messagesPerMinute} msj/min</div>
+                  <div className="flex justify-between text-[11px] text-gray-400 font-medium">
+                    <span>2/min (Ultraseguro)</span>
+                    <span>10-20/min (Recomendado)</span>
+                    <span>60/min (Rápido)</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -357,41 +518,52 @@ export default function MassivePanel({ contacts = [], onCancel, codigoEmpresa, o
           {/* STEP 4: Revisión y Envío */}
           {currentStep === 4 && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-               <div className="mb-4">
-                <h3 className="text-xl font-bold">Resumen de Campaña</h3>
-                <p className="text-gray-500 text-sm">Verifica los datos antes de lanzar el envío masivo.</p>
+              <div className="mb-4">
+                <h3 className="text-xl font-bold">Resumen de la Campaña</h3>
+                <p className="text-gray-500 text-sm">Verifica la configuración antes de encolar los envíos.</p>
               </div>
 
-              <div className="bg-white rounded-[24px] p-8 shadow-sm">
-                <h3 className="text-2xl font-bold mb-6">{campaignName}</h3>
+              <div className="bg-white rounded-[28px] p-8 shadow-sm">
+                <h3 className="text-2xl font-bold mb-6 text-gray-900">{campaignName}</h3>
                 
-                <div className="grid grid-cols-2 gap-8 mb-8">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 mb-8">
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Destinatarios</p>
+                    <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-1">Destinatarios</p>
                     <p className="text-3xl font-bold text-gray-900">{selectedContacts.length}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Velocidad</p>
-                    <p className="text-xl font-medium text-gray-900">{messagesPerMinute} msj/min</p>
+                    <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-1">Velocidad</p>
+                    <p className="text-xl font-bold text-gray-900">{messagesPerMinute} msj/min</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-1">Tiempo Estimado</p>
+                    <p className="text-xl font-bold text-gray-900">
+                      ~{Math.max(1, Math.ceil(selectedContacts.length / messagesPerMinute))} min
+                    </p>
                   </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-xl p-4 mb-8">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2">Plantilla Seleccionada</p>
-                  <p className="text-sm text-gray-700 font-medium">
+                <div className="bg-gray-50 rounded-2xl p-5 mb-8 border border-gray-100">
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Plantilla Meta</p>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white border border-gray-200">
+                      Personalización: {useContactName ? 'Activada (Nombre)' : 'Desactivada'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-900 font-bold mb-1">
                     {selectedTemplate ? `${selectedTemplate.name} (${selectedTemplate.language})` : "Ninguna seleccionada"}
                   </p>
-                  <div className="mt-2 text-sm text-gray-600 line-clamp-3">
-                    {selectedTemplate?.components.find(c => c.type === 'BODY')?.text || ''}
-                  </div>
+                  <p className="text-xs text-gray-600 font-mono bg-white p-3 rounded-xl border border-gray-100">
+                    {selectedTemplate?.components?.find(c => c.type === 'BODY')?.text || ''}
+                  </p>
                 </div>
 
                 <button 
                   onClick={startCampaign}
                   disabled={sending}
-                  className="w-full bg-black text-[#c6f432] font-semibold text-lg py-4 rounded-full shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50 disabled:scale-100"
+                  className="w-full bg-black text-[#c6f432] font-semibold text-lg py-4 rounded-full shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all disabled:opacity-50 disabled:scale-100"
                 >
-                  {sending ? 'Iniciando...' : 'Iniciar Envío Masivo'}
+                  {sending ? 'Encolando envíos...' : `Iniciar Campaña (${selectedContacts.length} mensajes)`}
                 </button>
               </div>
             </div>
@@ -401,7 +573,7 @@ export default function MassivePanel({ contacts = [], onCancel, codigoEmpresa, o
       </div>
       
       {/* Footer Navigation Buttons */}
-      <div className="mt-6 flex justify-between items-center max-w-4xl mx-auto w-full pt-4 border-t border-gray-200/50">
+      <div className="mt-4 flex justify-between items-center max-w-4xl mx-auto w-full pt-4 border-t border-gray-200/50">
         <button 
           onClick={() => setCurrentStep(prev => Math.max(1, prev - 1))}
           disabled={currentStep === 1}
@@ -418,7 +590,7 @@ export default function MassivePanel({ contacts = [], onCancel, codigoEmpresa, o
             Siguiente Paso
           </button>
         ) : (
-          <div className="w-[100px]"></div> // Spacer for alignment
+          <div className="w-[100px]"></div>
         )}
       </div>
 
