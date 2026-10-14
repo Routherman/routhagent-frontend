@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { Save, BookOpen, Upload, FileText, Loader2 } from 'lucide-react';
+import { API_URL } from '@/config/api';
 
 export default function Library() {
   const { user } = useUser();
@@ -20,12 +21,12 @@ export default function Library() {
     if (!user) return;
     const fetchData = async () => {
       try {
-        const resUser = await fetch(`http://localhost:8080/api/users/me/${user.id}`);
+        const resUser = await fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
         const dataUser = await resUser.json();
         
         if (dataUser && dataUser.codigo_empresa) {
           setCodigoEmpresa(dataUser.codigo_empresa);
-          const resEmpresa = await fetch(`http://localhost:8080/api/empresas/${dataUser.codigo_empresa}`);
+          const resEmpresa = await fetch(`${API_URL}/empresas/${dataUser.codigo_empresa}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
           const dataEmpresa = await resEmpresa.json();
           if (resEmpresa.ok) {
             setEmpresa(dataEmpresa);
@@ -47,9 +48,12 @@ export default function Library() {
     setSaving(true);
     setSaveMessage('');
     try {
-        const res = await fetch(`http://localhost:8080/api/empresas/${codigoEmpresa}/ia`, {
+        const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/ia`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true'
+            },
             body: JSON.stringify({ prompt_ia: promptIa, conocimiento_ia: conocimientoIa })
         });
         if (res.ok) {
@@ -74,8 +78,9 @@ export default function Library() {
     formData.append('file', file);
 
     try {
-        const res = await fetch(`http://localhost:8080/api/empresas/${codigoEmpresa}/upload-doc`, {
+        const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/upload-doc`, {
             method: 'POST',
+            headers: { 'ngrok-skip-browser-warning': 'true' },
             body: formData
         });
         const data = await res.json();

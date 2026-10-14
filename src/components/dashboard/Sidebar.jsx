@@ -7,8 +7,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import Image from 'next/image';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api` : 'http://localhost:8080/api';
+import { API_URL } from '@/config/api';
 
 // Global variable to persist known handoffs across Sidebar remounts during navigation
 let globalHandoffs = new Set();

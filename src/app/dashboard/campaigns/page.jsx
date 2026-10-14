@@ -5,8 +5,7 @@ import { useUser } from '@clerk/nextjs';
 import Sidebar from "@/components/dashboard/Sidebar";
 import Panel from "@/components/dashboard/Panel";
 import Header from "@/components/dashboard/Header";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api` : 'http://localhost:8080/api';
+import { API_URL } from '@/config/api';
 
 export default function CampaignsPage() {
   const { user, isLoaded } = useUser();

@@ -18,8 +18,7 @@ import {
   Panel as FlowPanel
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api` : 'http://localhost:8080/api';
+import { API_URL } from '@/config/api';
 
 const nodeTypesList = [
   { type: 'message', name: 'Mensaje Simple' },

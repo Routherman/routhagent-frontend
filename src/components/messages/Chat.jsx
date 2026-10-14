@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { API_URL } from '@/config/api';
 
 export default function Chat({ messages = [], contact, onHeaderClick, onSendMessage, onToggleBot }) {
   const [inputValue, setInputValue] = useState('');
@@ -69,7 +70,7 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
     setTemplateError('');
     setSelectedTemplate(null);
     try {
-        const res = await fetch('http://localhost:8080/api/templates', { headers: { 'ngrok-skip-browser-warning': 'true' } });
+        const res = await fetch(`${API_URL}/templates`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
         const data = await res.json();
         if (data.error) {
             setTemplateError(data.error);
@@ -334,7 +335,7 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
                 try {
                   setLoadingTemplates(true);
                   const bodyText = selectedTemplate.components?.find(c => c.type === 'BODY')?.text || '';
-                  const res = await fetch(`http://localhost:8080/api/contacts/${contact.id}/template`, {
+                  const res = await fetch(`${API_URL}/contacts/${contact.id}/template`, {
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json',

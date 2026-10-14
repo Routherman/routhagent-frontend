@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { Building, Hash, Save, Check } from 'lucide-react';
+import { API_URL } from '@/config/api';
 
 export default function Empresa({ privilegios }) {
   const { user } = useUser();
@@ -25,12 +26,12 @@ export default function Empresa({ privilegios }) {
     if (!user) return;
     const fetchData = async () => {
       try {
-        const resUser = await fetch(`http://localhost:8080/api/users/me/${user.id}`);
+        const resUser = await fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
         const dataUser = await resUser.json();
         
         if (dataUser && dataUser.codigo_empresa) {
           setCodigoEmpresa(dataUser.codigo_empresa);
-          const resEmpresa = await fetch(`http://localhost:8080/api/empresas/${dataUser.codigo_empresa}`);
+          const resEmpresa = await fetch(`${API_URL}/empresas/${dataUser.codigo_empresa}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
           const dataEmpresa = await resEmpresa.json();
           if (resEmpresa.ok) {
             setEmpresa(dataEmpresa);
@@ -58,9 +59,12 @@ export default function Empresa({ privilegios }) {
 
     try {
       const payload = { nombre, telefono, email, direccion };
-      const res = await fetch(`http://localhost:8080/api/empresas/${codigoEmpresa}`, {
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
         body: JSON.stringify(payload)
       });
       if (res.ok) {

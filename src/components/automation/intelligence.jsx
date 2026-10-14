@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { Save, BrainCircuit } from 'lucide-react';
+import { API_URL } from '@/config/api';
 
 export default function Intelligence() {
   const { user } = useUser();
@@ -17,12 +18,12 @@ export default function Intelligence() {
     if (!user) return;
     const fetchData = async () => {
       try {
-        const resUser = await fetch(`http://localhost:8080/api/users/me/${user.id}`);
+        const resUser = await fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
         const dataUser = await resUser.json();
         
         if (dataUser && dataUser.codigo_empresa) {
           setCodigoEmpresa(dataUser.codigo_empresa);
-          const resEmpresa = await fetch(`http://localhost:8080/api/empresas/${dataUser.codigo_empresa}`);
+          const resEmpresa = await fetch(`${API_URL}/empresas/${dataUser.codigo_empresa}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
           const dataEmpresa = await resEmpresa.json();
           if (resEmpresa.ok) {
             setEmpresa(dataEmpresa);
@@ -44,9 +45,12 @@ export default function Intelligence() {
     setSaving(true);
     setSaveMessage('');
     try {
-        const res = await fetch(`http://localhost:8080/api/empresas/${codigoEmpresa}/ia`, {
+        const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/ia`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true'
+            },
             body: JSON.stringify({ prompt_ia: promptIa, conocimiento_ia: conocimientoIa })
         });
         if (res.ok) {

@@ -6,8 +6,7 @@ import ListContacts from './listChats';
 import Chat from './Chat';
 import InfoContact from './infoContact';
 import MassivePanel from './massivePanel';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api` : 'http://localhost:8080/api';
+import { API_URL, BASE_URL } from '@/config/api';
 
 export default function MessagesPanel() {
   const { user, isLoaded } = useUser();
@@ -100,7 +99,7 @@ export default function MessagesPanel() {
           };
 
           // Construimos la URL completa para el frontend
-          const fullMediaUrl = parsedMedia && parsedMedia.url ? `http://localhost:8080${parsedMedia.url}` : null;
+          const fullMediaUrl = parsedMedia && parsedMedia.url ? `${BASE_URL}${parsedMedia.url}` : null;
 
           if (m.tipo === 'audio') {
              msgObj.audio = { url: fullMediaUrl };

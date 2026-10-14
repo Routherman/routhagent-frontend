@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { Users, Shield, Plus, Edit2, Trash2, Check, X } from 'lucide-react';
+import { API_URL } from '@/config/api';
 
 export default function Equipo({ userData, privilegios }) {
     const [usuarios, setUsuarios] = useState([]);
@@ -32,8 +33,8 @@ export default function Equipo({ userData, privilegios }) {
         setLoading(true);
         try {
             const [usersRes, rolesRes] = await Promise.all([
-                fetch(`http://localhost:8080/api/empresas/${userData.codigo_empresa}/users`),
-                fetch(`http://localhost:8080/api/empresas/${userData.codigo_empresa}/roles`)
+                fetch(`${API_URL}/empresas/${userData.codigo_empresa}/users`, { headers: { 'ngrok-skip-browser-warning': 'true' } }),
+                fetch(`${API_URL}/empresas/${userData.codigo_empresa}/roles`, { headers: { 'ngrok-skip-browser-warning': 'true' } })
             ]);
             
             const usersData = await usersRes.json();
@@ -50,9 +51,12 @@ export default function Equipo({ userData, privilegios }) {
 
     const handleAssignRole = async (userId, rolId) => {
         try {
-            await fetch(`http://localhost:8080/api/empresas/${userData.codigo_empresa}/users/${userId}/role`, {
+            await fetch(`${API_URL}/empresas/${userData.codigo_empresa}/users/${userId}/role`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
+                },
                 body: JSON.stringify({ rolId })
             });
             fetchData();
@@ -64,15 +68,21 @@ export default function Equipo({ userData, privilegios }) {
     const handleSaveRole = async () => {
         try {
             if (editingRole) {
-                await fetch(`http://localhost:8080/api/empresas/${userData.codigo_empresa}/roles/${editingRole.id}`, {
+                await fetch(`${API_URL}/empresas/${userData.codigo_empresa}/roles/${editingRole.id}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
                     body: JSON.stringify(roleForm)
                 });
             } else {
-                await fetch(`http://localhost:8080/api/empresas/${userData.codigo_empresa}/roles`, {
+                await fetch(`${API_URL}/empresas/${userData.codigo_empresa}/roles`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
                     body: JSON.stringify(roleForm)
                 });
             }
@@ -88,8 +98,9 @@ export default function Equipo({ userData, privilegios }) {
     const handleDeleteRole = async (roleId) => {
         if (!confirm('¿Estás seguro de eliminar este rol? Los usuarios con este rol pasarán a ser main.')) return;
         try {
-            await fetch(`http://localhost:8080/api/empresas/${userData.codigo_empresa}/roles/${roleId}`, {
-                method: 'DELETE'
+            await fetch(`${API_URL}/empresas/${userData.codigo_empresa}/roles/${roleId}`, {
+                method: 'DELETE',
+                headers: { 'ngrok-skip-browser-warning': 'true' }
             });
             fetchData();
         } catch (error) {

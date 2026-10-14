@@ -6,8 +6,7 @@ import Sidebar from '@/components/dashboard/Sidebar';
 import Panel from '@/components/dashboard/Panel';
 import Header from '@/components/dashboard/Header';
 import Link from 'next/link';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api` : 'http://localhost:8080/api';
+import { API_URL } from '@/config/api';
 
 export default function FlowsPage() {
   const { user, isLoaded } = useUser();

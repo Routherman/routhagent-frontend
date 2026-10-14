@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api` : 'http://localhost:8080/api';
+import { API_URL } from '@/config/api';
 
 export default function InfoContact({ contact, codigoEmpresa }) {
   const [roles, setRoles] = useState([]);

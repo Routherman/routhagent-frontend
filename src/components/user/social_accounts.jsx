@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { CheckCircle2, Plus, X, MessageCircle, Save } from 'lucide-react';
+import { API_URL } from '@/config/api';
 
 const TikTokIcon = ({ className }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -42,12 +43,12 @@ export default function SocialAccounts() {
     if (!user) return;
     const fetchData = async () => {
       try {
-        const resUser = await fetch(`http://localhost:8080/api/users/me/${user.id}`);
+        const resUser = await fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
         const dataUser = await resUser.json();
         
         if (dataUser && dataUser.codigo_empresa) {
           setCodigoEmpresa(dataUser.codigo_empresa);
-          const resEmpresa = await fetch(`http://localhost:8080/api/empresas/${dataUser.codigo_empresa}`);
+          const resEmpresa = await fetch(`${API_URL}/empresas/${dataUser.codigo_empresa}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
           const dataEmpresa = await resEmpresa.json();
           if (resEmpresa.ok) {
             setEmpresa(dataEmpresa);
@@ -109,9 +110,12 @@ export default function SocialAccounts() {
         }
       };
 
-      const res = await fetch(`http://localhost:8080/api/empresas/${codigoEmpresa}/social`, {
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/social`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
         body: JSON.stringify({ cuentasVinculadas: updatedCuentas })
       });
       if (res.ok) {

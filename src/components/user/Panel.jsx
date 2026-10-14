@@ -6,6 +6,7 @@ import Configurations from './configurations';
 import SocialAccounts from './social_accounts';
 import Empresa from './empresa';
 import Equipo from './equipo'; // We will create this
+import { API_URL } from '@/config/api';
 
 export default function UserPanel() {
     const { user } = useUser();
@@ -18,7 +19,9 @@ export default function UserPanel() {
         if (!user) return;
         const fetchUserData = async () => {
             try {
-                const res = await fetch(`http://localhost:8080/api/users/me/${user.id}`);
+                const res = await fetch(`${API_URL}/users/me/${user.id}`, {
+                    headers: { 'ngrok-skip-browser-warning': 'true' }
+                });
                 const data = await res.json();
                 setUserData(data);
                 

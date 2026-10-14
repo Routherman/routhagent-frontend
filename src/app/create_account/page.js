@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useClerk } from '@clerk/nextjs';
+import { API_URL } from '@/config/api';
 
 export default function CreateAccountPage() {
     const { user, isLoaded } = useUser();
@@ -33,9 +34,12 @@ export default function CreateAccountPage() {
                 direccion,
                 cuentasVinculadas: user.externalAccounts || []
             };
-            const res = await fetch('http://localhost:8080/api/empresas', {
+            const res = await fetch(`${API_URL}/empresas`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
+                },
                 body: JSON.stringify(payload)
             });
             const data = await res.json();
@@ -57,9 +61,12 @@ export default function CreateAccountPage() {
         setError(null);
         try {
             const payload = { clerkId: user.id, codigo };
-            const res = await fetch('http://localhost:8080/api/empresas/join', {
+            const res = await fetch(`${API_URL}/empresas/join`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
+                },
                 body: JSON.stringify(payload)
             });
             const data = await res.json();

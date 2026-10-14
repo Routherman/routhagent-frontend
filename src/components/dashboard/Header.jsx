@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useUser, useClerk } from '@clerk/nextjs';
 import Link from 'next/link';
+import { API_URL } from '@/config/api';
 
 export default function Header() {
   const { user } = useUser();
@@ -33,9 +34,12 @@ export default function Header() {
             imageUrl: user.imageUrl,
             token: user.id // or a real generated token if needed
           };
-          const res = await fetch('http://localhost:8080/api/users/sync', {
+          const res = await fetch(`${API_URL}/users/sync`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true'
+            },
             body: JSON.stringify(payload)
           });
           const data = await res.json();
