@@ -212,6 +212,14 @@ export default function MassivePanel({ contacts = [], onCancel, codigoEmpresa, o
     c => c.type === 'BODY' && /\{\{\d+\}\}/.test(c.text)
   );
 
+  const handleSelectTemplate = (tpl) => {
+    setSelectedTemplate(tpl);
+    const hasVars = tpl?.components?.some(
+      c => c.type === 'BODY' && /\{\{\d+\}\}/.test(c.text)
+    );
+    setUseContactName(Boolean(hasVars));
+  };
+
   return (
     <div className="flex flex-col w-full h-full bg-[#eae8e1] relative rounded-[32px] overflow-hidden text-gray-800 font-sans p-6">
       
@@ -419,44 +427,71 @@ export default function MassivePanel({ contacts = [], onCancel, codigoEmpresa, o
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {templates.map((tpl) => (
-                    <button 
-                      key={tpl.id}
-                      onClick={() => setSelectedTemplate(tpl)}
-                      className={`p-6 rounded-[24px] text-left transition-all border-2 ${
-                        selectedTemplate?.id === tpl.id 
-                          ? 'bg-white border-black shadow-md' 
-                          : 'bg-white/60 border-transparent hover:bg-white'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-semibold text-gray-900">{tpl.name}</h4>
-                        <span className="text-[10px] bg-green-100 text-green-800 font-bold px-2 py-0.5 rounded-full uppercase">
-                          {tpl.language}
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-600 line-clamp-3 bg-gray-50 p-3 rounded-xl border border-gray-100 font-mono">
-                        {tpl.components?.find(c => c.type === 'BODY')?.text || 'Sin texto'}
-                      </div>
-                    </button>
-                  ))}
+                  {templates.map((tpl) => {
+                    const hasVars = tpl.components?.some(c => c.type === 'BODY' && /\{\{\d+\}\}/.test(c.text));
+                    return (
+                      <button 
+                        key={tpl.id}
+                        onClick={() => handleSelectTemplate(tpl)}
+                        className={`p-6 rounded-[24px] text-left transition-all border-2 ${
+                          selectedTemplate?.id === tpl.id 
+                            ? 'bg-white border-black shadow-md' 
+                            : 'bg-white/60 border-transparent hover:bg-white'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-semibold text-gray-900">{tpl.name}</h4>
+                          <div className="flex gap-1.5 items-center">
+                            {hasVars && (
+                              <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full">
+                                {"{{1}}"} Dinámico
+                              </span>
+                            )}
+                            <span className="text-[10px] bg-green-100 text-green-800 font-bold px-2 py-0.5 rounded-full uppercase">
+                              {tpl.language}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-600 line-clamp-3 bg-gray-50 p-3 rounded-xl border border-gray-100 font-mono">
+                          {tpl.components?.find(c => c.type === 'BODY')?.text || 'Sin texto'}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 
               {/* Personalización con Variables */}
               {selectedTemplate && (
-                <div className="bg-white p-5 rounded-[24px] shadow-sm flex items-center justify-between border border-gray-100">
+                <div className={`p-5 rounded-[24px] shadow-sm flex items-center justify-between border transition-all ${
+                  templateHasVariables 
+                    ? 'bg-white border-gray-200' 
+                    : 'bg-gray-50 border-gray-200 opacity-90'
+                }`}>
                   <div className="pr-4">
-                    <p className="font-semibold text-sm text-gray-900">Personalizar plantilla con el Nombre del Contacto</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      Si tu plantilla tiene variables dinámicas como <code className="bg-gray-100 px-1 py-0.5 rounded font-bold font-mono">{"{{1}}"}</code>, 
-                      se reemplazará automáticamente con el nombre importado del cliente.
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-semibold text-sm text-gray-900">Personalizar con Nombre del Contacto</p>
+                      {templateHasVariables ? (
+                        <span className="text-[10px] bg-[#c6f432] text-black font-bold px-2 py-0.5 rounded-md">
+                          Admite Variables
+                        </span>
+                      ) : (
+                        <span className="text-[10px] bg-gray-200 text-gray-600 font-medium px-2 py-0.5 rounded-md">
+                          Plantilla fija (sin variables)
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      {templateHasVariables 
+                        ? 'Se sustituirá automáticamente el parámetro {{1}} con el nombre del cliente extraído por la IA.' 
+                        : 'Esta plantilla no contiene {{1}} en Meta. Se enviará de forma segura con el texto estándar predefinido.'}
                     </p>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <label className={`relative inline-flex items-center ${templateHasVariables ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'} shrink-0`}>
                     <input 
                       type="checkbox" 
-                      checked={useContactName} 
+                      checked={useContactName && templateHasVariables} 
+                      disabled={!templateHasVariables}
                       onChange={(e) => setUseContactName(e.target.checked)}
                       className="sr-only peer" 
                     />
