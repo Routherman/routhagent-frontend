@@ -53,21 +53,28 @@ function FlowEditor({ flowId }) {
 
   const loadFlow = async (codigo) => {
     try {
-      const res = await fetch(`${API_URL}/empresas/${codigo}/flujos`);
+      const res = await fetch(`${API_URL}/empresas/${codigo}/flujos`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
       const allFlows = await res.json();
       const current = allFlows.find(f => f.id.toString() === flowId);
       if (current) {
         setFlowData(current);
         const dataJson = typeof current.data_json === 'string' ? JSON.parse(current.data_json) : current.data_json;
         if (dataJson) {
-           const initialNodes = (dataJson.nodes || []).map(n => ({
-               id: n.id,
-               type: 'default', // Using default node type for now
-               position: n.position || { x: Math.random() * 200, y: Math.random() * 200 },
-               data: { label: `${n.name} (${n.type})` },
-               // Store the raw node data inside node properties
-               raw: n
-           }));
+           const initialNodes = (dataJson.nodes || []).map(n => {
+               let displayLabel = `${n.name} (${n.type})`;
+               if (n.data?.message) {
+                  displayLabel = `${n.name}\n"${n.data.message.substring(0, 35)}..."`;
+               } else if (n.data?.question) {
+                  displayLabel = `${n.name}\n"${n.data.question.substring(0, 35)}..."`;
+               }
+               return {
+                   id: n.id,
+                   type: 'default',
+                   position: n.position || { x: Math.random() * 200, y: Math.random() * 200 },
+                   data: { label: displayLabel },
+                   raw: n
+               };
+           });
            
            const initialEdges = (dataJson.edges || []).map(e => ({
                id: e.id,
