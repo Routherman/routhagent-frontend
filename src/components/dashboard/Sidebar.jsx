@@ -4,9 +4,22 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '@/context/ThemeContext';
-import { useUser } from '@clerk/nextjs';
+import { useUser, SignOutButton } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import Image from 'next/image';
+import { 
+  LayoutGrid, 
+  MessageSquare, 
+  Ticket, 
+  Users, 
+  Cpu, 
+  BarChart3, 
+  Zap, 
+  GitFork, 
+  Settings, 
+  LogOut,
+  ChevronRight,
+  ShieldCheck
+} from 'lucide-react';
 import { API_URL } from '@/config/api';
 
 // Global variable to persist known handoffs across Sidebar remounts during navigation
@@ -17,14 +30,15 @@ export default function Sidebar() {
   const { themeData } = useTheme();
   const { user, isLoaded } = useUser();
   const [hasHandoffs, setHasHandoffs] = useState(false);
+  const [empresaCode, setEmpresaCode] = useState('');
 
   // if background is yellow (light), icons should be darker.
   const isLightBg = themeData?.id === 'yellow';
 
-  const defaultIconColor = isLightBg ? 'text-gray-600' : 'text-white/70';
-  const hoverIconColor = isLightBg ? 'hover:text-gray-900' : 'hover:text-white';
-  const activeBg = isLightBg ? 'bg-black/10' : 'bg-white/20';
-  const activeText = isLightBg ? 'text-gray-900' : 'text-white';
+  const defaultColor = isLightBg ? 'text-gray-600' : 'text-white/70';
+  const hoverColor = isLightBg ? 'hover:text-gray-950 hover:bg-black/5' : 'hover:text-white hover:bg-white/10';
+  const activeBg = isLightBg ? 'bg-black/10' : 'bg-white/15 backdrop-blur-md shadow-sm';
+  const activeColor = isLightBg ? 'text-gray-950 font-bold' : 'text-white font-bold';
 
   const playAlertSound = () => {
     try {
@@ -34,7 +48,7 @@ export default function Sidebar() {
       oscillator.connect(gainNode);
       gainNode.connect(audioCtx.destination);
       oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(440, audioCtx.currentTime); // A4 note
+      oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
       oscillator.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1);
       gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
@@ -50,32 +64,29 @@ export default function Sidebar() {
 
     let intervalId;
 
-    // 1. Get enterprise code
     fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } })
       .then(res => res.json())
       .then(userData => {
         const codigoEmpresa = userData.codigo_empresa;
         if (codigoEmpresa) {
-          // 2. Poll contacts
+          setEmpresaCode(codigoEmpresa);
           const pollContacts = async () => {
             try {
               const res = await fetch(`${API_URL}/contacts/${codigoEmpresa}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
               const data = await res.json();
 
               let currentHandoffs = 0;
-
               data.forEach(c => {
                 if (c.estado_bot === 'HANDOFF') {
                   currentHandoffs++;
                   if (!globalHandoffs.has(c.id)) {
                     globalHandoffs.add(c.id);
                     playAlertSound();
-                    toast.error('Ingresa a la bandeja de chats, se desactivo la IA en un chat. Revisalo', {
+                    toast.error('Atención: se desactivó la IA en un chat. Requiere intervención humana.', {
                       duration: 8000,
                     });
                   }
                 } else {
-                  // Si se vuelve a activar, lo removemos para alertar si vuelve a caer
                   if (globalHandoffs.has(c.id)) {
                     globalHandoffs.delete(c.id);
                   }
@@ -99,99 +110,119 @@ export default function Sidebar() {
     };
   }, [isLoaded, user]);
 
+  const navItems = [
+    { label: 'Dashboard', href: '/dashboard', icon: LayoutGrid, exact: true },
+    { label: 'Mensajes', href: '/dashboard/messages', icon: MessageSquare, badge: hasHandoffs },
+    { label: 'Tickets Helpdesk', href: '/dashboard/tickets', icon: Ticket },
+    { label: 'Agenda CRM', href: '/dashboard/crm', icon: Users },
+    { label: 'Router Multi-IA', href: '/dashboard/models', icon: Cpu },
+    { label: 'Campañas', href: '/dashboard/campaigns', icon: BarChart3 },
+    { label: 'Automatización', href: '/dashboard/automation', icon: Zap },
+    { label: 'Flujos Bot', href: '/dashboard/flows', icon: GitFork },
+    { label: 'Configuración', href: '/dashboard/user', icon: Settings },
+  ];
+
   return (
-    <aside className="w-20 md:w-24 flex flex-col items-center justify-between py-6 transition-colors duration-500">
-      <div className="flex flex-col items-center gap-8 w-full">
-        {/* Logo */}
-        <div className="w-12 h-12 bg-[#f4ebd0] rounded-xl flex items-center justify-center cursor-pointer shadow-sm">
-          <img src="/icono.svg" alt="icono" className='rounded-xl' />
+    <aside 
+      className="group w-20 hover:w-64 flex flex-col justify-between py-6 px-3.5 transition-all duration-300 ease-in-out shrink-0 select-none z-30"
+      style={{ willChange: 'width' }}
+    >
+      <div className="flex flex-col gap-6 w-full">
+        {/* Brand / Logo */}
+        <div className="flex items-center gap-3.5 px-1 overflow-hidden">
+          <div className="w-11 h-11 min-w-[44px] bg-[#f4ebd0] rounded-2xl flex items-center justify-center shadow-md cursor-pointer transition-transform group-hover:scale-105">
+            <img src="/icono.svg" alt="Routh Logo" className="w-7 h-7 rounded-lg object-contain" />
+          </div>
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
+            <h1 className="text-sm font-extrabold tracking-wider uppercase text-white font-mono">
+              ROUTH AGENT
+            </h1>
+            <div className="flex items-center gap-1.5 text-[10px] text-amber-300 font-semibold tracking-wide">
+              <ShieldCheck className="w-3 h-3 text-emerald-400" />
+              <span>{empresaCode ? `Empresa: ${empresaCode}` : 'Colaboratium'}</span>
+            </div>
+          </div>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex flex-col gap-4 w-full px-4">
-          <Link
-            href="/dashboard"
-            className={`w-12 h-12 mx-auto rounded-xl flex items-center justify-center transition-colors ${pathname === '/dashboard'
-              ? `${activeBg} ${activeText}`
-              : `${defaultIconColor} ${hoverIconColor}`
-              }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-            </svg>
-          </Link>
+        {/* Navigation Items */}
+        <nav className="flex flex-col gap-1.5 w-full">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = item.exact 
+              ? pathname === item.href 
+              : pathname === item.href || pathname.startsWith(item.href + '/');
 
-          <Link
-            href="/dashboard/messages"
-            className={`w-12 h-12 mx-auto rounded-xl flex items-center justify-center transition-colors relative ${pathname === '/dashboard/messages'
-              ? `${activeBg} ${activeText}`
-              : `${defaultIconColor} ${hoverIconColor}`
-              }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v3" />
-            </svg>
-            {hasHandoffs && (
-              <span className="absolute top-2 right-2 w-3 h-3 bg-red-500 rounded-full border-2 border-[#1a1a1c] shadow-sm animate-pulse"></span>
-            )}
-          </Link>
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`relative flex items-center h-11 px-3 rounded-2xl transition-all duration-200 group/item ${
+                  isActive 
+                    ? `${activeBg} ${activeColor}` 
+                    : `${defaultColor} ${hoverColor}`
+                }`}
+                title={item.label}
+              >
+                {/* Active indicator bar on left */}
+                {isActive && (
+                  <span className="absolute left-1 top-2.5 bottom-2.5 w-1 bg-amber-400 rounded-full shadow-[0_0_8px_rgba(251,191,36,0.8)]" />
+                )}
 
-          <Link
-            href="/dashboard/campaigns"
-            className={`w-12 h-12 mx-auto rounded-xl flex items-center justify-center transition-colors ${pathname === '/dashboard/campaigns'
-              ? `${activeBg} ${activeText}`
-              : `${defaultIconColor} ${hoverIconColor}`
-              }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-            </svg>
-          </Link>
+                {/* Icon wrapper */}
+                <div className="w-5 h-5 min-w-[20px] flex items-center justify-center relative">
+                  <Icon className="w-5 h-5 transition-transform group-hover/item:scale-110" />
+                  {item.badge && (
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border border-black animate-pulse shadow-sm" />
+                  )}
+                </div>
 
-          <Link
-            href="/dashboard/automation"
-            className={`w-12 h-12 mx-auto rounded-xl flex items-center justify-center transition-colors ${pathname === '/dashboard/automation'
-              ? `${activeBg} ${activeText}`
-              : `${defaultIconColor} ${hoverIconColor}`
-              }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
-            </svg>
-          </Link>
+                {/* Label displayed on sidebar hover */}
+                <span className="ml-3.5 text-xs font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-[-6px] group-hover:translate-x-0 overflow-hidden">
+                  {item.label}
+                </span>
 
-          <Link
-            href="/dashboard/flows"
-            className={`w-12 h-12 mx-auto rounded-xl flex items-center justify-center transition-colors ${pathname === '/dashboard/flows' || pathname.startsWith('/dashboard/flows/')
-              ? `${activeBg} ${activeText}`
-              : `${defaultIconColor} ${hoverIconColor}`
-              }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
-            </svg>
-          </Link>
-
-          <Link
-            href="/dashboard/user"
-            className={`w-12 h-12 mx-auto rounded-xl flex items-center justify-center transition-colors ${pathname === '/dashboard/user'
-              ? `${activeBg} ${activeText}`
-              : `${defaultIconColor} ${hoverIconColor}`
-              }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-            </svg>
-          </Link>
+                {/* Active Arrow indicator when expanded */}
+                {isActive && (
+                  <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-0 group-hover:opacity-60 transition-opacity duration-200" />
+                )}
+              </Link>
+            );
+          })}
         </nav>
       </div>
 
-      {/* Logout */}
-      <button className={`w-12 h-12 flex items-center justify-center transition-colors ${defaultIconColor} ${hoverIconColor}`}>
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
-        </svg>
-      </button>
+      {/* Footer / User Profile & Logout */}
+      <div className="flex flex-col gap-2 pt-4 border-t border-white/10 w-full">
+        {user && (
+          <div className="flex items-center gap-3 px-2 py-1.5 rounded-xl overflow-hidden">
+            <div className="w-7 h-7 min-w-[28px] rounded-full bg-gradient-to-tr from-amber-500 to-amber-200 text-slate-900 font-black text-xs flex items-center justify-center shadow">
+              {(user.firstName?.[0] || user.primaryEmailAddress?.emailAddress?.[0] || 'U').toUpperCase()}
+            </div>
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap overflow-hidden text-left">
+              <p className="text-xs font-bold text-white truncate max-w-[140px]">
+                {user.fullName || user.primaryEmailAddress?.emailAddress?.split('@')[0]}
+              </p>
+              <p className="text-[10px] text-white/50 truncate max-w-[140px]">
+                {user.primaryEmailAddress?.emailAddress}
+              </p>
+            </div>
+          </div>
+        )}
+
+        <SignOutButton>
+          <button 
+            className={`flex items-center h-10 px-3 rounded-2xl w-full transition-all duration-200 ${defaultColor} hover:text-rose-400 hover:bg-rose-500/10`}
+            title="Cerrar Sesión"
+          >
+            <div className="w-5 h-5 min-w-[20px] flex items-center justify-center">
+              <LogOut className="w-4 h-4" />
+            </div>
+            <span className="ml-3.5 text-xs font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-[-6px] group-hover:translate-x-0 overflow-hidden">
+              Cerrar Sesión
+            </span>
+          </button>
+        </SignOutButton>
+      </div>
     </aside>
   );
 }
