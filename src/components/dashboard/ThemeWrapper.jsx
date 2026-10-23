@@ -1,6 +1,7 @@
 "use client";
 import React from 'react';
 import { useTheme } from '@/context/ThemeContext';
+import FloatingCopilot from './FloatingCopilot';
 
 export default function ThemeWrapper({ children }) {
     const { themeData } = useTheme();
@@ -11,7 +12,7 @@ export default function ThemeWrapper({ children }) {
 
     return (
         <div 
-            className="h-screen w-full flex p-2 md:p-3 font-sans overflow-hidden transition-colors duration-500 ease-in-out"
+            className="h-screen w-full flex p-2 md:p-3 font-sans overflow-hidden transition-colors duration-500 ease-in-out relative"
             style={{ 
                 backgroundColor: themeData.hex,
                 color: isLightBg ? '#1a1c1e' : '#ffffff' 
@@ -21,6 +22,9 @@ export default function ThemeWrapper({ children }) {
             <div className={`flex w-full h-full ${isLightBg ? 'theme-light' : 'theme-dark'}`}>
                 {children}
             </div>
+
+            {/* Copiloto Flotante Inteligente presente en todas las secciones */}
+            <FloatingCopilot />
         </div>
     );
 }

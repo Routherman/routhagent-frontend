@@ -21,20 +21,39 @@ import {
   ShieldCheck,
   Building2,
   Send,
-  X
+  X,
+  ChevronDown,
+  ChevronUp,
+  UserCheck,
+  MessageSquare,
+  Sparkles,
+  Mail,
+  Phone,
+  FileText,
+  BadgeAlert,
+  ArrowRight
 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function CalendarPage() {
   const { user, isLoaded } = useUser();
-  const [codigoEmpresa, setCodigoEmpresa] = useState(null);
+  const [codigoEmpresa, setCodigoEmpresa] = useState("KRZMJI");
   const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [showBookModal, setShowBookModal] = useState(false);
   const [selectedSlotForBooking, setSelectedSlotForBooking] = useState(null);
 
-  // Form State
+  // Inscriptos Dropdown state por slot
+  const [expandedSlotId, setExpandedSlotId] = useState(null);
+
+  // Drawer / Modal de Detalle de Inscripto
+  const [selectedSubscriberId, setSelectedSubscriberId] = useState(null);
+  const [subscriberProfile, setSubscriberProfile] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [activeTab, setActiveTab] = useState("db"); // "db" | "ai" | "chat"
+
+  // Form State para Inscribir Asesor
   const [bookForm, setBookForm] = useState({
     nombre: "",
     email: "",
@@ -45,22 +64,22 @@ export default function CalendarPage() {
   // 1. Obtener código de empresa
   useEffect(() => {
     if (isLoaded && user) {
-      fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } })
-        .then(res => res.json())
-        .then(data => {
+      fetch(`${API_URL}/users/me/${user.id}`, { headers: { "ngrok-skip-browser-warning": "true" } })
+        .then((res) => res.json())
+        .then((data) => {
           if (data.codigo_empresa) setCodigoEmpresa(data.codigo_empresa);
         })
-        .catch(err => console.error(err));
+        .catch((err) => console.error(err));
     }
   }, [isLoaded, user]);
 
-  // 2. Cargar slots de capacitación
+  // 2. Cargar slots de capacitación con inscriptos
   const fetchSlots = async () => {
     if (!codigoEmpresa) return;
     try {
       setLoading(true);
       const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/calendar/slots`, {
-        headers: { 'ngrok-skip-browser-warning': 'true' }
+        headers: { "ngrok-skip-browser-warning": "true" }
       });
       const data = await res.json();
       if (data.success) {
@@ -78,7 +97,29 @@ export default function CalendarPage() {
     fetchSlots();
   }, [codigoEmpresa]);
 
-  // 3. Inscribir asesor manualmente
+  // 3. Cargar Ficha Detallada del Inscripto
+  const loadSubscriberDetail = async (subscriberId) => {
+    setSelectedSubscriberId(subscriberId);
+    setLoadingProfile(true);
+    setActiveTab("db");
+    try {
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/calendar/subscriber/${subscriberId}`, {
+        headers: { "ngrok-skip-browser-warning": "true" }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSubscriberProfile(data);
+      } else {
+        toast.error(data.error || "No se pudo cargar la ficha del inscripto");
+      }
+    } catch (err) {
+      toast.error("Error al obtener datos del inscripto");
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
+  // 4. Inscribir asesor manualmente
   const handleManualBooking = async (e) => {
     e.preventDefault();
     if (!selectedSlotForBooking || !bookForm.email || !bookForm.telefono) {
@@ -106,6 +147,7 @@ export default function CalendarPage() {
         toast.success(`¡Asesor inscripto! Se envió confirmación a ${bookForm.email} y a colaboratium@gmail.com`);
         setShowBookModal(false);
         setBookForm({ nombre: "", email: "", telefono: "" });
+        fetchSlots(); // Recargar slots para mostrar el nuevo inscripto
       } else {
         toast.error(data.error || "Error al registrar");
       }
@@ -134,7 +176,7 @@ export default function CalendarPage() {
                     Calendario de Capacitaciones & Meet
                   </h2>
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Sincronización con Google Calendar • Google Meet Oficial • Sesiones Presenciales
+                    Sincronización con Google Calendar • Google Meet Oficial • Control de Inscriptos
                   </p>
                 </div>
               </div>
@@ -151,29 +193,30 @@ export default function CalendarPage() {
 
               <button
                 onClick={fetchSlots}
-                className="p-2.5 rounded-2xl border border-gray-200 hover:bg-gray-50 text-gray-700 transition"
-                title="Actualizar turnos"
+                disabled={loading}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold transition shadow-sm"
               >
-                <RefreshCw className="w-4 h-4" />
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+                <span>Actualizar</span>
               </button>
             </div>
           </div>
 
-          {/* Banner de Estado Google Calendar */}
-          <div className="bg-gradient-to-r from-slate-900 via-neutral-900 to-black text-white p-5 rounded-3xl mb-6 shadow-md border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          {/* Banner de Sincronización */}
+          <div className="mb-6 p-4 rounded-3xl bg-gradient-to-r from-gray-950 via-gray-900 to-black text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-white/10">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                <ShieldCheck className="w-6 h-6" />
+              <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 shrink-0">
+                <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="font-extrabold text-sm text-white">Google Calendar Sincronizado</h3>
+                  <h4 className="text-sm font-extrabold text-white">Google Calendar Sincronizado</h4>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    En Vivo
+                    En Vivo (iCal Oficial)
                   </span>
                 </div>
-                <p className="text-xs text-white/60 mt-0.5">
-                  El bot lee en tiempo real los eventos de capacitación de tu cuenta y despacha las invitaciones por email certificado desde <strong>colaboratium@gmail.com</strong>.
+                <p className="text-xs text-gray-400 mt-0.5">
+                  El bot lee en tiempo real los eventos de capacitación de tu cuenta, gestiona cupos y despacha invitaciones automáticas desde colaboratium@gmail.com.
                 </p>
               </div>
             </div>
@@ -182,7 +225,7 @@ export default function CalendarPage() {
               href="https://meet.google.com/qmv-wqzk-hxo"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold text-xs shadow-md transition shrink-0"
+              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-extrabold transition shadow-lg shrink-0"
             >
               <Video className="w-4 h-4" />
               <span>Abrir Sala Google Meet</span>
@@ -205,15 +248,22 @@ export default function CalendarPage() {
                 No hay sesiones cargadas actualmente
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {slots.map((s) => {
                   const isVirtual = s.modalidad === "VIRTUAL";
+                  const subsCount = s.inscriptosCount ?? s.subscribers?.length ?? 0;
+                  const totalCupos = s.cupos || (isVirtual ? 25 : 15);
+                  const libres = s.cuposDisponibles ?? Math.max(0, totalCupos - subsCount);
+                  const pctOcupado = Math.min(100, Math.round((subsCount / totalCupos) * 100));
+                  const isExpanded = expandedSlotId === s.id;
+
                   return (
                     <div
                       key={s.id}
                       className="bg-white rounded-3xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
                     >
                       <div>
+                        {/* Header de la tarjeta */}
                         <div className="flex items-center justify-between mb-3">
                           <span
                             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase ${
@@ -240,6 +290,26 @@ export default function CalendarPage() {
                           {s.horarioStr}
                         </p>
 
+                        {/* Barra y contador de suscriptores */}
+                        <div className="mb-3 p-3 bg-gray-50/80 rounded-2xl border border-gray-100">
+                          <div className="flex items-center justify-between text-xs mb-1.5">
+                            <span className="font-extrabold text-gray-900 flex items-center gap-1.5">
+                              <Users className="w-3.5 h-3.5 text-indigo-600" />
+                              <span>{subsCount} Suscriptores</span>
+                            </span>
+                            <span className="text-[11px] font-bold text-gray-500">
+                              {libres} cupos libres ({totalCupos} tot.)
+                            </span>
+                          </div>
+                          <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500 rounded-full"
+                              style={{ width: `${pctOcupado}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Ubicación / Enlace */}
                         <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100 text-[11px] text-gray-600 space-y-1">
                           <p className="flex items-center gap-1 font-medium">
                             <MapPin className="w-3 h-3 text-gray-400 shrink-0" />
@@ -251,8 +321,74 @@ export default function CalendarPage() {
                             </p>
                           )}
                         </div>
+
+                        {/* Desplegable de Inscriptos */}
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedSlotId(isExpanded ? null : s.id)}
+                            className="w-full flex items-center justify-between text-xs font-bold text-gray-700 hover:text-black py-1.5 px-2 rounded-xl bg-gray-50/60 hover:bg-gray-100 transition"
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <UserCheck className="w-3.5 h-3.5 text-indigo-600" />
+                              <span>Ver inscriptos ({subsCount})</span>
+                            </span>
+                            <span className="text-[11px] font-mono text-gray-500 flex items-center gap-1">
+                              {isExpanded ? (
+                                <>
+                                  <span>Ocultar</span>
+                                  <ChevronUp className="w-3.5 h-3.5" />
+                                </>
+                              ) : (
+                                <>
+                                  <span>Desplegar</span>
+                                  <ChevronDown className="w-3.5 h-3.5" />
+                                </>
+                              )}
+                            </span>
+                          </button>
+
+                          {isExpanded && (
+                            <div className="mt-2.5 space-y-2 max-h-56 overflow-y-auto pr-1">
+                              {(!s.subscribers || s.subscribers.length === 0) ? (
+                                <p className="text-[11px] text-gray-400 italic py-3 text-center bg-gray-50/70 rounded-xl">
+                                  No hay candidatos inscriptos aún para esta fecha
+                                </p>
+                              ) : (
+                                s.subscribers.map((sub) => (
+                                  <div
+                                    key={sub.id}
+                                    onClick={() => loadSubscriberDetail(sub.id)}
+                                    className="p-2.5 rounded-2xl bg-white hover:bg-indigo-50/70 border border-gray-200/80 hover:border-indigo-300 transition-all cursor-pointer flex items-center justify-between gap-2 shadow-2xs group"
+                                  >
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                      <div className="w-7 h-7 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
+                                        {(sub.nombre || "A")[0].toUpperCase()}
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="text-xs font-extrabold text-gray-900 group-hover:text-indigo-600 transition truncate">
+                                          {sub.nombre}
+                                        </p>
+                                        <p className="text-[10px] text-gray-500 truncate">
+                                          {sub.email || sub.telefono}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-blue-100 text-blue-800 uppercase">
+                                        {sub.canal || "WhatsApp"}
+                                      </span>
+                                      <ArrowRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition" />
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
+                      {/* Footer de la Tarjeta */}
                       <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
                         {isVirtual ? (
                           <a
@@ -293,58 +429,293 @@ export default function CalendarPage() {
             )}
           </div>
 
+          {/* Modal / Slide-over de Ficha Completa del Inscripto */}
+          {selectedSubscriberId && (
+            <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-gray-100 max-h-[92vh] overflow-y-auto flex flex-col animate-in fade-in zoom-in-95 duration-200">
+                {/* Header del Modal */}
+                <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center font-black text-lg shadow-md">
+                      {subscriberProfile?.contacto?.nombre?.[0]?.toUpperCase() || "A"}
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black text-gray-900 flex items-center gap-2">
+                        <span>{subscriberProfile?.contacto?.nombre || "Cargando..."}</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800">
+                          {subscriberProfile?.contacto?.grupo || "ASESORES"}
+                        </span>
+                      </h3>
+                      <p className="text-xs text-gray-500 font-mono">
+                        {subscriberProfile?.contacto?.telefono} • {subscriberProfile?.contacto?.email || "Sin email"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setSelectedSubscriberId(null);
+                      setSubscriberProfile(null);
+                    }}
+                    className="p-2 text-gray-400 hover:text-black rounded-xl hover:bg-gray-100 transition"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {loadingProfile ? (
+                  <div className="py-16 flex flex-col items-center justify-center gap-3">
+                    <div className="w-8 h-8 border-4 border-gray-200 border-t-indigo-600 rounded-full animate-spin" />
+                    <p className="text-xs font-bold text-gray-500">Cargando base de datos e historial de respuestas...</p>
+                  </div>
+                ) : subscriberProfile ? (
+                  <div className="mt-4 flex-1 flex flex-col">
+                    {/* Selector de Pestañas */}
+                    <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-2xl mb-4">
+                      <button
+                        onClick={() => setActiveTab("db")}
+                        className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                          activeTab === "db"
+                            ? "bg-white text-gray-900 shadow-sm"
+                            : "text-gray-500 hover:text-gray-900"
+                        }`}
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>Ficha BD</span>
+                      </button>
+
+                      <button
+                        onClick={() => setActiveTab("ai")}
+                        className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                          activeTab === "ai"
+                            ? "bg-white text-indigo-600 shadow-sm"
+                            : "text-gray-500 hover:text-gray-900"
+                        }`}
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Resumen Respuestas (IA)</span>
+                      </button>
+
+                      <button
+                        onClick={() => setActiveTab("chat")}
+                        className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                          activeTab === "chat"
+                            ? "bg-white text-blue-600 shadow-sm"
+                            : "text-gray-500 hover:text-gray-900"
+                        }`}
+                      >
+                        <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Conversación ({subscriberProfile.mensajes?.length || 0})</span>
+                      </button>
+                    </div>
+
+                    {/* Contenido Pestaña 1: Ficha BD */}
+                    {activeTab === "db" && (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Teléfono / WhatsApp</span>
+                            <span className="text-xs font-mono font-extrabold text-gray-900">
+                              {subscriberProfile.contacto.telefono}
+                            </span>
+                          </div>
+
+                          <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Correo Electrónico</span>
+                            <span className="text-xs font-extrabold text-gray-900 truncate block">
+                              {subscriberProfile.contacto.email || "No registrado"}
+                            </span>
+                          </div>
+
+                          <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">DNI / Identificación</span>
+                            <span className="text-xs font-extrabold text-gray-900">
+                              {subscriberProfile.contacto.dni || "Pendiente de presentación"}
+                            </span>
+                          </div>
+
+                          <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Localidad / Dirección</span>
+                            <span className="text-xs font-extrabold text-gray-900 truncate block">
+                              {subscriberProfile.contacto.direccion || "Sin especificar"}
+                            </span>
+                          </div>
+
+                          <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">CBU / Alias</span>
+                            <span className="text-xs font-mono font-extrabold text-gray-900">
+                              {subscriberProfile.contacto.cbu || subscriberProfile.contacto.alias || "Sin registrar"}
+                            </span>
+                          </div>
+
+                          <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Entidad Bancaria</span>
+                            <span className="text-xs font-extrabold text-gray-900">
+                              {subscriberProfile.contacto.banco || "BIND / Coinag"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Ticket Asociado */}
+                        <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-black text-indigo-950 flex items-center gap-1.5">
+                              <BadgeAlert className="w-4 h-4 text-indigo-600" />
+                              <span>Ticket Helpdesk #{subscriberProfile.ticket?.id || "N/A"}</span>
+                            </span>
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-900">
+                              {subscriberProfile.ticket?.status || "pending_auth"}
+                            </span>
+                          </div>
+                          <p className="text-xs text-indigo-900 font-medium">
+                            {subscriberProfile.ticket?.summary || subscriberProfile.contacto?.metadata_extra?.inscripcion || "Inscripción a capacitación"}
+                          </p>
+                          <div className="mt-2 text-[10px] text-indigo-600 font-semibold flex items-center justify-between">
+                            <span>Asignado a: {subscriberProfile.ticket?.assigned_to_name || "Equipo Admisiones"}</span>
+                            <span>Fecha: {new Date(subscriberProfile.contacto.creado_en).toLocaleString("es-AR")}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Contenido Pestaña 2: Resumen IA */}
+                    {activeTab === "ai" && (
+                      <div className="space-y-4">
+                        <div className="p-4 rounded-2xl bg-gradient-to-tr from-purple-50 via-indigo-50 to-blue-50 border border-indigo-100/80 shadow-sm">
+                          <div className="flex items-center gap-2 mb-2 text-indigo-900 font-black text-xs uppercase tracking-wider">
+                            <Sparkles className="w-4 h-4 text-indigo-600" />
+                            <span>Síntesis Inteligente del Candidato</span>
+                          </div>
+                          <p className="text-xs text-gray-800 leading-relaxed font-medium whitespace-pre-wrap">
+                            {subscriberProfile.resumen_ia}
+                          </p>
+                        </div>
+
+                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-2">
+                          <h4 className="text-xs font-extrabold text-gray-900">Puntos Clave Detectados:</h4>
+                          <ul className="text-xs text-gray-600 space-y-1.5">
+                            <li className="flex items-center gap-2">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span>Interés confirmado en el programa de <b>Asesores Comerciales</b>.</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span>Canal de ingreso: <b>WhatsApp Cloud Oficial</b>.</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span>Correo verificado y notificado vía SMTP de Colaboratium.</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span>Ticket en espera de contacto por el directivo/admisiones.</span>
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Contenido Pestaña 3: Conversación */}
+                    {activeTab === "chat" && (
+                      <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                        {(!subscriberProfile.mensajes || subscriberProfile.mensajes.length === 0) ? (
+                          <div className="text-center py-10 bg-gray-50 rounded-2xl text-xs text-gray-400">
+                            No hay mensajes registrados en base de datos para este contacto
+                          </div>
+                        ) : (
+                          subscriberProfile.mensajes.map((m) => {
+                            const isIncoming = m.direccion === "ENTRANTE";
+                            return (
+                              <div
+                                key={m.id}
+                                className={`flex ${isIncoming ? "justify-start" : "justify-end"}`}
+                              >
+                                <div
+                                  className={`max-w-[80%] p-3 rounded-2xl text-xs leading-relaxed ${
+                                    isIncoming
+                                      ? "bg-gray-100 text-gray-900 font-medium"
+                                      : "bg-black text-white font-normal"
+                                  }`}
+                                >
+                                  <p className="whitespace-pre-wrap">{m.contenido}</p>
+                                  <span className="block mt-1 text-[9px] opacity-60 text-right">
+                                    {new Date(m.creado_en).toLocaleTimeString("es-AR", {
+                                      hour: "2-digit",
+                                      minute: "2-digit"
+                                    })}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
+
+                    {/* Acciones del Footer del Modal */}
+                    <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between gap-2">
+                      <a
+                        href={`https://wa.me/${subscriberProfile.contacto.telefono.replace(/[^\d]/g, "")}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>Abrir Chat WhatsApp</span>
+                      </a>
+
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText("https://meet.google.com/qmv-wqzk-hxo");
+                          toast.success("Enlace de Google Meet copiado al portapapeles");
+                        }}
+                        className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold transition flex items-center gap-1.5"
+                      >
+                        <Video className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Copiar Link Meet</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          )}
+
           {/* Modal Guía de Conexión Google Calendar */}
           {showGuideModal && (
             <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
               <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center">
-                      <HelpCircle className="w-4 h-4" />
-                    </div>
-                    <h3 className="font-extrabold text-base text-gray-900">
-                      Dónde encontrar la integración de Google Calendar
+                    <CalendarIcon className="w-5 h-5 text-indigo-600" />
+                    <h3 className="font-extrabold text-sm text-gray-900">
+                      Sincronización con Google Calendar
                     </h3>
                   </div>
-                  <button onClick={() => setShowGuideModal(false)} className="p-1 rounded-xl hover:bg-gray-100 text-gray-400">
-                    <X className="w-5 h-5" />
+                  <button
+                    onClick={() => setShowGuideModal(false)}
+                    className="p-1.5 text-gray-400 hover:text-black rounded-lg hover:bg-gray-100"
+                  >
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="mt-4 space-y-4 text-xs text-gray-700 leading-relaxed">
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-2xl">
-                    <p className="font-bold text-blue-900 mb-1">
-                      ✅ Opción 1: Dirección Secreta iCal (La más rápida y fácil)
+                <div className="py-4 space-y-4 text-xs text-gray-600">
+                  <div className="p-3.5 bg-emerald-50 rounded-2xl border border-emerald-200 text-emerald-950 font-medium">
+                    <p className="font-bold flex items-center gap-1.5 text-emerald-800 mb-1">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Conexión Activa por Feed iCal Secreto
                     </p>
-                    <ol className="list-decimal pl-4 space-y-1 text-blue-800">
-                      <li>Entra en tu navegador a <a href="https://calendar.google.com" target="_blank" rel="noreferrer" className="underline font-bold">calendar.google.com</a>.</li>
-                      <li>En la barra lateral izquierda (debajo de <strong>Mis calendarios</strong>), pasa el mouse sobre <strong>Damian Feuermann</strong> y haz clic en los <strong>tres puntos (⋮)</strong>.</li>
-                      <li>Haz clic en <strong>Configuración y uso compartido</strong>.</li>
-                      <li>Baja por la página hasta encontrar la sección <strong>"Integrar el calendario"</strong>.</li>
-                      <li>Verás un recuadro llamado <strong>"Dirección secreta en formato iCal"</strong> (empieza con <code>https://calendar.google.com/calendar/ical/.../basic.ics</code>).</li>
-                      <li>Copia esa dirección y pégala en tu archivo <code>.env</code> como <code>GOOGLE_CALENDAR_ICAL_URL</code>.</li>
-                    </ol>
-                  </div>
-
-                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-2xl">
-                    <p className="font-bold text-purple-900 mb-1">
-                      ⚡ Opción 2: Google Cloud Service Account (Para invitar con Meet automático)
+                    <p className="text-[11px] leading-relaxed">
+                      Tu calendario ya está vinculado a través de la Dirección Secreta de Google Calendar. Todos los eventos de tu cuenta se reflejan en tiempo real en los turnos del bot y en este panel.
                     </p>
-                    <ol className="list-decimal pl-4 space-y-1 text-purple-800">
-                      <li>Entra a <a href="https://console.cloud.google.com" target="_blank" rel="noreferrer" className="underline font-bold">console.cloud.google.com</a>.</li>
-                      <li>Habilita la <strong>Google Calendar API</strong> en la biblioteca de APIs.</li>
-                      <li>Ve a <strong>IAM y administración</strong> ➔ <strong>Cuentas de servicio</strong> (Service Accounts).</li>
-                      <li>Crea una cuenta de servicio, haz clic en ella y ve a la pestaña <strong>Claves (Keys)</strong> ➔ <strong>Crear clave nueva (JSON)</strong>.</li>
-                      <li>Coloca ese archivo en la carpeta <code>backend/google_credentials.json</code>.</li>
-                      <li>En tu Google Calendar, ve a <strong>Compartir con personas específicas</strong> y añade el email de esa cuenta de servicio con permisos de <strong>"Hacer cambios en eventos"</strong>.</li>
-                    </ol>
                   </div>
                 </div>
 
-                <div className="mt-5 pt-3 border-t border-gray-100 flex justify-end">
+                <div className="pt-3 border-t border-gray-100 flex justify-end">
                   <button
                     onClick={() => setShowGuideModal(false)}
-                    className="px-4 py-2 bg-black text-white rounded-xl text-xs font-bold"
+                    className="px-5 py-2 bg-black hover:bg-gray-800 text-white rounded-xl text-xs font-bold transition"
                   >
                     Entendido
                   </button>
@@ -353,30 +724,26 @@ export default function CalendarPage() {
             </div>
           )}
 
-          {/* Modal Inscribir Asesor Manualmente */}
+          {/* Modal de Reserva Manual */}
           {showBookModal && selectedSlotForBooking && (
             <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100 animate-in fade-in duration-200">
+              <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100">
                 <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-black text-white flex items-center justify-center">
-                      <Users className="w-4 h-4" />
-                    </div>
-                    <h3 className="font-extrabold text-sm text-gray-900">
-                      Inscribir Asesor al Turno #{selectedSlotForBooking.id}
-                    </h3>
+                  <div>
+                    <h3 className="font-extrabold text-sm text-gray-900">Inscribir Asesor Manualmente</h3>
+                    <p className="text-[11px] text-gray-500 font-medium">
+                      {selectedSlotForBooking.titulo} • {selectedSlotForBooking.fechaStr}
+                    </p>
                   </div>
-                  <button onClick={() => setShowBookModal(false)} className="p-1 rounded-xl hover:bg-gray-100 text-gray-400">
-                    <X className="w-5 h-5" />
+                  <button
+                    onClick={() => setShowBookModal(false)}
+                    className="p-1.5 text-gray-400 hover:text-black rounded-lg hover:bg-gray-100"
+                  >
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="p-3 bg-gray-50 rounded-2xl my-3 text-xs">
-                  <p className="font-bold text-gray-800">{selectedSlotForBooking.titulo}</p>
-                  <p className="text-indigo-600 font-semibold">{selectedSlotForBooking.fechaStr} • {selectedSlotForBooking.horarioStr}</p>
-                </div>
-
-                <form onSubmit={handleManualBooking} className="space-y-3">
+                <form onSubmit={handleManualBooking} className="py-4 space-y-3.5">
                   <div>
                     <label className="text-[10px] font-bold text-gray-500 uppercase">Nombre Completo</label>
                     <input
