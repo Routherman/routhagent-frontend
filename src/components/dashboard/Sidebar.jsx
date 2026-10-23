@@ -18,7 +18,9 @@ import {
   Settings, 
   LogOut,
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  Mail,
+  Calendar
 } from 'lucide-react';
 import { API_URL } from '@/config/api';
 
@@ -113,6 +115,8 @@ export default function Sidebar() {
   const navItems = [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutGrid, exact: true },
     { label: 'Mensajes', href: '/dashboard/messages', icon: MessageSquare, badge: hasHandoffs },
+    { label: 'Inbox Gmail', href: '/dashboard/inbox', icon: Mail },
+    { label: 'Calendario & Meet', href: '/dashboard/calendar', icon: Calendar },
     { label: 'Tickets Helpdesk', href: '/dashboard/tickets', icon: Ticket },
     { label: 'Agenda CRM', href: '/dashboard/crm', icon: Users },
     { label: 'Router Multi-IA', href: '/dashboard/models', icon: Cpu },
