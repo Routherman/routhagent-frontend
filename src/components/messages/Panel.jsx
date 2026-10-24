@@ -33,45 +33,47 @@ export default function MessagesPanel() {
   }, [isLoaded, user]);
 
   // 2. Poll contacts for this enterprise
+  const fetchContacts = async () => {
+    if (!codigoEmpresa || !user?.id) return;
+    try {
+      const res = await fetch(`${API_URL}/contacts/${codigoEmpresa}?clerkId=${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+      const data = await res.json();
+      
+      // Formatear datos para el frontend
+      const formatted = Array.isArray(data) ? data.map(c => ({
+        id: c.id,
+        name: c.nombre || 'Desconocido',
+        telefono: c.telefono,
+        email: c.email,
+        grupo: c.grupo,
+        estado_bot: c.estado_bot,
+        categoria: c.rol_asignado || 'General',
+        usuario_asignado_id: c.usuario_asignado_id,
+        estado_resolucion: c.estado_resolucion || 'RESUELTO',
+        nota_pendiente: c.nota_pendiente || null,
+        lider_id: c.lider_id || null,
+        asesor_id: c.asesor_id || null,
+        avatar: `https://ui-avatars.com/api/?name=${c.nombre || 'Usuario'}`,
+        time: new Date(c.creado_en).toLocaleDateString(),
+        unread: 0,
+        online: c.estado_bot === 'ACTIVO',
+      })) : [];
+      
+      setContacts(formatted);
+      if (loading) setLoading(false);
+    } catch (err) {
+      console.error('Error fetching contacts:', err);
+      if (loading) setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!codigoEmpresa || !user?.id) return;
-
-    const fetchContacts = async () => {
-      try {
-        const res = await fetch(`${API_URL}/contacts/${codigoEmpresa}?clerkId=${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
-        const data = await res.json();
-        
-        // Formatear datos para el frontend
-        const formatted = data.map(c => ({
-          id: c.id,
-          name: c.nombre || 'Desconocido',
-          telefono: c.telefono,
-          email: c.email,
-          grupo: c.grupo,
-          estado_bot: c.estado_bot,
-          categoria: c.rol_asignado || 'General',
-          usuario_asignado_id: c.usuario_asignado_id,
-          estado_resolucion: c.estado_resolucion || 'RESUELTO',
-          nota_pendiente: c.nota_pendiente || null,
-          lider_id: c.lider_id || null,
-          asesor_id: c.asesor_id || null,
-          avatar: `https://ui-avatars.com/api/?name=${c.nombre || 'Usuario'}`,
-          time: new Date(c.creado_en).toLocaleDateString(),
-          unread: 0,
-          online: c.estado_bot === 'ACTIVO',
-        }));
-        
-        setContacts(formatted);
-        if (loading) setLoading(false);
-      } catch (err) {
-        console.error('Error fetching contacts:', err);
-      }
-    };
 
     fetchContacts();
     const intervalId = setInterval(fetchContacts, 3000);
     return () => clearInterval(intervalId);
-  }, [codigoEmpresa, loading, user?.id]);
+  }, [codigoEmpresa, user?.id]);
 
   // 3. Poll messages for active contact
   useEffect(() => {

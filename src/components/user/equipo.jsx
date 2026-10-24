@@ -410,7 +410,7 @@ export default function Equipo({ userData, privilegios }) {
                                                     <span className="font-extrabold text-sm text-gray-900 block leading-tight">
                                                         {u.first_name} {u.last_name}
                                                     </span>
-                                                    <span className="text-[10px] text-gray-400 font-mono">ID: {u.id?.slice(0, 10)}...</span>
+                                                    <span className="text-[10px] text-gray-400 font-mono">ID: {String(u.clerk_id || u.id || '').slice(0, 10)}...</span>
                                                 </div>
                                             </td>
                                             <td className="py-4 px-4 text-xs font-semibold text-gray-600 font-mono">{u.email}</td>
