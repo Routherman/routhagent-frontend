@@ -348,29 +348,29 @@ export default function ContactActionMenu({
                 <select
                   value={teamForm.rol_asignado}
                   onChange={(e) => setTeamForm({ ...teamForm, rol_asignado: e.target.value })}
-                  className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-semibold"
+                  className="w-full px-3 py-2 text-xs text-gray-900 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-bold"
                 >
-                  <option value="General">General (Sin restricción)</option>
-                  <option value="Soporte">Soporte Técnico</option>
-                  <option value="Ventas">Ventas & Asesoría</option>
-                  <option value="Inversores">Mesa de Inversiones</option>
-                  <option value="Lideres">Coordinación de Líderes</option>
-                  <option value="Onboarding">Onboarding / Verificación</option>
+                  <option value="General" className="text-gray-900 font-bold">General (Sin restricción)</option>
+                  <option value="Soporte" className="text-gray-900 font-bold">Soporte Técnico</option>
+                  <option value="Ventas" className="text-gray-900 font-bold">Ventas & Asesoría</option>
+                  <option value="Inversores" className="text-gray-900 font-bold">Mesa de Inversiones</option>
+                  <option value="Lideres" className="text-gray-900 font-bold">Coordinación de Líderes</option>
+                  <option value="Onboarding" className="text-gray-900 font-bold">Onboarding / Verificación</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider block mb-1">
+                <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider block mb-1">
                   Miembro del Staff Específico (Opcional)
                 </label>
                 <select
                   value={teamForm.usuario_asignado_id}
                   onChange={(e) => setTeamForm({ ...teamForm, usuario_asignado_id: e.target.value })}
-                  className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-semibold"
+                  className="w-full px-3 py-2 text-xs text-gray-900 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-bold"
                 >
-                  <option value="">-- Cualquiera disponible en este Team --</option>
+                  <option value="" className="text-gray-900 font-bold">-- Cualquiera disponible en este Team --</option>
                   {users.map(u => (
-                    <option key={u.id} value={u.id}>
+                    <option key={u.id} value={u.id} className="text-gray-900 font-bold">
                       {u.first_name} {u.last_name} ({u.email})
                     </option>
                   ))}
@@ -491,17 +491,17 @@ export default function ContactActionMenu({
 
             <form onSubmit={handleSubmitHierarchy} className="space-y-3.5">
               <div>
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider block mb-1">
+                <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider block mb-1">
                   Seleccionar Líder de Equipo
                 </label>
                 <select
                   value={hierarchyForm.lider_id}
                   onChange={(e) => setHierarchyForm({ ...hierarchyForm, lider_id: e.target.value })}
-                  className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-semibold"
+                  className="w-full px-3 py-2 text-xs text-gray-900 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-bold"
                 >
-                  <option value="">-- Sin Líder asignado (Directo a Dirección) --</option>
+                  <option value="" className="text-gray-900 font-bold">-- Sin Líder asignado (Directo a Dirección) --</option>
                   {availableLideres.map(l => (
-                    <option key={l.id} value={l.id}>
+                    <option key={l.id} value={l.id} className="text-gray-900 font-bold">
                       {l.nombre} ({l.telefono || l.email || 'Sin datos'})
                     </option>
                   ))}
@@ -509,17 +509,17 @@ export default function ContactActionMenu({
               </div>
 
               <div>
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider block mb-1">
+                <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider block mb-1">
                   Seleccionar Asesor Comercial
                 </label>
                 <select
                   value={hierarchyForm.asesor_id}
                   onChange={(e) => setHierarchyForm({ ...hierarchyForm, asesor_id: e.target.value })}
-                  className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-semibold"
+                  className="w-full px-3 py-2 text-xs text-gray-900 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-bold"
                 >
-                  <option value="">-- Sin Asesor asignado --</option>
+                  <option value="" className="text-gray-900 font-bold">-- Sin Asesor asignado --</option>
                   {availableAsesores.map(a => (
-                    <option key={a.id} value={a.id}>
+                    <option key={a.id} value={a.id} className="text-gray-900 font-bold">
                       {a.nombre} ({a.telefono || a.email || 'Sin datos'})
                     </option>
                   ))}
@@ -573,7 +573,7 @@ export default function ContactActionMenu({
 
             <form onSubmit={handleSubmitResolution} className="py-4 space-y-3.5">
               <div>
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider block mb-1.5">
+                <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider block mb-1.5">
                   Estado de Resolución
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -616,7 +616,7 @@ export default function ContactActionMenu({
                     value={resolutionForm.nota_pendiente}
                     onChange={(e) => setResolutionForm({ ...resolutionForm, nota_pendiente: e.target.value })}
                     placeholder="ej. Falta subir foto de DNI por Renaper y coordinar llamado telefónico con el asesor..."
-                    className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-medium leading-relaxed"
+                    className="w-full px-3 py-2 text-xs text-gray-900 placeholder-gray-500 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-bold leading-relaxed"
                   />
                   <p className="text-[10px] text-amber-700 mt-1 font-semibold flex items-center gap-1">
                     <Clock className="w-3 h-3 shrink-0" />

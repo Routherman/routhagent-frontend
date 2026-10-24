@@ -43,6 +43,24 @@ export default function TicketsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [copilotFilterIds, setCopilotFilterIds] = useState(null);
+
+  // Escuchar acciones de entorno emitidas por el Copiloto Routh IA
+  useEffect(() => {
+    const handleCopilotAction = (e) => {
+      const action = e.detail;
+      if (!action) return;
+
+      if (action.type === 'FILTER_TICKETS') {
+        const ticketIds = action.payload?.ticketIds || [];
+        setCopilotFilterIds(ticketIds);
+        toast.info(`Copiloto: Mostrando ${ticketIds.length} tickets con más de 24 hs sin atención`);
+      }
+    };
+
+    window.addEventListener('routh-copilot-action', handleCopilotAction);
+    return () => window.removeEventListener('routh-copilot-action', handleCopilotAction);
+  }, []);
   
   // Modals & Actions
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -424,6 +442,9 @@ export default function TicketsPage() {
   };
 
   const filteredTickets = tickets.filter(t => {
+    if (copilotFilterIds !== null && !copilotFilterIds.includes(t.id)) {
+      return false;
+    }
     const term = searchTerm.toLowerCase();
     const phoneMatch = (t.phone || t.customer_number || '').includes(term);
     const nameMatch = (t.customer_name || '').toLowerCase().includes(term);
@@ -483,6 +504,24 @@ export default function TicketsPage() {
             </div>
           </div>
 
+          {/* Banner de Filtro Activo por Copilot */}
+          {copilotFilterIds !== null && (
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-2xl flex items-center justify-between gap-3 text-xs animate-in fade-in duration-200">
+              <div className="flex items-center gap-2 text-amber-900">
+                <Clock className="w-4 h-4 text-amber-600 animate-pulse shrink-0" />
+                <span className="font-bold">
+                  Filtro Copilot: Mostrando {filteredTickets.length} ticket(s) con más de 24 horas sin atención.
+                </span>
+              </div>
+              <button
+                onClick={() => setCopilotFilterIds(null)}
+                className="px-3 py-1 rounded-xl bg-amber-200/80 hover:bg-amber-300 text-amber-950 font-black text-xs transition"
+              >
+                Ver Todos los Tickets (Restablecer)
+              </button>
+            </div>
+          )}
+
           {/* Filter Bar & Search */}
           <div className="bg-gray-50 p-3 rounded-2xl border border-gray-200/80 mb-6 flex flex-col md:flex-row gap-3 items-center justify-between">
             <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto">
@@ -495,7 +534,10 @@ export default function TicketsPage() {
               ].map(f => (
                 <button
                   key={f.id}
-                  onClick={() => setFilter(f.id)}
+                  onClick={() => {
+                    setFilter(f.id);
+                    setCopilotFilterIds(null);
+                  }}
                   className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
                     filter === f.id
                       ? 'bg-white text-gray-950 shadow-sm border border-gray-200'
@@ -513,13 +555,13 @@ export default function TicketsPage() {
             </div>
 
             <div className="relative w-full md:w-72">
-              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Buscar por teléfono, nombre, asignado..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-black/10"
+                className="w-full pl-9 pr-3 py-1.5 bg-white border border-gray-300 rounded-xl text-xs text-gray-950 placeholder-gray-500 font-bold focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
           </div>

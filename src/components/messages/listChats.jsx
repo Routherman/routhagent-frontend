@@ -27,6 +27,34 @@ export default function ListChats({
   const [searchTerm, setSearchTerm] = useState('');
   const [hoveredNoteId, setHoveredNoteId] = useState(null);
 
+  // Escuchar acciones de entorno emitidas por el Copiloto Routh IA
+  React.useEffect(() => {
+    const handleCopilotAction = (e) => {
+      const action = e.detail;
+      if (!action) return;
+
+      if (action.type === 'FILTER_CHATS' || action.type === 'SELECT_CHAT') {
+        const query = action.payload?.term || action.payload?.query || '';
+        if (query) setSearchTerm(query);
+
+        // Buscar coincidencia en contactos para seleccionarlo
+        const targetName = (action.payload?.contactName || query).toLowerCase();
+        const matched = contacts.find(c => 
+          (c.name || '').toLowerCase().includes(targetName) ||
+          (c.telefono || '').includes(targetName) ||
+          (c.phone || '').includes(targetName) ||
+          c.id === action.payload?.contactId
+        );
+        if (matched) {
+          onSelectContact(matched);
+        }
+      }
+    };
+
+    window.addEventListener('routh-copilot-action', handleCopilotAction);
+    return () => window.removeEventListener('routh-copilot-action', handleCopilotAction);
+  }, [contacts, onSelectContact]);
+
   // Filtrado de contactos por nombre, teléfono, categoría o nota pendiente
   const filteredContacts = contacts.filter((c) => {
     const term = searchTerm.toLowerCase().trim();
@@ -51,21 +79,21 @@ export default function ListChats({
 
   return (
     <div className="w-full md:w-[340px] flex-shrink-0 flex flex-col h-full bg-white border-r border-gray-100 select-none">
-      {/* Search Bar */}
+      {/* Search Bar con alto contraste de texto */}
       <div className="p-3.5 border-b border-gray-100 flex items-center gap-2">
-        <div className="flex-1 bg-gray-50 flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200/80 focus-within:border-black focus-within:bg-white transition-all">
-          <Search className="w-4 h-4 text-gray-400 shrink-0" />
+        <div className="flex-1 bg-white flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-300 focus-within:border-black focus-within:ring-1 focus-within:ring-black transition-all shadow-xs">
+          <Search className="w-4 h-4 text-gray-500 shrink-0" />
           <input 
             type="text" 
             placeholder="Buscar por nombre, tel, rol..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-transparent outline-none w-full text-[13px] text-gray-800 placeholder-gray-400 font-medium" 
+            className="bg-transparent outline-none w-full text-[13px] text-gray-950 placeholder-gray-500 font-bold" 
           />
           {searchTerm && (
             <button 
               onClick={() => setSearchTerm('')} 
-              className="text-gray-400 hover:text-gray-600 text-xs font-bold"
+              className="text-gray-400 hover:text-black text-sm font-black px-1"
             >
               ×
             </button>

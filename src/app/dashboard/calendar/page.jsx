@@ -130,6 +130,19 @@ export default function CalendarPage() {
     fetchSlots();
   }, [codigoEmpresa]);
 
+  // Escuchar acciones de creación de eventos emitidas por el Copiloto Routh IA
+  useEffect(() => {
+    const handleCopilotAction = (e) => {
+      const action = e.detail;
+      if (action && action.type === 'CALENDAR_EVENT_CREATED') {
+        fetchSlots();
+      }
+    };
+
+    window.addEventListener('routh-copilot-action', handleCopilotAction);
+    return () => window.removeEventListener('routh-copilot-action', handleCopilotAction);
+  }, [codigoEmpresa]);
+
   // 3. Cargar Ficha Detallada del Inscripto
   const loadSubscriberDetail = async (subscriberId) => {
     setSelectedSubscriberId(subscriberId);
@@ -906,38 +919,38 @@ export default function CalendarPage() {
 
                 <form onSubmit={handleManualBooking} className="py-4 space-y-3.5">
                   <div>
-                    <label className="text-[10px] font-bold text-gray-500 uppercase">Nombre Completo</label>
+                    <label className="text-[10px] font-bold text-gray-700 uppercase">Nombre Completo</label>
                     <input
                       type="text"
                       required
                       placeholder="ej. Juan Ramón Valle"
                       value={bookForm.nombre}
                       onChange={(e) => setBookForm({ ...bookForm, nombre: e.target.value })}
-                      className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black"
+                      className="w-full mt-1 px-3 py-2 text-xs text-gray-900 placeholder-gray-500 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-bold"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold text-gray-500 uppercase">Correo Electrónico (Para invitación)</label>
+                    <label className="text-[10px] font-bold text-gray-700 uppercase">Correo Electrónico (Para invitación)</label>
                     <input
                       type="email"
                       required
                       placeholder="ej. damduff@gmail.com"
                       value={bookForm.email}
                       onChange={(e) => setBookForm({ ...bookForm, email: e.target.value })}
-                      className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black"
+                      className="w-full mt-1 px-3 py-2 text-xs text-gray-900 placeholder-gray-500 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-bold"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold text-gray-500 uppercase">Teléfono (WhatsApp)</label>
+                    <label className="text-[10px] font-bold text-gray-700 uppercase">Teléfono (WhatsApp)</label>
                     <input
                       type="text"
                       required
                       placeholder="ej. 5491136822409"
                       value={bookForm.telefono}
                       onChange={(e) => setBookForm({ ...bookForm, telefono: e.target.value })}
-                      className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black"
+                      className="w-full mt-1 px-3 py-2 text-xs text-gray-900 placeholder-gray-500 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-bold"
                     />
                   </div>
 
@@ -978,7 +991,7 @@ export default function CalendarPage() {
                       <h3 className="text-sm font-black text-gray-900">
                         {createModalType === 'webinar' ? 'Nuevo Webinar de Capacitación (Líder)' : 'Nueva Reunión Meet con Inversor (Asesor)'}
                       </h3>
-                      <p className="text-[10px] text-gray-400 font-mono">
+                      <p className="text-[10px] text-gray-500 font-mono font-medium">
                         Ámbito Google Oficial: colaboratium@gmail.com
                       </p>
                     </div>
@@ -993,20 +1006,20 @@ export default function CalendarPage() {
 
                 <form onSubmit={handleCreateEvent} className="py-4 space-y-3.5">
                   <div>
-                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Título del Evento</label>
+                    <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider">Título del Evento</label>
                     <input
                       type="text"
                       required
                       value={createForm.titulo}
                       onChange={(e) => setCreateForm({ ...createForm, titulo: e.target.value })}
                       placeholder={createModalType === 'webinar' ? "ej. Webinar Virtual de Líderes" : "ej. Asesoría Financiera Personalizada"}
-                      className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-semibold"
+                      className="w-full mt-1 px-3 py-2 text-xs text-gray-900 placeholder-gray-500 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-bold"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Modalidad</label>
+                      <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider">Modalidad</label>
                       <select
                         value={createForm.modalidad}
                         onChange={(e) => setCreateForm({ 
@@ -1014,87 +1027,87 @@ export default function CalendarPage() {
                           modalidad: e.target.value,
                           ubicacion: e.target.value === 'PRESENCIAL' ? 'Av. del Libertador 264, Vicente López' : 'Google Meet'
                         })}
-                        className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-semibold"
+                        className="w-full mt-1 px-3 py-2 text-xs text-gray-900 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-bold"
                       >
-                        <option value="VIRTUAL">Virtual (Google Meet)</option>
-                        <option value="PRESENCIAL">Presencial (Oficinas)</option>
+                        <option value="VIRTUAL" className="text-gray-900 font-bold">Virtual (Google Meet)</option>
+                        <option value="PRESENCIAL" className="text-gray-900 font-bold">Presencial (Oficinas)</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Categoría</label>
+                      <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider">Categoría</label>
                       <select
                         value={createForm.categoria}
                         onChange={(e) => setCreateForm({ ...createForm, categoria: e.target.value })}
-                        className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-semibold"
+                        className="w-full mt-1 px-3 py-2 text-xs text-gray-900 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-bold"
                       >
-                        <option value="LIDERES">Líderes de Equipo</option>
-                        <option value="ASESORES">Asesores Comerciales</option>
-                        <option value="INVERSORES">Inversores</option>
+                        <option value="LIDERES" className="text-gray-900 font-bold">Líderes de Equipo</option>
+                        <option value="ASESORES" className="text-gray-900 font-bold">Asesores Comerciales</option>
+                        <option value="INVERSORES" className="text-gray-900 font-bold">Inversores</option>
                       </select>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Fecha (ej. Lunes 26 de Octubre)</label>
+                      <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider">Fecha (ej. Lunes 26 de Octubre)</label>
                       <input
                         type="text"
                         required
                         value={createForm.fecha}
                         onChange={(e) => setCreateForm({ ...createForm, fecha: e.target.value })}
                         placeholder="ej. Lunes 26 de Octubre"
-                        className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-semibold"
+                        className="w-full mt-1 px-3 py-2 text-xs text-gray-900 placeholder-gray-500 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-bold"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Horario (ej. 16:30 a 17:30 hs)</label>
+                      <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider">Horario (ej. 16:30 a 17:30 hs)</label>
                       <input
                         type="text"
                         required
                         value={createForm.horario}
                         onChange={(e) => setCreateForm({ ...createForm, horario: e.target.value })}
                         placeholder="ej. 16:30 a 17:30 hs"
-                        className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-semibold"
+                        className="w-full mt-1 px-3 py-2 text-xs text-gray-900 placeholder-gray-500 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-bold"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-3">
                     <div className="col-span-1">
-                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Cupos</label>
+                      <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider">Cupos</label>
                       <input
                         type="number"
                         min="1"
                         max="500"
                         value={createForm.cupos}
                         onChange={(e) => setCreateForm({ ...createForm, cupos: e.target.value })}
-                        className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-semibold"
+                        className="w-full mt-1 px-3 py-2 text-xs text-gray-900 placeholder-gray-500 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-bold"
                       />
                     </div>
 
                     <div className="col-span-2">
-                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Sala Google Meet</label>
+                      <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider">Sala Google Meet</label>
                       <input
                         type="text"
                         value={createForm.meetLink}
                         onChange={(e) => setCreateForm({ ...createForm, meetLink: e.target.value })}
                         placeholder="https://meet.google.com/..."
-                        className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-mono"
+                        className="w-full mt-1 px-3 py-2 text-xs text-gray-900 placeholder-gray-500 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-mono font-bold"
                       />
                     </div>
                   </div>
 
                   {createForm.modalidad === 'PRESENCIAL' && (
                     <div>
-                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Dirección Física</label>
+                      <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider">Dirección Física</label>
                       <input
                         type="text"
                         value={createForm.ubicacion}
                         onChange={(e) => setCreateForm({ ...createForm, ubicacion: e.target.value })}
                         placeholder="Av. del Libertador 264..."
-                        className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-semibold"
+                        className="w-full mt-1 px-3 py-2 text-xs text-gray-900 placeholder-gray-500 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-bold"
                       />
                     </div>
                   )}
