@@ -36,8 +36,10 @@ import {
   Tag,
   MapPin,
   UserCheck,
-  FileBadge
+  FileBadge,
+  Pin
 } from "lucide-react";
+import ContactActionMenu from "@/components/dashboard/ContactActionMenu";
 import { toast } from "sonner";
 
 const EMAIL_TEMPLATES = [
@@ -379,12 +381,13 @@ export default function InboxPage() {
                     const hasContact = !!em.contact;
                     const displayName = em.contact?.nombre || em.fromName || em.fromEmail || "Remitente";
                     const groupBadge = em.contact?.grupo || (hasContact ? "ASESORES" : null);
+                    const isPending = (em.contact?.estado_resolucion || '').toUpperCase() === 'PENDIENTE';
 
                     return (
                       <div
                         key={em.uid}
                         onClick={() => loadEmailDetails(em.uid, em)}
-                        className={`p-3.5 cursor-pointer transition-colors ${
+                        className={`p-3.5 cursor-pointer transition-colors relative group ${
                           isSelected
                             ? "bg-white/10 border-l-2 border-sky-400"
                             : "hover:bg-white/5"
@@ -392,7 +395,7 @@ export default function InboxPage() {
                       >
                         <div className="flex items-center justify-between mb-1 gap-2">
                           <div className="flex items-center gap-1.5 truncate">
-                            <span className="font-extrabold text-xs text-white truncate max-w-[150px]">
+                            <span className="font-extrabold text-xs text-white truncate max-w-[140px]">
                               {displayName}
                             </span>
                             {groupBadge && (
@@ -401,9 +404,22 @@ export default function InboxPage() {
                               </span>
                             )}
                           </div>
-                          <span className="text-[10px] text-white/40 font-mono shrink-0">
-                            {new Date(em.date).toLocaleDateString("es-AR", { day: "numeric", month: "short" })}
-                          </span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-[10px] text-white/40 font-mono">
+                              {new Date(em.date).toLocaleDateString("es-AR", { day: "numeric", month: "short" })}
+                            </span>
+                            {hasContact && (
+                              <div onClick={(e) => e.stopPropagation()} className="relative shrink-0">
+                                <ContactActionMenu
+                                  contact={em.contact}
+                                  codigoEmpresa={codigoEmpresa}
+                                  currentUser={user}
+                                  onUpdated={fetchEmails}
+                                  buttonClassName="p-1 text-white/40 hover:text-white rounded hover:bg-white/10 transition text-xs"
+                                />
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         <p className={`text-xs truncate ${!em.seen ? "font-bold text-sky-300" : "text-white/70"}`}>
@@ -412,11 +428,18 @@ export default function InboxPage() {
 
                         <div className="flex items-center justify-between gap-1.5 mt-1.5 text-[10px] text-white/40 truncate">
                           <span className="truncate">{em.fromEmail}</span>
-                          {hasContact && (
-                            <span className="flex items-center gap-1 text-emerald-400 font-bold shrink-0">
-                              <MessageSquare className="w-3 h-3" /> WhatsApp
-                            </span>
-                          )}
+                          <div className="flex items-center gap-2 shrink-0">
+                            {isPending && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold text-[9px]" title={em.contact?.nota_pendiente ? `Falta: ${em.contact.nota_pendiente}` : 'Pendiente'}>
+                                ⏳ Pendiente
+                              </span>
+                            )}
+                            {hasContact && (
+                              <span className="flex items-center gap-1 text-emerald-400 font-bold">
+                                <MessageSquare className="w-3 h-3" /> WhatsApp
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -485,8 +508,33 @@ export default function InboxPage() {
                               <Sparkles className="w-3.5 h-3.5" />
                               <span>Ficha BD & Chat ({contactProfile?.mensajes?.length || 0}) ▾</span>
                             </button>
+                            <ContactActionMenu
+                              contact={matchedContact}
+                              codigoEmpresa={codigoEmpresa}
+                              currentUser={user}
+                              onUpdated={() => {
+                                fetchEmails();
+                                if (matchedContact?.email) loadContactProfile(matchedContact.email, matchedContact.id);
+                              }}
+                              buttonClassName="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold transition flex items-center gap-1 shadow-sm text-xs"
+                            />
                           </div>
                         </div>
+
+                        {/* NOTA FLOTANTE / ALERTA DE CONTACTO PENDIENTE */}
+                        {matchedContact.estado_resolucion === 'PENDIENTE' && (
+                          <div className="mt-2.5 p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-start gap-2.5 text-xs animate-in fade-in duration-200">
+                            <Pin className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                              <span className="font-extrabold text-amber-300 uppercase text-[10px] tracking-wider block">
+                                Estado Pendiente • Explicación de qué falta:
+                              </span>
+                              <p className="text-amber-100 text-[11px] mt-0.5 leading-relaxed font-medium">
+                                {matchedContact.nota_pendiente || 'Falta información requerida para completar el trámite.'}
+                              </p>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Desplegable en línea con información de BD y Ticket */}
                         {isDropdownExpanded && (

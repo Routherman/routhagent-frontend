@@ -46,9 +46,15 @@ export default function MessagesPanel() {
           id: c.id,
           name: c.nombre || 'Desconocido',
           telefono: c.telefono,
+          email: c.email,
+          grupo: c.grupo,
           estado_bot: c.estado_bot,
           categoria: c.rol_asignado || 'General',
           usuario_asignado_id: c.usuario_asignado_id,
+          estado_resolucion: c.estado_resolucion || 'RESUELTO',
+          nota_pendiente: c.nota_pendiente || null,
+          lider_id: c.lider_id || null,
+          asesor_id: c.asesor_id || null,
           avatar: `https://ui-avatars.com/api/?name=${c.nombre || 'Usuario'}`,
           time: new Date(c.creado_en).toLocaleDateString(),
           unread: 0,
@@ -186,6 +192,9 @@ export default function MessagesPanel() {
              onStartMassive={() => setView('massive')} 
              onSelectContact={(c) => setActiveContact(c)}
              activeContact={activeContact}
+             codigoEmpresa={codigoEmpresa}
+             currentUser={user}
+             onRefreshContacts={fetchContacts}
           />
 
           {activeContact ? (

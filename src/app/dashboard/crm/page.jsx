@@ -27,8 +27,15 @@ import {
   FileSpreadsheet,
   RefreshCw,
   Eye,
-  Tag
+  Tag,
+  Pin,
+  Clock,
+  Crown,
+  Layers,
+  ArrowRight
 } from 'lucide-react';
+import CrmHierarchyTree from '@/components/dashboard/CrmHierarchyTree';
+import ContactActionMenu from '@/components/dashboard/ContactActionMenu';
 import { toast } from 'sonner';
 
 export default function CrmPage() {
@@ -39,6 +46,12 @@ export default function CrmPage() {
   const [selectedGroup, setSelectedGroup] = useState('TODOS');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+
+  // Árbol de dependencias jerárquico
+  const [treeData, setTreeData] = useState(null);
+  const [treeBranch, setTreeBranch] = useState('TODOS'); // 'TODOS' | 'CLIENTES' | 'INVERSORES' | 'ASESORES_LIDERES'
+  const [showTree, setShowTree] = useState(true);
+  const [hoveredCrmNoteId, setHoveredCrmNoteId] = useState(null);
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
@@ -108,25 +121,25 @@ export default function CrmPage() {
     }
   };
 
-  // Cargar rubros
-  const fetchRubros = async () => {
+  // Cargar árbol de dependencias jerárquico
+  const fetchTreeData = async () => {
     if (!codigoEmpresa) return;
     try {
-      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/crm/rubros`, {
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/crm/tree`, {
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
       const data = await res.json();
-      if (data.success && Array.isArray(data.rubros)) {
-        const unique = Array.from(new Set(['TODOS', 'CLIENTES', 'INVERSORES', 'ASESORES', 'LIDERES', 'PROVEEDORES', ...data.rubros]));
-        setRubros(unique);
+      if (data.success && data.tree) {
+        setTreeData(data.tree);
       }
     } catch (e) {
-      console.error(e);
+      console.error('Error fetching CRM tree:', e);
     }
   };
 
   useEffect(() => {
     fetchContacts();
+    fetchTreeData();
   }, [codigoEmpresa, selectedGroup]);
 
   useEffect(() => {
@@ -360,54 +373,181 @@ export default function CrmPage() {
             </div>
           </div>
 
-          {/* KPI Mini-cards */}
+          {/* KPI Mini-cards (Clickeables para enfocar líneas del árbol de dependencias) */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            <div className="bg-white p-3.5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+            {/* Total Contactos -> Todo el árbol */}
+            <div 
+              onClick={() => {
+                setSelectedGroup('TODOS');
+                setTreeBranch('TODOS');
+                setShowTree(true);
+              }}
+              className={`p-3.5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between group ${
+                treeBranch === 'TODOS' && selectedGroup === 'TODOS'
+                  ? 'bg-slate-900 text-white border-slate-800 ring-2 ring-black/20'
+                  : 'bg-white hover:border-gray-300 border-gray-100 text-gray-900'
+              }`}
+              title="Clic para mostrar todo el árbol de dependencias y todos los contactos"
+            >
               <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase">Total Contactos</p>
-                <p className="text-xl font-black text-gray-900">{contacts.length}</p>
+                <p className={`text-[10px] font-bold uppercase transition ${treeBranch === 'TODOS' && selectedGroup === 'TODOS' ? 'text-gray-300' : 'text-gray-400'}`}>
+                  Total Contactos
+                </p>
+                <div className="flex items-baseline gap-1 mt-0.5">
+                  <p className={`text-xl font-black ${treeBranch === 'TODOS' && selectedGroup === 'TODOS' ? 'text-white' : 'text-gray-900'}`}>
+                    {contacts.length}
+                  </p>
+                  <span className="text-[10px] font-medium opacity-70 group-hover:opacity-100">
+                    ➔ Ver todo
+                  </span>
+                </div>
               </div>
-              <div className="w-9 h-9 rounded-xl bg-gray-50 text-gray-700 flex items-center justify-center font-bold text-sm">
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm ${
+                treeBranch === 'TODOS' && selectedGroup === 'TODOS' ? 'bg-white/10 text-white' : 'bg-gray-50 text-gray-700'
+              }`}>
                 <Users className="w-4 h-4" />
               </div>
             </div>
 
-            <div className="bg-white p-3.5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+            {/* Clientes -> Línea de Clientes (Tomadores de Deuda) */}
+            <div 
+              onClick={() => {
+                setSelectedGroup('CLIENTES');
+                setTreeBranch('CLIENTES');
+                setShowTree(true);
+              }}
+              className={`p-3.5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between group ${
+                treeBranch === 'CLIENTES'
+                  ? 'bg-blue-600 text-white border-blue-700 ring-2 ring-blue-500/30'
+                  : 'bg-white hover:border-blue-200 border-gray-100 text-gray-900'
+              }`}
+              title="Clic para mostrar solo la línea de Clientes (tomadores de deuda) en el árbol"
+            >
               <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase">Clientes</p>
-                <p className="text-xl font-black text-blue-600">
-                  {contacts.filter(c => (c.grupo || '').toUpperCase() === 'CLIENTES').length}
+                <p className={`text-[10px] font-bold uppercase transition ${treeBranch === 'CLIENTES' ? 'text-blue-100' : 'text-gray-400'}`}>
+                  Clientes (Deuda)
                 </p>
+                <div className="flex items-baseline gap-1 mt-0.5">
+                  <p className={`text-xl font-black ${treeBranch === 'CLIENTES' ? 'text-white' : 'text-blue-600'}`}>
+                    {contacts.filter(c => (c.grupo || '').toUpperCase() === 'CLIENTES').length}
+                  </p>
+                  <span className="text-[10px] font-medium opacity-70 group-hover:opacity-100">
+                    ➔ Filtrar
+                  </span>
+                </div>
               </div>
-              <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm ${
+                treeBranch === 'CLIENTES' ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-600'
+              }`}>
                 C
               </div>
             </div>
 
-            <div className="bg-white p-3.5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+            {/* Inversores -> Línea de Inversores (iaboxeeuu) */}
+            <div 
+              onClick={() => {
+                setSelectedGroup('INVERSORES');
+                setTreeBranch('INVERSORES');
+                setShowTree(true);
+              }}
+              className={`p-3.5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between group ${
+                treeBranch === 'INVERSORES'
+                  ? 'bg-emerald-600 text-white border-emerald-700 ring-2 ring-emerald-500/30'
+                  : 'bg-white hover:border-emerald-200 border-gray-100 text-gray-900'
+              }`}
+              title="Clic para mostrar solo la línea de Inversores en el árbol de dependencias"
+            >
               <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase">Inversores</p>
-                <p className="text-xl font-black text-emerald-600">
-                  {contacts.filter(c => (c.grupo || '').toUpperCase() === 'INVERSORES').length}
+                <p className={`text-[10px] font-bold uppercase transition ${treeBranch === 'INVERSORES' ? 'text-emerald-100' : 'text-gray-400'}`}>
+                  Inversores
                 </p>
+                <div className="flex items-baseline gap-1 mt-0.5">
+                  <p className={`text-xl font-black ${treeBranch === 'INVERSORES' ? 'text-white' : 'text-emerald-600'}`}>
+                    {contacts.filter(c => (c.grupo || '').toUpperCase() === 'INVERSORES').length}
+                  </p>
+                  <span className="text-[10px] font-medium opacity-70 group-hover:opacity-100">
+                    ➔ Filtrar
+                  </span>
+                </div>
               </div>
-              <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm">
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm ${
+                treeBranch === 'INVERSORES' ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-600'
+              }`}>
                 $
               </div>
             </div>
 
-            <div className="bg-white p-3.5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+            {/* Asesores / Líderes -> Línea de Líderes y Asesores */}
+            <div 
+              onClick={() => {
+                setSelectedGroup('ASESORES');
+                setTreeBranch('ASESORES_LIDERES');
+                setShowTree(true);
+              }}
+              className={`p-3.5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between group ${
+                treeBranch === 'ASESORES_LIDERES'
+                  ? 'bg-purple-600 text-white border-purple-700 ring-2 ring-purple-500/30'
+                  : 'bg-white hover:border-purple-200 border-gray-100 text-gray-900'
+              }`}
+              title="Clic para mostrar solo la línea de Líderes y Asesores en el árbol"
+            >
               <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase">Asesores / Líderes</p>
-                <p className="text-xl font-black text-purple-600">
-                  {contacts.filter(c => ['ASESORES', 'LIDERES'].includes((c.grupo || '').toUpperCase())).length}
+                <p className={`text-[10px] font-bold uppercase transition ${treeBranch === 'ASESORES_LIDERES' ? 'text-purple-100' : 'text-gray-400'}`}>
+                  Asesores / Líderes
                 </p>
+                <div className="flex items-baseline gap-1 mt-0.5">
+                  <p className={`text-xl font-black ${treeBranch === 'ASESORES_LIDERES' ? 'text-white' : 'text-purple-600'}`}>
+                    {contacts.filter(c => ['ASESORES', 'LIDERES'].includes((c.grupo || '').toUpperCase())).length}
+                  </p>
+                  <span className="text-[10px] font-medium opacity-70 group-hover:opacity-100">
+                    ➔ Filtrar
+                  </span>
+                </div>
               </div>
-              <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-sm">
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm ${
+                treeBranch === 'ASESORES_LIDERES' ? 'bg-white/20 text-white' : 'bg-purple-50 text-purple-600'
+              }`}>
                 ★
               </div>
             </div>
           </div>
+
+          {/* Toggle Button Árbol de Dependencias */}
+          <div className="flex items-center justify-between mb-3 px-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                Estructura Organizacional
+              </span>
+              <span className="text-[10px] bg-indigo-50 text-indigo-700 font-extrabold px-2 py-0.5 rounded-full border border-indigo-200">
+                Línea: {treeBranch === 'TODOS' ? 'Completa' : treeBranch}
+              </span>
+            </div>
+            <button
+              onClick={() => setShowTree(!showTree)}
+              className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-2.5 py-1 rounded-xl transition flex items-center gap-1"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>{showTree ? 'Contraer Árbol' : 'Mostrar Árbol Jerárquico'}</span>
+            </button>
+          </div>
+
+          {/* ÁRBOL DE DEPENDENCIAS JERÁRQUICO (colaboratium@gmail.com -> Líderes -> Asesores -> Inversores) */}
+          {showTree && (
+            <CrmHierarchyTree 
+              treeData={treeData} 
+              activeBranch={treeBranch} 
+              onSelectBranch={(b) => {
+                setTreeBranch(b);
+                if (b === 'CLIENTES') setSelectedGroup('CLIENTES');
+                else if (b === 'INVERSORES') setSelectedGroup('INVERSORES');
+                else if (b === 'ASESORES_LIDERES') setSelectedGroup('ASESORES');
+                else setSelectedGroup('TODOS');
+              }}
+              onSelectContact={(c) => {
+                setSearch(c.nombre || c.telefono || '');
+              }}
+            />
+          )}
 
           {/* Group Filter Tabs & Search */}
           <div className="bg-gray-50 p-3 rounded-2xl border border-gray-200/80 mb-6 flex flex-col md:flex-row gap-3 items-center justify-between">
@@ -483,6 +623,39 @@ export default function CrmPage() {
                             {c.email && (
                               <span className="text-gray-500 truncate max-w-[140px]">
                                 {c.email}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Estado de Resolución y Nota Flotante */}
+                          <div className="mt-1 flex items-center gap-1.5">
+                            {(c.estado_resolucion || '').toUpperCase() === 'PENDIENTE' ? (
+                              <div 
+                                className="relative inline-flex items-center"
+                                onMouseEnter={() => setHoveredCrmNoteId(c.id)}
+                                onMouseLeave={() => setHoveredCrmNoteId(null)}
+                              >
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold cursor-pointer hover:bg-amber-100 transition shadow-2xs">
+                                  <Clock className="w-3 h-3 text-amber-600 animate-pulse" />
+                                  <span>Pendiente</span>
+                                </span>
+
+                                {/* NOTA FLOTANTE EXPLICATIVA */}
+                                {hoveredCrmNoteId === c.id && (
+                                  <div className="absolute left-0 bottom-full mb-2 z-50 w-64 p-3 bg-gray-900 text-white rounded-xl shadow-2xl border border-gray-700 text-xs animate-in fade-in duration-150">
+                                    <div className="flex items-center gap-1 text-amber-300 font-bold mb-1 border-b border-gray-700 pb-1 text-[11px]">
+                                      <Pin className="w-3 h-3" /> Explicación de qué falta:
+                                    </div>
+                                    <p className="text-[11px] text-gray-200 leading-relaxed font-medium">
+                                      {c.nota_pendiente || 'Faltan datos por completar.'}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600">
+                                <CheckCircle2 className="w-2.5 h-2.5" />
+                                <span>Resuelto</span>
                               </span>
                             )}
                           </div>
@@ -582,6 +755,17 @@ export default function CrmPage() {
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
+                            {/* Menú de 3 puntitos (Derivar a Team, Asignar Líder/Asesor, Marcar Resuelto/Pendiente) */}
+                            <ContactActionMenu
+                              contact={c}
+                              codigoEmpresa={codigoEmpresa}
+                              currentUser={user}
+                              onUpdated={() => {
+                                fetchContacts();
+                                fetchTreeData();
+                              }}
+                              buttonClassName="p-1.5 rounded-lg text-gray-400 hover:text-black hover:bg-gray-100 transition"
+                            />
                           </div>
                         </td>
                       </tr>
