@@ -31,7 +31,8 @@ import {
   Phone,
   FileText,
   BadgeAlert,
-  ArrowRight
+  ArrowRight,
+  Trash2
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -53,6 +54,26 @@ export default function CalendarPage() {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [activeTab, setActiveTab] = useState("db"); // "db" | "ai" | "chat"
 
+  // Rol y permisos del usuario conectado
+  const [userRole, setUserRole] = useState("");
+  const [userPrivs, setUserPrivs] = useState({});
+  const [userName, setUserName] = useState("");
+
+  // Estado del Modal para Crear Evento (Webinar o Meet)
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createModalType, setCreateModalType] = useState("webinar"); // 'webinar' | 'meet'
+  const [creatingEvent, setCreatingEvent] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    titulo: "",
+    modalidad: "VIRTUAL",
+    categoria: "ASESORES",
+    fecha: "",
+    horario: "",
+    cupos: 25,
+    meetLink: "https://meet.google.com/qmv-wqzk-hxo",
+    ubicacion: "Google Meet"
+  });
+
   // Form State para Inscribir Asesor
   const [bookForm, setBookForm] = useState({
     nombre: "",
@@ -61,17 +82,29 @@ export default function CalendarPage() {
   });
   const [bookingLoading, setBookingLoading] = useState(false);
 
-  // 1. Obtener código de empresa
+  // 1. Obtener código de empresa y permisos de usuario
   useEffect(() => {
     if (isLoaded && user) {
       fetch(`${API_URL}/users/me/${user.id}`, { headers: { "ngrok-skip-browser-warning": "true" } })
         .then((res) => res.json())
         .then((data) => {
           if (data.codigo_empresa) setCodigoEmpresa(data.codigo_empresa);
+          if (data.rol_nombre) setUserRole(data.rol_nombre.toLowerCase());
+          setUserName(`${data.first_name || ''} ${data.last_name || ''}`.trim() || user.firstName || 'Usuario');
+          let privs = data.rol_privilegios;
+          if (typeof privs === 'string') {
+            try { privs = JSON.parse(privs); } catch (e) {}
+          }
+          if (privs) setUserPrivs(privs);
         })
         .catch((err) => console.error(err));
     }
   }, [isLoaded, user]);
+
+  const isSuper = !userRole || ["master", "main"].includes(userRole);
+  const canCreateWebinar = isSuper || userPrivs?.manage_calendar_webinar || userRole.includes("lider");
+  const canCreateMeet = isSuper || userPrivs?.manage_calendar_meet || userRole.includes("asesor");
+  const canManageEvents = isSuper || userPrivs?.manage_calendar_events;
 
   // 2. Cargar slots de capacitación con inscriptos
   const fetchSlots = async () => {
@@ -158,6 +191,92 @@ export default function CalendarPage() {
     }
   };
 
+  const openCreateModal = (type = 'webinar') => {
+    setCreateModalType(type);
+    setCreateForm({
+      titulo: type === 'webinar' ? 'Webinar Virtual de Capacitación Líderes' : 'Reunión Meet de Inversión',
+      modalidad: 'VIRTUAL',
+      categoria: type === 'webinar' ? 'LIDERES' : 'INVERSORES',
+      fecha: 'Lunes 26 de Octubre',
+      horario: '16:30 a 17:30 hs',
+      cupos: type === 'webinar' ? 25 : 5,
+      meetLink: 'https://meet.google.com/qmv-wqzk-hxo',
+      ubicacion: 'Google Meet'
+    });
+    setShowCreateModal(true);
+  };
+
+  const handleCreateEvent = async (e) => {
+    e.preventDefault();
+    if (!createForm.titulo || !createForm.fecha || !createForm.horario) {
+      toast.error("Por favor completa los campos del evento");
+      return;
+    }
+    setCreatingEvent(true);
+    try {
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/calendar/events`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true"
+        },
+        body: JSON.stringify({
+          titulo: createForm.titulo,
+          tipo: createModalType,
+          modalidad: createForm.modalidad,
+          categoria: createForm.categoria,
+          fecha: createForm.fecha,
+          horario: createForm.horario,
+          meetLink: createForm.meetLink,
+          ubicacion: createForm.ubicacion,
+          cupos: parseInt(createForm.cupos, 10) || 25,
+          userId: user?.id,
+          userName: userName,
+          userRole: userRole
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("¡Evento creado y registrado en Google Calendar (colaboratium@gmail.com)!");
+        setShowCreateModal(false);
+        fetchSlots();
+      } else {
+        toast.error(data.error || "Error al registrar evento");
+      }
+    } catch (err) {
+      toast.error("Error de conexión al registrar evento");
+    } finally {
+      setCreatingEvent(false);
+    }
+  };
+
+  const handleDeleteCustomEvent = async (dbId) => {
+    if (!confirm("¿Deseas eliminar este evento del calendario y auditarlo en Google Colaboratium?")) return;
+    try {
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/calendar/events/${dbId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true"
+        },
+        body: JSON.stringify({
+          userId: user?.id,
+          userName: userName,
+          userRole: userRole
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Evento eliminado del calendario");
+        fetchSlots();
+      } else {
+        toast.error(data.error || "No se pudo eliminar el evento");
+      }
+    } catch (err) {
+      toast.error("Error al eliminar evento");
+    }
+  };
+
   return (
     <>
       <Sidebar />
@@ -182,13 +301,35 @@ export default function CalendarPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center flex-wrap gap-2.5">
+              {canCreateWebinar && (
+                <button
+                  onClick={() => openCreateModal('webinar')}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-amber-500 hover:bg-amber-600 text-black text-xs font-black transition shadow-sm"
+                  title="Facultad de Líder de Equipo para capacitar asesores"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Crear Webinar (Líder)</span>
+                </button>
+              )}
+
+              {canCreateMeet && (
+                <button
+                  onClick={() => openCreateModal('meet')}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black transition shadow-sm"
+                  title="Facultad de Asesor Comercial para conectar con inversores"
+                >
+                  <Video className="w-3.5 h-3.5" />
+                  <span>+ Crear Meet con Inversor</span>
+                </button>
+              )}
+
               <button
                 onClick={() => setShowGuideModal(true)}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs font-bold transition shadow-sm"
               >
                 <HelpCircle className="w-4 h-4 text-amber-600" />
-                <span>¿Cómo conectar tu Google Calendar?</span>
+                <span>¿Cómo conectar?</span>
               </button>
 
               <button
@@ -265,19 +406,39 @@ export default function CalendarPage() {
                       <div>
                         {/* Header de la tarjeta */}
                         <div className="flex items-center justify-between mb-3">
-                          <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase ${
-                              isVirtual
-                                ? "bg-blue-50 text-blue-700 border border-blue-200"
-                                : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                            }`}
-                          >
-                            {isVirtual ? <Video className="w-3 h-3" /> : <Building2 className="w-3 h-3" />}
-                            {s.modalidad}
-                          </span>
-                          <span className="font-mono text-xs font-black text-gray-400">
-                            Opción {s.id}
-                          </span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase ${
+                                isVirtual
+                                  ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                  : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              }`}
+                            >
+                              {isVirtual ? <Video className="w-3 h-3" /> : <Building2 className="w-3 h-3" />}
+                              {s.modalidad}
+                            </span>
+                            {s.categoria && (
+                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                                s.categoria === 'LIDERES' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700'
+                              }`}>
+                                {s.categoria}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-black text-gray-400">
+                              Opción {s.id}
+                            </span>
+                            {s.isCustom && canManageEvents && (
+                              <button
+                                onClick={() => handleDeleteCustomEvent(s.dbId)}
+                                className="p-1 text-gray-400 hover:text-red-600 rounded-lg transition"
+                                title="Eliminar evento del calendario"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </div>
 
                         <h4 className="font-extrabold text-sm text-gray-900 mb-1">{s.titulo}</h4>
@@ -795,6 +956,169 @@ export default function CalendarPage() {
                     >
                       <Send className="w-3.5 h-3.5" />
                       <span>{bookingLoading ? "Procesando..." : "Confirmar y Enviar Emails"}</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Modal de Crear Evento (Webinar Líder o Meet Inversor) */}
+          {showCreateModal && (
+            <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto flex flex-col animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white ${
+                      createModalType === 'webinar' ? 'bg-amber-500' : 'bg-blue-600'
+                    }`}>
+                      {createModalType === 'webinar' ? <CalendarIcon className="w-5 h-5 text-black" /> : <Video className="w-5 h-5" />}
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-gray-900">
+                        {createModalType === 'webinar' ? 'Nuevo Webinar de Capacitación (Líder)' : 'Nueva Reunión Meet con Inversor (Asesor)'}
+                      </h3>
+                      <p className="text-[10px] text-gray-400 font-mono">
+                        Ámbito Google Oficial: colaboratium@gmail.com
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowCreateModal(false)}
+                    className="p-1 text-gray-400 hover:text-black hover:bg-gray-100 rounded-xl transition"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleCreateEvent} className="py-4 space-y-3.5">
+                  <div>
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Título del Evento</label>
+                    <input
+                      type="text"
+                      required
+                      value={createForm.titulo}
+                      onChange={(e) => setCreateForm({ ...createForm, titulo: e.target.value })}
+                      placeholder={createModalType === 'webinar' ? "ej. Webinar Virtual de Líderes" : "ej. Asesoría Financiera Personalizada"}
+                      className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-semibold"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Modalidad</label>
+                      <select
+                        value={createForm.modalidad}
+                        onChange={(e) => setCreateForm({ 
+                          ...createForm, 
+                          modalidad: e.target.value,
+                          ubicacion: e.target.value === 'PRESENCIAL' ? 'Av. del Libertador 264, Vicente López' : 'Google Meet'
+                        })}
+                        className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-semibold"
+                      >
+                        <option value="VIRTUAL">Virtual (Google Meet)</option>
+                        <option value="PRESENCIAL">Presencial (Oficinas)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Categoría</label>
+                      <select
+                        value={createForm.categoria}
+                        onChange={(e) => setCreateForm({ ...createForm, categoria: e.target.value })}
+                        className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-semibold"
+                      >
+                        <option value="LIDERES">Líderes de Equipo</option>
+                        <option value="ASESORES">Asesores Comerciales</option>
+                        <option value="INVERSORES">Inversores</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Fecha (ej. Lunes 26 de Octubre)</label>
+                      <input
+                        type="text"
+                        required
+                        value={createForm.fecha}
+                        onChange={(e) => setCreateForm({ ...createForm, fecha: e.target.value })}
+                        placeholder="ej. Lunes 26 de Octubre"
+                        className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-semibold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Horario (ej. 16:30 a 17:30 hs)</label>
+                      <input
+                        type="text"
+                        required
+                        value={createForm.horario}
+                        onChange={(e) => setCreateForm({ ...createForm, horario: e.target.value })}
+                        placeholder="ej. 16:30 a 17:30 hs"
+                        className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-semibold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="col-span-1">
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Cupos</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="500"
+                        value={createForm.cupos}
+                        onChange={(e) => setCreateForm({ ...createForm, cupos: e.target.value })}
+                        className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-semibold"
+                      />
+                    </div>
+
+                    <div className="col-span-2">
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Sala Google Meet</label>
+                      <input
+                        type="text"
+                        value={createForm.meetLink}
+                        onChange={(e) => setCreateForm({ ...createForm, meetLink: e.target.value })}
+                        placeholder="https://meet.google.com/..."
+                        className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  {createForm.modalidad === 'PRESENCIAL' && (
+                    <div>
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Dirección Física</label>
+                      <input
+                        type="text"
+                        value={createForm.ubicacion}
+                        onChange={(e) => setCreateForm({ ...createForm, ubicacion: e.target.value })}
+                        placeholder="Av. del Libertador 264..."
+                        className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-semibold"
+                      />
+                    </div>
+                  )}
+
+                  <div className="p-3 bg-blue-50/70 rounded-xl border border-blue-100 text-[11px] text-blue-900 flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span>Este evento se sincronizará y registrará en el historial de sucesos de colaboratium@gmail.com.</span>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateModal(false)}
+                      className="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={creatingEvent}
+                      className="flex items-center gap-1.5 px-5 py-2 bg-black hover:bg-gray-800 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-md"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>{creatingEvent ? "Guardando y Auditando..." : "Crear y Auditar en Google"}</span>
                     </button>
                   </div>
                 </form>

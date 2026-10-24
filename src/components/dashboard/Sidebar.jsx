@@ -34,6 +34,9 @@ export default function Sidebar() {
   const [hasHandoffs, setHasHandoffs] = useState(false);
   const [empresaCode, setEmpresaCode] = useState('');
 
+  const [userRole, setUserRole] = useState('master');
+  const [userPrivs, setUserPrivs] = useState(null);
+
   // if background is yellow (light), icons should be darker.
   const isLightBg = themeData?.id === 'yellow';
 
@@ -70,6 +73,13 @@ export default function Sidebar() {
       .then(res => res.json())
       .then(userData => {
         const codigoEmpresa = userData.codigo_empresa;
+        if (userData.rol_nombre) setUserRole(userData.rol_nombre.toLowerCase());
+        let privs = userData.rol_privilegios;
+        if (typeof privs === 'string') {
+          try { privs = JSON.parse(privs); } catch(e) {}
+        }
+        if (privs) setUserPrivs(privs);
+
         if (codigoEmpresa) {
           setEmpresaCode(codigoEmpresa);
           const pollContacts = async () => {
@@ -112,19 +122,27 @@ export default function Sidebar() {
     };
   }, [isLoaded, user]);
 
-  const navItems = [
-    { label: 'Dashboard', href: '/dashboard', icon: LayoutGrid, exact: true },
-    { label: 'Mensajes', href: '/dashboard/messages', icon: MessageSquare, badge: hasHandoffs },
-    { label: 'Inbox Gmail', href: '/dashboard/inbox', icon: Mail },
-    { label: 'Calendario & Meet', href: '/dashboard/calendar', icon: Calendar },
-    { label: 'Tickets Helpdesk', href: '/dashboard/tickets', icon: Ticket },
-    { label: 'Agenda CRM', href: '/dashboard/crm', icon: Users },
-    { label: 'Router Multi-IA', href: '/dashboard/models', icon: Cpu },
-    { label: 'Campañas', href: '/dashboard/campaigns', icon: BarChart3 },
-    { label: 'Automatización', href: '/dashboard/automation', icon: Zap },
-    { label: 'Flujos Bot', href: '/dashboard/flows', icon: GitFork },
-    { label: 'Configuración', href: '/dashboard/user', icon: Settings },
+  const rawNavItems = [
+    { label: 'Dashboard', href: '/dashboard', icon: LayoutGrid, exact: true, permission: 'view_dashboard' },
+    { label: 'Mensajes', href: '/dashboard/messages', icon: MessageSquare, badge: hasHandoffs, permission: 'view_messages' },
+    { label: 'Inbox Gmail', href: '/dashboard/inbox', icon: Mail, permission: 'view_inbox' },
+    { label: 'Calendario & Meet', href: '/dashboard/calendar', icon: Calendar, permission: 'view_calendar' },
+    { label: 'Tickets Helpdesk', href: '/dashboard/tickets', icon: Ticket, permission: 'view_tickets' },
+    { label: 'Agenda CRM', href: '/dashboard/crm', icon: Users, permission: 'view_crm' },
+    { label: 'Router Multi-IA', href: '/dashboard/models', icon: Cpu, permission: 'view_models' },
+    { label: 'Campañas', href: '/dashboard/campaigns', icon: BarChart3, permission: 'view_campaigns' },
+    { label: 'Automatización', href: '/dashboard/automation', icon: Zap, permission: 'view_flows' },
+    { label: 'Flujos Bot', href: '/dashboard/flows', icon: GitFork, permission: 'view_flows' },
+    { label: 'Configuración', href: '/dashboard/user', icon: Settings, permission: 'view_settings' },
   ];
+
+  // Master y Main ven todo. Otros roles ven solo las secciones autorizadas.
+  const isSuperAdmin = !userRole || ['master', 'main'].includes(userRole);
+  const navItems = rawNavItems.filter(item => {
+    if (isSuperAdmin) return true;
+    if (!userPrivs) return true;
+    return userPrivs[item.permission] !== false;
+  });
 
   return (
     <aside 

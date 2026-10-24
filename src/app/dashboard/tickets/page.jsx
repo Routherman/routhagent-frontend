@@ -24,32 +24,55 @@ import {
   Send,
   User,
   Phone,
-  FileText
+  FileText,
+  UserCheck,
+  Edit3,
+  ShieldCheck,
+  Tag,
+  Share2,
+  Check
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function TicketsPage() {
   const { user, isLoaded } = useUser();
   const [codigoEmpresa, setCodigoEmpresa] = useState(null);
+  const [currentUserData, setCurrentUserData] = useState(null);
   const [tickets, setTickets] = useState([]);
+  const [teamUsers, setTeamUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   
   // Modals & Actions
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDelegateModal, setShowDelegateModal] = useState(false);
+  
   const [summarizingId, setSummarizingId] = useState(null);
   const [sendingEmailId, setSendingEmailId] = useState(null);
+  const [authorizingId, setAuthorizingId] = useState(null);
+  
+  // Form states
   const [newTicket, setNewTicket] = useState({
     phone: '',
     customer_name: '',
     summary: '',
     details: '',
     status: 'open',
-    priority: 'media'
+    priority: 'media',
+    category: 'General'
   });
 
-  // 1. Obtener código de empresa
+  const [editingTicket, setEditingTicket] = useState(null);
+  const [delegatingTicket, setDelegatingTicket] = useState(null);
+  const [delegateTarget, setDelegateTarget] = useState({
+    assigned_to_user_id: '',
+    assigned_to_name: '',
+    internal_notes: ''
+  });
+
+  // 1. Obtener código de empresa y datos de usuario
   useEffect(() => {
     if (isLoaded && user) {
       fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } })
@@ -57,28 +80,40 @@ export default function TicketsPage() {
         .then(data => {
           if (data.codigo_empresa) {
             setCodigoEmpresa(data.codigo_empresa);
+            setCurrentUserData(data);
           }
         })
         .catch(err => console.error("Error fetching user data:", err));
     }
   }, [isLoaded, user]);
 
-  // 2. Cargar tickets
+  // 2. Cargar tickets y usuarios del equipo
   const fetchTickets = async () => {
     if (!codigoEmpresa) return;
     try {
       setLoading(true);
       const statusParam = filter === 'all' ? '' : filter;
-      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/tickets?status=${encodeURIComponent(statusParam)}`, {
-        headers: { 'ngrok-skip-browser-warning': 'true' }
-      });
-      const data = await res.json();
-      if (data.success) {
-        setTickets(Array.isArray(data.tickets) ? data.tickets : []);
+      const [tRes, uRes] = await Promise.all([
+        fetch(`${API_URL}/empresas/${codigoEmpresa}/tickets?status=${encodeURIComponent(statusParam)}`, {
+          headers: { 'ngrok-skip-browser-warning': 'true' }
+        }),
+        fetch(`${API_URL}/empresas/${codigoEmpresa}/users`, {
+          headers: { 'ngrok-skip-browser-warning': 'true' }
+        })
+      ]);
+
+      const tData = await tRes.json();
+      const uData = await uRes.json();
+
+      if (tData.success) {
+        setTickets(Array.isArray(tData.tickets) ? tData.tickets : []);
+      }
+      if (Array.isArray(uData)) {
+        setTeamUsers(uData);
       }
     } catch (err) {
-      console.error('Error fetching tickets:', err);
-      toast.error('Error al cargar tickets');
+      console.error('Error fetching tickets or users:', err);
+      toast.error('Error al cargar datos del Helpdesk');
     } finally {
       setLoading(false);
     }
@@ -109,7 +144,7 @@ export default function TicketsPage() {
       if (data.success) {
         toast.success('Ticket creado con éxito');
         setShowCreateModal(false);
-        setNewTicket({ phone: '', customer_name: '', summary: '', details: '', status: 'open', priority: 'media' });
+        setNewTicket({ phone: '', customer_name: '', summary: '', details: '', status: 'open', priority: 'media', category: 'General' });
         fetchTickets();
       } else {
         toast.error(data.error || 'No se pudo crear el ticket');
@@ -119,7 +154,135 @@ export default function TicketsPage() {
     }
   };
 
-  // Actualizar estado de ticket directamente
+  // Abrir Modal de Modificación
+  const handleOpenEdit = (ticket) => {
+    setEditingTicket({
+      ...ticket,
+      priority: ticket.priority || 'media',
+      category: ticket.category || 'General',
+      internal_notes: ticket.internal_notes || ''
+    });
+    setShowEditModal(true);
+  };
+
+  // Guardar Modificación de Ticket
+  const handleSaveEditTicket = async (e) => {
+    e.preventDefault();
+    if (!editingTicket) return;
+
+    try {
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/tickets/${editingTicket.id}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
+        body: JSON.stringify({
+          customer_name: editingTicket.customer_name,
+          summary: editingTicket.summary,
+          status: editingTicket.status,
+          priority: editingTicket.priority,
+          category: editingTicket.category,
+          internal_notes: editingTicket.internal_notes,
+          assigned_to_name: editingTicket.assigned_to_name
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Ticket #${editingTicket.id} actualizado correctamente`);
+        setShowEditModal(false);
+        setTickets(prev => prev.map(t => t.id === editingTicket.id ? { ...t, ...editingTicket } : t));
+      } else {
+        toast.error(data.error || 'No se pudo actualizar el ticket');
+      }
+    } catch (err) {
+      toast.error('Error de red al actualizar ticket');
+    }
+  };
+
+  // Autorizar Ticket (Pasar de pending_auth a open / autorizado)
+  const handleAuthorizeTicket = async (ticketId) => {
+    try {
+      setAuthorizingId(ticketId);
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/tickets/${ticketId}/authorize`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
+        body: JSON.stringify({
+          usuario_id: currentUserData?.id || user?.id,
+          usuario_nombre: currentUserData?.first_name ? `${currentUserData.first_name} ${currentUserData.last_name || ''}` : 'Administrador',
+          usuario_email: currentUserData?.email || user?.emailAddresses?.[0]?.emailAddress,
+          rol: currentUserData?.rol_nombre || 'Admin'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`¡Ticket #${ticketId} autorizado exitosamente!`);
+        setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: 'open', authorized_at: new Date() } : t));
+      } else {
+        toast.error(data.error || 'No se pudo autorizar el ticket');
+      }
+    } catch (err) {
+      toast.error('Error de conexión al autorizar');
+    } finally {
+      setAuthorizingId(null);
+    }
+  };
+
+  // Abrir Modal de Delegación
+  const handleOpenDelegate = (ticket) => {
+    setDelegatingTicket(ticket);
+    setDelegateTarget({
+      assigned_to_user_id: ticket.assigned_to_user_id || '',
+      assigned_to_name: ticket.assigned_to_name || '',
+      internal_notes: ticket.internal_notes || ''
+    });
+    setShowDelegateModal(true);
+  };
+
+  // Confirmar Delegación
+  const handleConfirmDelegate = async (e) => {
+    e.preventDefault();
+    if (!delegatingTicket) return;
+
+    try {
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/tickets/${delegatingTicket.id}/delegate`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
+        body: JSON.stringify({
+          assigned_to_user_id: delegateTarget.assigned_to_user_id,
+          assigned_to_name: delegateTarget.assigned_to_name,
+          internal_notes: delegateTarget.internal_notes,
+          delegator_id: currentUserData?.id || user?.id,
+          delegator_name: currentUserData?.first_name ? `${currentUserData.first_name} ${currentUserData.last_name || ''}` : 'Admin',
+          delegator_email: currentUserData?.email,
+          rol: currentUserData?.rol_nombre || 'Admin'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Ticket delegado a ${delegateTarget.assigned_to_name} con éxito`);
+        setShowDelegateModal(false);
+        setTickets(prev => prev.map(t => t.id === delegatingTicket.id ? { 
+          ...t, 
+          assigned_to_user_id: delegateTarget.assigned_to_user_id,
+          assigned_to_name: delegateTarget.assigned_to_name,
+          internal_notes: delegateTarget.internal_notes 
+        } : t));
+      } else {
+        toast.error(data.error || 'No se pudo delegar el ticket');
+      }
+    } catch (err) {
+      toast.error('Error al delegar ticket');
+    }
+  };
+
+  // Actualizar estado de ticket directamente desde selector
   const handleUpdateStatus = async (ticketId, newStatus) => {
     try {
       const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/tickets/${ticketId}`, {
@@ -150,11 +313,10 @@ export default function TicketsPage() {
           'Content-Type': 'application/json',
           'ngrok-skip-browser-warning': 'true'
         },
-        body: JSON.stringify({ phone: ticket.phone })
+        body: JSON.stringify({ phone: ticket.phone || ticket.customer_number })
       });
       const data = await res.json();
       if (data.success && data.summary) {
-        // Actualizar ticket con el resumen nuevo
         await fetch(`${API_URL}/empresas/${codigoEmpresa}/tickets/${ticket.id}`, {
           method: 'PUT',
           headers: { 
@@ -225,7 +387,8 @@ export default function TicketsPage() {
       case 'pending_auth':
         return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-800 border border-orange-300"><AlertCircle className="w-3.5 h-3.5" /> Pendiente Aut.</span>;
       case 'en logistica':
-        return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-sky-100 text-sky-800 border border-sky-300"><Truck className="w-3.5 h-3.5" /> En Logística</span>;
+      case 'delegated':
+        return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-sky-100 text-sky-800 border border-sky-300"><Truck className="w-3.5 h-3.5" /> En Gestión</span>;
       case 'closed':
         return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300"><CheckCircle2 className="w-3.5 h-3.5" /> Cerrado</span>;
       default:
@@ -246,13 +409,37 @@ export default function TicketsPage() {
     }
   };
 
+  const getCategoryBadge = (category) => {
+    switch (category) {
+      case 'Inversor':
+        return <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">📈 Inversor</span>;
+      case 'Asesor':
+        return <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-blue-50 text-blue-700 border border-blue-200">💼 Asesor</span>;
+      case 'Líder':
+      case 'Lider':
+        return <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-purple-50 text-purple-700 border border-purple-200">👑 Líder</span>;
+      default:
+        return <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-gray-50 text-gray-600 border border-gray-200">{category || 'General'}</span>;
+    }
+  };
+
   const filteredTickets = tickets.filter(t => {
     const term = searchTerm.toLowerCase();
-    const phoneMatch = (t.phone || '').includes(term);
+    const phoneMatch = (t.phone || t.customer_number || '').includes(term);
     const nameMatch = (t.customer_name || '').toLowerCase().includes(term);
     const summaryMatch = (t.summary || '').toLowerCase().includes(term);
-    return phoneMatch || nameMatch || summaryMatch;
+    const assignedMatch = (t.assigned_to_name || '').toLowerCase().includes(term);
+    return phoneMatch || nameMatch || summaryMatch || assignedMatch;
   });
+
+  // Conteo para las pestañas
+  const counts = {
+    all: tickets.length,
+    pending_auth: tickets.filter(t => t.status === 'pending_auth').length,
+    open: tickets.filter(t => t.status === 'open').length,
+    delegated: tickets.filter(t => t.status === 'en logistica' || t.status === 'delegated' || !!t.assigned_to_name).length,
+    closed: tickets.filter(t => t.status === 'closed').length
+  };
 
   return (
     <>
@@ -272,7 +459,7 @@ export default function TicketsPage() {
                     Administrador de Tickets Helpdesk
                   </h2>
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Opción B • Derivación, Resumen IA y Despacho a colaboratium@gmail.com
+                    Gestión Integral • Autorización, Delegación y Despacho a colaboratium@gmail.com
                   </p>
                 </div>
               </div>
@@ -300,22 +487,27 @@ export default function TicketsPage() {
           <div className="bg-gray-50 p-3 rounded-2xl border border-gray-200/80 mb-6 flex flex-col md:flex-row gap-3 items-center justify-between">
             <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto">
               {[
-                { id: 'all', label: 'Todos' },
-                { id: 'open', label: 'Abiertos' },
-                { id: 'pending_auth', label: 'Pendientes' },
-                { id: 'en logistica', label: 'En Logística' },
-                { id: 'closed', label: 'Cerrados' }
+                { id: 'all', label: 'Todos', count: counts.all },
+                { id: 'pending_auth', label: 'Pendientes Aut.', count: counts.pending_auth },
+                { id: 'open', label: 'Abiertos', count: counts.open },
+                { id: 'en logistica', label: 'En Gestión', count: counts.delegated },
+                { id: 'closed', label: 'Cerrados', count: counts.closed }
               ].map(f => (
                 <button
                   key={f.id}
                   onClick={() => setFilter(f.id)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
                     filter === f.id
                       ? 'bg-white text-gray-950 shadow-sm border border-gray-200'
                       : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
                   }`}
                 >
-                  {f.label}
+                  <span>{f.label}</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
+                    filter === f.id ? 'bg-black text-white' : 'bg-gray-200 text-gray-700'
+                  }`}>
+                    {f.count}
+                  </span>
                 </button>
               ))}
             </div>
@@ -324,7 +516,7 @@ export default function TicketsPage() {
               <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Buscar por teléfono, nombre..."
+                placeholder="Buscar por teléfono, nombre, asignado..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-black/10"
@@ -340,99 +532,142 @@ export default function TicketsPage() {
           ) : filteredTickets.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-gray-200 rounded-3xl">
               <Ticket className="w-12 h-12 text-gray-300 mb-3" />
-              <p className="text-gray-700 font-bold text-sm">No hay tickets registrados</p>
+              <p className="text-gray-700 font-bold text-sm">No hay tickets en este estado</p>
               <p className="text-gray-400 text-xs mt-1">Crea un nuevo ticket o cambia el filtro de búsqueda</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3.5">
-              {filteredTickets.map(ticket => (
-                <div
-                  key={ticket.id}
-                  className="bg-white rounded-2xl border border-gray-200/90 p-4 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                      <span className="font-mono text-xs font-black text-gray-400">#{ticket.id}</span>
-                      {getStatusBadge(ticket.status)}
-                      {getPriorityBadge(ticket.priority)}
-                      <span className="text-[11px] text-gray-400 font-medium">
-                        {new Date(ticket.created_at).toLocaleString()}
-                      </span>
-                    </div>
+              {filteredTickets.map(ticket => {
+                const isPendingAuth = ticket.status === 'pending_auth';
+                const dateStr = ticket.creado_en 
+                  ? new Date(ticket.creado_en).toLocaleString('es-AR') 
+                  : (ticket.created_at ? new Date(ticket.created_at).toLocaleString('es-AR') : 'Reciente');
 
-                    <div className="flex items-center gap-3 text-sm font-bold text-gray-900 mb-1">
-                      <span className="flex items-center gap-1.5">
-                        <User className="w-3.5 h-3.5 text-gray-400" />
-                        {ticket.customer_name || 'Sin nombre'}
-                      </span>
-                      <span className="text-gray-300">•</span>
-                      <span className="flex items-center gap-1.5 font-mono text-xs text-gray-600">
-                        <Phone className="w-3 h-3 text-gray-400" />
-                        {ticket.phone}
-                      </span>
-                    </div>
+                return (
+                  <div
+                    key={ticket.id}
+                    className="bg-white rounded-2xl border border-gray-200/90 p-4 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                        <span className="font-mono text-xs font-black text-gray-400">#{ticket.id}</span>
+                        {getStatusBadge(ticket.status)}
+                        {getPriorityBadge(ticket.priority || 'media')}
+                        {getCategoryBadge(ticket.category)}
+                        <span className="text-[11px] text-gray-400 font-medium">
+                          {dateStr}
+                        </span>
+                      </div>
 
-                    <p className="text-xs text-gray-700 bg-gray-50/80 p-2.5 rounded-xl border border-gray-100 font-medium line-clamp-2">
-                      {ticket.summary}
-                    </p>
+                      <div className="flex items-center gap-3 text-sm font-bold text-gray-900 mb-1">
+                        <span className="flex items-center gap-1.5">
+                          <User className="w-3.5 h-3.5 text-gray-400" />
+                          {ticket.customer_name || 'Sin nombre'}
+                        </span>
+                        <span className="text-gray-300">•</span>
+                        <span className="flex items-center gap-1.5 font-mono text-xs text-gray-600">
+                          <Phone className="w-3 h-3 text-gray-400" />
+                          {ticket.phone || ticket.customer_number}
+                        </span>
 
-                    {ticket.details && (
-                      <p className="text-[11px] text-gray-500 mt-1 italic">
-                        Detalles: {ticket.details}
+                        {ticket.assigned_to_name && (
+                          <>
+                            <span className="text-gray-300">•</span>
+                            <span 
+                              onClick={() => handleOpenDelegate(ticket)}
+                              className="cursor-pointer inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition"
+                              title="Hacé clic para reasignar"
+                            >
+                              <UserCheck className="w-3 h-3" />
+                              {ticket.assigned_to_name}
+                            </span>
+                          </>
+                        )}
+                      </div>
+
+                      <p className="text-xs text-gray-700 bg-gray-50/80 p-2.5 rounded-xl border border-gray-100 font-medium line-clamp-2">
+                        {ticket.summary}
                       </p>
-                    )}
-                  </div>
 
-                  {/* Actions Column */}
-                  <div className="flex flex-wrap md:flex-col items-end gap-2 shrink-0 border-t md:border-t-0 md:border-l border-gray-100 pt-3 md:pt-0 md:pl-4">
-                    {/* Status Select */}
-                    <div className="flex items-center gap-1.5">
-                      <label className="text-[10px] text-gray-400 font-bold uppercase">Estado:</label>
-                      <select
-                        value={ticket.status}
-                        onChange={(e) => handleUpdateStatus(ticket.id, e.target.value)}
-                        className="text-xs font-bold bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 focus:outline-none"
-                      >
-                        <option value="open">Abierto</option>
-                        <option value="pending_auth">Pendiente Aut.</option>
-                        <option value="en logistica">En Logística</option>
-                        <option value="closed">Cerrado</option>
-                      </select>
+                      {ticket.internal_notes && (
+                        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-amber-800 bg-amber-50/60 px-2.5 py-1 rounded-lg border border-amber-200">
+                          <FileText className="w-3 h-3 text-amber-600 shrink-0" />
+                          <span className="font-semibold">Nota Interna:</span> {ticket.internal_notes}
+                        </div>
+                      )}
                     </div>
 
-                    {/* AI Summary and Send Email */}
-                    <div className="flex items-center gap-2 mt-1">
-                      <button
-                        onClick={() => handleSummarizeWithAI(ticket)}
-                        disabled={summarizingId === ticket.id}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100 text-[11px] font-bold border border-purple-200 transition"
-                        title="Generar resumen de conversación con IA"
-                      >
-                        <Sparkles className={`w-3.5 h-3.5 ${summarizingId === ticket.id ? 'animate-spin' : ''}`} />
-                        <span>{summarizingId === ticket.id ? 'Resumiendo...' : 'Resumir IA'}</span>
-                      </button>
+                    {/* Actions Column */}
+                    <div className="flex flex-wrap md:flex-col items-end gap-2 shrink-0 border-t md:border-t-0 md:border-l border-gray-100 pt-3 md:pt-0 md:pl-4">
+                      
+                      {/* Botón Destacado: Autorizar (si está pendiente) */}
+                      {isPendingAuth && (
+                        <button
+                          onClick={() => handleAuthorizeTicket(ticket.id)}
+                          disabled={authorizingId === ticket.id}
+                          className="w-full md:w-auto flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-extrabold shadow-sm transition-all"
+                          title="Autorizar este ticket y habilitar gestión"
+                        >
+                          <ShieldCheck className="w-4 h-4" />
+                          <span>{authorizingId === ticket.id ? 'Autorizando...' : 'Autorizar'}</span>
+                        </button>
+                      )}
 
-                      <button
-                        onClick={() => handleSendEmail(ticket)}
-                        disabled={sendingEmailId === ticket.id}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-sm transition"
-                        title="Despachar ticket por mail a colaboratium@gmail.com"
-                      >
-                        <Mail className={`w-3.5 h-3.5 ${sendingEmailId === ticket.id ? 'animate-bounce' : ''}`} />
-                        <span>{sendingEmailId === ticket.id ? 'Enviando...' : 'Enviar Email'}</span>
-                      </button>
+                      {/* Botón Delegar / Asignar */}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleOpenDelegate(ticket)}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-[11px] font-bold border border-indigo-200 transition"
+                          title="Delegar a Asesor o Líder del equipo"
+                        >
+                          <Share2 className="w-3.5 h-3.5" />
+                          <span>Delegar</span>
+                        </button>
 
-                      <button
-                        onClick={() => handleDeleteTicket(ticket.id)}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition"
-                        title="Eliminar ticket"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        <button
+                          onClick={() => handleOpenEdit(ticket)}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 text-[11px] font-bold border border-gray-200 transition"
+                          title="Modificar ticket completo"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          <span>Modificar</span>
+                        </button>
+                      </div>
+
+                      {/* AI Summary and Send Email */}
+                      <div className="flex items-center gap-2 mt-1">
+                        <button
+                          onClick={() => handleSummarizeWithAI(ticket)}
+                          disabled={summarizingId === ticket.id}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100 text-[11px] font-bold border border-purple-200 transition"
+                          title="Generar resumen de conversación con IA"
+                        >
+                          <Sparkles className={`w-3.5 h-3.5 ${summarizingId === ticket.id ? 'animate-spin' : ''}`} />
+                          <span>{summarizingId === ticket.id ? 'Resumiendo...' : 'Resumir IA'}</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleSendEmail(ticket)}
+                          disabled={sendingEmailId === ticket.id}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-sm transition"
+                          title="Despachar ticket por mail a colaboratium@gmail.com"
+                        >
+                          <Mail className={`w-3.5 h-3.5 ${sendingEmailId === ticket.id ? 'animate-bounce' : ''}`} />
+                          <span>{sendingEmailId === ticket.id ? 'Enviando...' : 'Enviar Email'}</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteTicket(ticket.id)}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                          title="Eliminar ticket"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -449,44 +684,59 @@ export default function TicketsPage() {
                   </div>
                   <button 
                     onClick={() => setShowCreateModal(false)}
-                    className="p-1.5 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-700"
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                <form onSubmit={handleCreateTicket} className="mt-4 space-y-3.5">
+                <form onSubmit={handleCreateTicket} className="mt-4 space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[11px] font-bold text-gray-600 uppercase">Teléfono (WhatsApp)</label>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Nombre del Cliente</label>
                       <input
                         type="text"
-                        required
-                        placeholder="ej. 5491136822409"
-                        value={newTicket.phone}
-                        onChange={(e) => setNewTicket({ ...newTicket, phone: e.target.value })}
-                        className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black"
+                        placeholder="Ej. Juan Pérez"
+                        value={newTicket.customer_name}
+                        onChange={(e) => setNewTicket({ ...newTicket, customer_name: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-black/10"
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] font-bold text-gray-600 uppercase">Nombre Cliente</label>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Teléfono WhatsApp *</label>
                       <input
                         type="text"
-                        placeholder="ej. Juan Pérez"
-                        value={newTicket.customer_name}
-                        onChange={(e) => setNewTicket({ ...newTicket, customer_name: e.target.value })}
-                        className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black"
+                        required
+                        placeholder="Ej. 5491122334455"
+                        value={newTicket.phone}
+                        onChange={(e) => setNewTicket({ ...newTicket, phone: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-black/10"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[11px] font-bold text-gray-600 uppercase">Prioridad</label>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Categoría</label>
+                      <select
+                        value={newTicket.category}
+                        onChange={(e) => setNewTicket({ ...newTicket, category: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none font-bold"
+                      >
+                        <option value="General">General</option>
+                        <option value="Inversor">📈 Inversor</option>
+                        <option value="Asesor">💼 Asesor</option>
+                        <option value="Líder">👑 Líder</option>
+                        <option value="Soporte">🛠️ Soporte</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Prioridad</label>
                       <select
                         value={newTicket.priority}
                         onChange={(e) => setNewTicket({ ...newTicket, priority: e.target.value })}
-                        className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none font-bold"
                       >
                         <option value="baja">Baja</option>
                         <option value="media">Media</option>
@@ -494,55 +744,31 @@ export default function TicketsPage() {
                         <option value="urgente">Urgente</option>
                       </select>
                     </div>
-                    <div>
-                      <label className="text-[11px] font-bold text-gray-600 uppercase">Estado Inicial</label>
-                      <select
-                        value={newTicket.status}
-                        onChange={(e) => setNewTicket({ ...newTicket, status: e.target.value })}
-                        className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none"
-                      >
-                        <option value="open">Abierto</option>
-                        <option value="pending_auth">Pendiente Autorización</option>
-                        <option value="en logistica">En Logística</option>
-                        <option value="closed">Cerrado</option>
-                      </select>
-                    </div>
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-bold text-gray-600 uppercase">Resumen / Asunto</label>
-                    <input
-                      type="text"
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Resumen del Ticket *</label>
+                    <textarea
                       required
-                      placeholder="ej. Consulta sobre requisitos para Inversor de Capital"
+                      rows={3}
+                      placeholder="Describa el motivo, perfil o solicitud del cliente..."
                       value={newTicket.summary}
                       onChange={(e) => setNewTicket({ ...newTicket, summary: e.target.value })}
-                      className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black"
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-black/10"
                     />
                   </div>
 
-                  <div>
-                    <label className="text-[11px] font-bold text-gray-600 uppercase">Detalles Adicionales</label>
-                    <textarea
-                      rows={3}
-                      placeholder="Notas del asesor, número de cuenta, o condiciones requeridas..."
-                      value={newTicket.details}
-                      onChange={(e) => setNewTicket({ ...newTicket, details: e.target.value })}
-                      className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                  <div className="flex justify-end gap-2 pt-2">
                     <button
                       type="button"
                       onClick={() => setShowCreateModal(false)}
-                      className="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100"
+                      className="px-4 py-2 border border-gray-200 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50 transition"
                     >
                       Cancelar
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2 rounded-xl text-xs font-bold bg-black hover:bg-gray-800 text-white shadow-md"
+                      className="px-5 py-2 bg-black hover:bg-gray-800 text-white rounded-xl text-xs font-bold shadow-md transition"
                     >
                       Guardar Ticket
                     </button>
@@ -551,6 +777,213 @@ export default function TicketsPage() {
               </div>
             </div>
           )}
+
+          {/* Modal Modificar Ticket */}
+          {showEditModal && editingTicket && (
+            <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center">
+                      <Edit3 className="w-4 h-4" />
+                    </div>
+                    <h3 className="font-extrabold text-lg text-gray-900">Modificar Ticket #{editingTicket.id}</h3>
+                  </div>
+                  <button 
+                    onClick={() => setShowEditModal(false)}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveEditTicket} className="mt-4 space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Nombre</label>
+                      <input
+                        type="text"
+                        value={editingTicket.customer_name || ''}
+                        onChange={(e) => setEditingTicket({ ...editingTicket, customer_name: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Estado</label>
+                      <select
+                        value={editingTicket.status}
+                        onChange={(e) => setEditingTicket({ ...editingTicket, status: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 font-bold"
+                      >
+                        <option value="pending_auth">Pendiente Aut.</option>
+                        <option value="open">Abierto</option>
+                        <option value="en logistica">En Gestión</option>
+                        <option value="closed">Cerrado</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Categoría</label>
+                      <select
+                        value={editingTicket.category || 'General'}
+                        onChange={(e) => setEditingTicket({ ...editingTicket, category: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 font-bold"
+                      >
+                        <option value="General">General</option>
+                        <option value="Inversor">📈 Inversor</option>
+                        <option value="Asesor">💼 Asesor</option>
+                        <option value="Líder">👑 Líder</option>
+                        <option value="Soporte">🛠️ Soporte</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Prioridad</label>
+                      <select
+                        value={editingTicket.priority || 'media'}
+                        onChange={(e) => setEditingTicket({ ...editingTicket, priority: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 font-bold"
+                      >
+                        <option value="baja">Baja</option>
+                        <option value="media">Media</option>
+                        <option value="alta">Alta</option>
+                        <option value="urgente">Urgente</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Resumen del Ticket</label>
+                    <textarea
+                      rows={3}
+                      value={editingTicket.summary || ''}
+                      onChange={(e) => setEditingTicket({ ...editingTicket, summary: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Notas Internas</label>
+                    <textarea
+                      rows={2}
+                      placeholder="Instrucciones para el asesor asignado o notas de seguimiento..."
+                      value={editingTicket.internal_notes || ''}
+                      onChange={(e) => setEditingTicket({ ...editingTicket, internal_notes: e.target.value })}
+                      className="w-full px-3 py-2 bg-amber-50/50 border border-amber-200 rounded-xl text-xs text-gray-900 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowEditModal(false)}
+                      className="px-4 py-2 border border-gray-200 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50 transition"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition"
+                    >
+                      Guardar Cambios
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Modal Delegar Ticket */}
+          {showDelegateModal && delegatingTicket && (
+            <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100 animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center">
+                      <Share2 className="w-4 h-4" />
+                    </div>
+                    <h3 className="font-extrabold text-lg text-gray-900">Delegar Ticket #{delegatingTicket.id}</h3>
+                  </div>
+                  <button 
+                    onClick={() => setShowDelegateModal(false)}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleConfirmDelegate} className="mt-4 space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Asignar a Asesor / Líder del Equipo</label>
+                    <select
+                      value={delegateTarget.assigned_to_name}
+                      onChange={(e) => {
+                        const selName = e.target.value;
+                        const foundUser = teamUsers.find(u => `${u.first_name} ${u.last_name || ''}`.trim() === selName || u.email === selName);
+                        setDelegateTarget({
+                          ...delegateTarget,
+                          assigned_to_name: selName,
+                          assigned_to_user_id: foundUser ? foundUser.id : ''
+                        });
+                      }}
+                      className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 font-bold focus:outline-none"
+                    >
+                      <option value="">-- Seleccionar Asesor o Equipo --</option>
+                      <optgroup label="Equipos Funcionales">
+                        <option value="Mesa de Inversiones">📈 Mesa de Inversiones</option>
+                        <option value="Equipo Líderes">👑 Equipo Líderes</option>
+                        <option value="Equipo Asesores">💼 Equipo Asesores</option>
+                        <option value="Mesa de Créditos">💳 Mesa de Créditos</option>
+                      </optgroup>
+                      {teamUsers.length > 0 && (
+                        <optgroup label="Usuarios Registrados">
+                          {teamUsers.map(u => {
+                            const fullName = `${u.first_name} ${u.last_name || ''}`.trim() || u.email;
+                            return (
+                              <option key={u.id} value={fullName}>
+                                {fullName} ({u.rol_nombre || 'Usuario'})
+                              </option>
+                            );
+                          })}
+                        </optgroup>
+                      )}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Notas de Delegación</label>
+                    <textarea
+                      rows={3}
+                      placeholder="Instrucciones para el agente asignado (ej. coordinar llamada para onboarding)..."
+                      value={delegateTarget.internal_notes}
+                      onChange={(e) => setDelegateTarget({ ...delegateTarget, internal_notes: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowDelegateModal(false)}
+                      className="px-4 py-2 border border-gray-200 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50 transition"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={!delegateTarget.assigned_to_name}
+                      className="px-5 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-md transition"
+                    >
+                      Confirmar Delegación
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
         </div>
       </Panel>
     </>
