@@ -32,7 +32,8 @@ import {
 import { toast } from "sonner";
 
 export default function FloatingCopilot() {
-  const pathname = usePathname();
+  const rawPath = usePathname();
+  const pathname = rawPath || "";
   const router = useRouter();
   const { user, isLoaded } = useUser();
   const [isOpen, setIsOpen] = useState(false);

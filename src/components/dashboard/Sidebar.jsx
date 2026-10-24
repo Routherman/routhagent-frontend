@@ -28,7 +28,8 @@ import { API_URL } from '@/config/api';
 let globalHandoffs = new Set();
 
 export default function Sidebar() {
-  const pathname = usePathname();
+  const rawPath = usePathname();
+  const pathname = rawPath || "";
   const { themeData } = useTheme();
   const { user, isLoaded } = useUser();
   const [hasHandoffs, setHasHandoffs] = useState(false);

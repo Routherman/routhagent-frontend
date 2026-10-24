@@ -1,3 +1,6 @@
+const defaultBackend = 'https://carditic-laci-unmerrily.ngrok-free.dev';
+const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || defaultBackend).trim().replace(/\/+$/, '');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactCompiler: true,
@@ -5,11 +8,11 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/:path*`,
+        destination: `${BACKEND_URL}/api/:path*`,
       },
       {
         source: '/media/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/media/:path*`,
+        destination: `${BACKEND_URL}/media/:path*`,
       },
     ];
   },
