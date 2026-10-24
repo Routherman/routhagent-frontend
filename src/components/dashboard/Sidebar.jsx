@@ -129,6 +129,7 @@ export default function Sidebar() {
     { label: 'Calendario & Meet', href: '/dashboard/calendar', icon: Calendar, permission: 'view_calendar' },
     { label: 'Tickets Helpdesk', href: '/dashboard/tickets', icon: Ticket, permission: 'view_tickets' },
     { label: 'Agenda CRM', href: '/dashboard/crm', icon: Users, permission: 'view_crm' },
+    { label: 'Equipo & Roles', href: '/dashboard/roles', icon: ShieldCheck, permission: 'view_roles' },
     { label: 'Router Multi-IA', href: '/dashboard/models', icon: Cpu, permission: 'view_models' },
     { label: 'Campañas', href: '/dashboard/campaigns', icon: BarChart3, permission: 'view_campaigns' },
     { label: 'Automatización', href: '/dashboard/automation', icon: Zap, permission: 'view_flows' },
@@ -136,8 +137,8 @@ export default function Sidebar() {
     { label: 'Configuración', href: '/dashboard/user', icon: Settings, permission: 'view_settings' },
   ];
 
-  // Master y Main ven todo. Otros roles ven solo las secciones autorizadas.
-  const isSuperAdmin = !userRole || ['master', 'main'].includes(userRole);
+  // Master, Main, Admin y creadores de empresa ven todo. Otros roles ven según privilegios explícitos.
+  const isSuperAdmin = !userRole || ['master', 'main', 'admin', 'gerencia', 'director'].includes(userRole);
   const navItems = rawNavItems.filter(item => {
     if (isSuperAdmin) return true;
     if (!userPrivs) return true;

@@ -142,6 +142,22 @@ export default function CrmPage() {
     fetchTreeData();
   }, [codigoEmpresa, selectedGroup]);
 
+  // Cargar lista de rubros de la empresa
+  const fetchRubros = async () => {
+    if (!codigoEmpresa) return;
+    try {
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/crm/rubros`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.rubros)) {
+        setRubros(['TODOS', ...data.rubros]);
+      }
+    } catch (e) {
+      console.error('Error fetching rubros:', e);
+    }
+  };
+
   useEffect(() => {
     fetchRubros();
   }, [codigoEmpresa]);
@@ -568,13 +584,13 @@ export default function CrmPage() {
             </div>
 
             <div className="relative w-full md:w-72">
-              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Buscar por DNI, CBU, alias, teléfono..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-black/10"
+                className="w-full pl-9 pr-3 py-1.5 bg-white border border-gray-300 rounded-xl text-xs text-gray-950 font-bold placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
           </div>
@@ -812,7 +828,7 @@ export default function CrmPage() {
                           placeholder="ej. Carlos Benítez"
                           value={formData.nombre}
                           onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                          className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black"
+                          className="w-full mt-1 px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl text-gray-950 font-bold placeholder-gray-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-black"
                         />
                       </div>
                       <div>
@@ -823,7 +839,7 @@ export default function CrmPage() {
                           placeholder="ej. 5491136822409"
                           value={formData.telefono}
                           onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-                          className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black"
+                          className="w-full mt-1 px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl text-gray-950 font-bold placeholder-gray-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-black"
                         />
                       </div>
                       <div>
@@ -833,7 +849,7 @@ export default function CrmPage() {
                           placeholder="ej. 34567890"
                           value={formData.dni}
                           onChange={(e) => setFormData({ ...formData, dni: e.target.value })}
-                          className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black"
+                          className="w-full mt-1 px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl text-gray-950 font-bold placeholder-gray-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-black"
                         />
                       </div>
                       <div>
@@ -843,7 +859,7 @@ export default function CrmPage() {
                           placeholder="ej. carlos@ejemplo.com"
                           value={formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black"
+                          className="w-full mt-1 px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl text-gray-950 font-bold placeholder-gray-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-black"
                         />
                       </div>
                     </div>
@@ -862,7 +878,7 @@ export default function CrmPage() {
                           placeholder="ej. BIND Banco Industrial / Galicia"
                           value={formData.banco}
                           onChange={(e) => setFormData({ ...formData, banco: e.target.value })}
-                          className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black"
+                          className="w-full mt-1 px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl text-gray-950 font-bold placeholder-gray-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-black"
                         />
                       </div>
                       <div>
@@ -872,7 +888,7 @@ export default function CrmPage() {
                           placeholder="ej. carlos.inversor.bind"
                           value={formData.alias}
                           onChange={(e) => setFormData({ ...formData, alias: e.target.value })}
-                          className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black"
+                          className="w-full mt-1 px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl text-gray-950 font-bold placeholder-gray-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-black"
                         />
                       </div>
                       <div className="md:col-span-2">
@@ -882,7 +898,7 @@ export default function CrmPage() {
                           placeholder="ej. 0000003100010000000000"
                           value={formData.cbu}
                           onChange={(e) => setFormData({ ...formData, cbu: e.target.value })}
-                          className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-mono"
+                          className="w-full mt-1 px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl text-gray-950 font-bold placeholder-gray-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-mono"
                         />
                       </div>
                     </div>
@@ -899,7 +915,7 @@ export default function CrmPage() {
                         <select
                           value={formData.grupo}
                           onChange={(e) => setFormData({ ...formData, grupo: e.target.value })}
-                          className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none"
+                          className="w-full mt-1 px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl text-gray-950 font-bold focus:bg-white focus:outline-none"
                         >
                           {rubros.filter(r => r !== 'TODOS').map(r => (
                             <option key={r} value={r}>{r}</option>
@@ -913,7 +929,7 @@ export default function CrmPage() {
                           placeholder="@carlos.ok"
                           value={formData.instagram}
                           onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
-                          className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none"
+                          className="w-full mt-1 px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl text-gray-950 font-bold placeholder-gray-500 focus:bg-white focus:outline-none"
                         />
                       </div>
                       <div>
@@ -923,7 +939,7 @@ export default function CrmPage() {
                           placeholder="in/carlos-benitez"
                           value={formData.linkedin}
                           onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
-                          className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none"
+                          className="w-full mt-1 px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl text-gray-950 font-bold placeholder-gray-500 focus:bg-white focus:outline-none"
                         />
                       </div>
                       <div>
@@ -933,7 +949,7 @@ export default function CrmPage() {
                           placeholder="@carlos_tg"
                           value={formData.telegram}
                           onChange={(e) => setFormData({ ...formData, telegram: e.target.value })}
-                          className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none"
+                          className="w-full mt-1 px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl text-gray-950 font-bold placeholder-gray-500 focus:bg-white focus:outline-none"
                         />
                       </div>
                     </div>
@@ -946,7 +962,7 @@ export default function CrmPage() {
                       placeholder="Condiciones pactadas, referencias, montos de inversión habituales..."
                       value={formData.metadata_extra}
                       onChange={(e) => setFormData({ ...formData, metadata_extra: e.target.value })}
-                      className="w-full mt-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none"
+                      className="w-full mt-1 px-3 py-2 text-xs bg-white border border-gray-300 rounded-xl text-gray-950 font-bold placeholder-gray-500 focus:bg-white focus:outline-none"
                     />
                   </div>
 

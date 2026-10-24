@@ -32,9 +32,9 @@ export default function Equipo({ userData, privilegios }) {
     const [loadingLogs, setLoadingLogs] = useState(false);
     const [activeTab, setActiveTab] = useState('usuarios'); // 'usuarios' | 'roles' | 'sucesos'
     
-    // Verificación estricta: solo Master y Main pueden modificar vistas y permisos
+    // Verificación estricta: Master, Main y Administradores pueden gestionar vistas y permisos
     const userRole = (userData?.rol_nombre || '').toLowerCase();
-    const isMasterOrMain = userRole === 'master' || userRole === 'main';
+    const isMasterOrMain = !userRole || ['master', 'main', 'admin', 'gerencia', 'director'].includes(userRole);
 
     // Role form state
     const [showRoleForm, setShowRoleForm] = useState(false);

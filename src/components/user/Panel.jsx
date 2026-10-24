@@ -16,6 +16,16 @@ export default function UserPanel() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const tab = params.get('tab');
+            if (tab && ['config', 'social', 'empresa', 'equipo'].includes(tab)) {
+                setActiveTab(tab);
+            }
+        }
+    }, []);
+
+    useEffect(() => {
         if (!user) return;
         const fetchUserData = async () => {
             try {
@@ -50,7 +60,10 @@ export default function UserPanel() {
         { id: 'equipo', label: 'Equipo y Roles', icon: Users, requiredPrivilege: 'can_manage_users' }
     ];
 
+    const isSuperAdmin = !userData?.rol_nombre || ['master', 'main', 'admin', 'gerencia', 'director'].includes((userData?.rol_nombre || '').toLowerCase());
+
     const tabs = allTabs.filter(tab => {
+        if (isSuperAdmin) return true;
         if (!tab.requiredPrivilege) return true;
         if (!privilegios) return false;
         return privilegios[tab.requiredPrivilege] === true;
