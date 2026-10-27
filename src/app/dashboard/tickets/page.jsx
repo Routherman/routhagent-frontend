@@ -111,8 +111,9 @@ export default function TicketsPage() {
     try {
       setLoading(true);
       const statusParam = filter === 'all' ? '' : filter;
+      const roleParam = currentUserData?.rol_nombre ? `&role=${encodeURIComponent(currentUserData.rol_nombre)}&user_id=${currentUserData.id}` : '';
       const [tRes, uRes] = await Promise.all([
-        fetch(`${API_URL}/empresas/${codigoEmpresa}/tickets?status=${encodeURIComponent(statusParam)}`, {
+        fetch(`${API_URL}/empresas/${codigoEmpresa}/tickets?status=${encodeURIComponent(statusParam)}${roleParam}`, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         }),
         fetch(`${API_URL}/empresas/${codigoEmpresa}/users`, {
@@ -139,7 +140,7 @@ export default function TicketsPage() {
 
   useEffect(() => {
     fetchTickets();
-  }, [codigoEmpresa, filter]);
+  }, [codigoEmpresa, filter, currentUserData?.rol_nombre]);
 
   // Crear nuevo ticket
   const handleCreateTicket = async (e) => {
@@ -441,7 +442,18 @@ export default function TicketsPage() {
     }
   };
 
-  const filteredTickets = tickets.filter(t => {
+  const isSoporteRole = (currentUserData?.rol_nombre || '').toLowerCase().includes('soporte') || (currentUserData?.email || '').toLowerCase().includes('damduff');
+
+  // Si es rol Soporte, solo le mostramos tickets con rol/categoría soporte o asignados a él
+  const visibleTickets = tickets.filter(t => {
+    if (!isSoporteRole) return true;
+    const isSoporteCat = (t.category || '').toLowerCase().includes('soporte');
+    const isSoporteAssigned = (t.assigned_to_name || '').toLowerCase().includes('soporte');
+    const isAssignedToMe = currentUserData?.id && t.assigned_to_user_id === currentUserData.id;
+    return isSoporteCat || isSoporteAssigned || isAssignedToMe;
+  });
+
+  const filteredTickets = visibleTickets.filter(t => {
     if (copilotFilterIds !== null && !copilotFilterIds.includes(t.id)) {
       return false;
     }
@@ -455,11 +467,11 @@ export default function TicketsPage() {
 
   // Conteo para las pestañas
   const counts = {
-    all: tickets.length,
-    pending_auth: tickets.filter(t => t.status === 'pending_auth').length,
-    open: tickets.filter(t => t.status === 'open').length,
-    delegated: tickets.filter(t => t.status === 'en logistica' || t.status === 'delegated' || !!t.assigned_to_name).length,
-    closed: tickets.filter(t => t.status === 'closed').length
+    all: visibleTickets.length,
+    pending_auth: visibleTickets.filter(t => t.status === 'pending_auth').length,
+    open: visibleTickets.filter(t => t.status === 'open').length,
+    delegated: visibleTickets.filter(t => t.status === 'en logistica' || t.status === 'delegated' || !!t.assigned_to_name).length,
+    closed: visibleTickets.filter(t => t.status === 'closed').length
   };
 
   return (

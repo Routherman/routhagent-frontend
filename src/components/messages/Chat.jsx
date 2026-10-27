@@ -88,12 +88,12 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
     if (lastIncoming && lastIncoming.timestamp) {
       const lastIncomingTime = new Date(lastIncoming.timestamp).getTime();
       const now = Date.now();
-      const diffMs = now - lastIncomingTime;
+      const diffMs = Math.max(0, now - lastIncomingTime);
       const hours24 = 24 * 60 * 60 * 1000;
       
       if (diffMs < hours24) {
         isWithin24Hours = true;
-        const remainingMs = hours24 - diffMs;
+        const remainingMs = Math.min(hours24, Math.max(0, hours24 - diffMs));
         const rHours = Math.floor(remainingMs / (1000 * 60 * 60));
         const rMins = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
         remainingTimeStr = `Ventana de 24h abierta (quedan ${rHours}h ${rMins}m)`;
@@ -189,19 +189,24 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
     <div className="flex-1 flex flex-col bg-[#f8f9fa] dark:bg-[#080d19] border-l border-r border-gray-100 dark:border-white/10 min-w-0 relative">
       {/* Chat Header */}
       <div 
-        className="h-[76px] min-h-[76px] flex items-center justify-between px-6 border-b border-gray-100 dark:border-white/10 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+        className="min-h-[76px] py-2 flex flex-col md:flex-row md:items-center justify-between px-6 border-b border-gray-100 dark:border-white/10 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors gap-2"
         onClick={onHeaderClick}
       >
         <div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             <h2 className="font-bold text-[15px] text-gray-900 dark:text-white">{contact?.name || 'Desconocido'} ({contact?.telefono || ''})</h2>
             {contact?.categoria && contact?.categoria !== 'general' && (
               <span className="bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-slate-300 text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
                 {contact.categoria}
               </span>
             )}
+            {contact?.estado_resolucion === 'PENDIENTE' && (
+              <span className="bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[10px] px-2 py-0.5 rounded-md font-extrabold uppercase tracking-wider border border-amber-300 dark:border-amber-700/50">
+                ⚠️ Pendiente
+              </span>
+            )}
           </div>
-          <div className="flex items-center gap-1.5 mt-0.5">
+          <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
             {contact?.estado_bot === 'ACTIVO' ? (
                <span className="w-1.5 h-1.5 bg-[#4cd964] rounded-full"></span>
             ) : (
@@ -219,6 +224,19 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
               </span>
             )}
           </div>
+
+          {/* Banner de Derivación y Resumen de Necesidad del Cliente */}
+          {(contact?.derivado_desde || contact?.resumen_necesidad || contact?.nota_pendiente) && (
+            <div className="flex items-center gap-2 mt-1.5 px-2.5 py-1 rounded-xl bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/40 text-[11px] text-indigo-950 dark:text-indigo-200 animate-in fade-in duration-150">
+              <span className="font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-400 shrink-0 flex items-center gap-1">
+                ↪️ Derivado desde: {contact.derivado_desde || 'Soporte Técnico'}
+              </span>
+              <span className="text-gray-300 dark:text-gray-600 shrink-0">•</span>
+              <span className="font-semibold truncate">
+                <strong className="text-indigo-800 dark:text-indigo-300">Necesidad:</strong> {contact.resumen_necesidad || contact.nota_pendiente || 'Atención personalizada requerida'}
+              </span>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-4 text-gray-500 dark:text-slate-400">
            {/* Botón para activar/desactivar la IA */}

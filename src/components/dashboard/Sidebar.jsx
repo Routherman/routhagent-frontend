@@ -38,6 +38,8 @@ export default function Sidebar() {
 
   const [userRole, setUserRole] = useState('master');
   const [userPrivs, setUserPrivs] = useState(null);
+  const [chatsAttentionCount, setChatsAttentionCount] = useState(0);
+  const [pendingTicketsCount, setPendingTicketsCount] = useState(0);
 
   // if background is light, icons should be darker.
   const isLightBg = themeData?.isDark === false;
@@ -84,37 +86,54 @@ export default function Sidebar() {
 
         if (codigoEmpresa) {
           setEmpresaCode(codigoEmpresa);
-          const pollContacts = async () => {
+          const pollStatus = async () => {
             try {
+              // 1. Polling de contactos y handoffs
               const res = await fetch(`${API_URL}/contacts/${codigoEmpresa}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
               const data = await res.json();
 
               let currentHandoffs = 0;
-              data.forEach(c => {
-                if (c.estado_bot === 'HANDOFF') {
-                  currentHandoffs++;
-                  if (!globalHandoffs.has(c.id)) {
-                    globalHandoffs.add(c.id);
-                    playAlertSound();
-                    toast.error('Atención: se desactivó la IA en un chat. Requiere intervención humana.', {
-                      duration: 8000,
-                    });
+              let attentionCount = 0;
+              if (Array.isArray(data)) {
+                data.forEach(c => {
+                  if (c.estado_bot === 'HANDOFF') {
+                    currentHandoffs++;
+                    if (!globalHandoffs.has(c.id)) {
+                      globalHandoffs.add(c.id);
+                      playAlertSound();
+                      toast.error('Atención: se desactivó la IA en un chat. Requiere intervención humana.', {
+                        duration: 8000,
+                      });
+                    }
+                  } else {
+                    if (globalHandoffs.has(c.id)) {
+                      globalHandoffs.delete(c.id);
+                    }
                   }
-                } else {
-                  if (globalHandoffs.has(c.id)) {
-                    globalHandoffs.delete(c.id);
+
+                  if (c.estado_bot === 'HANDOFF' || c.estado_resolucion === 'PENDIENTE' || (c.unread_count && c.unread_count > 0)) {
+                    attentionCount++;
                   }
-                }
-              });
+                });
+                setChatsAttentionCount(attentionCount);
+              }
 
               setHasHandoffs(currentHandoffs > 0);
+
+              // 2. Polling de tickets pendientes
+              const roleParam = userData.rol_nombre ? `&role=${encodeURIComponent(userData.rol_nombre)}&user_id=${userData.id}` : '';
+              const tRes = await fetch(`${API_URL}/empresas/${codigoEmpresa}/tickets?status=open,pending_auth${roleParam}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+              const tData = await tRes.json();
+              if (tData.success && Array.isArray(tData.tickets)) {
+                setPendingTicketsCount(tData.tickets.length);
+              }
             } catch (err) {
-              console.warn("Sidebar pollContacts:", err.message || err);
+              console.warn("Sidebar pollStatus:", err.message || err);
             }
           };
 
-          pollContacts();
-          intervalId = setInterval(pollContacts, 3000);
+          pollStatus();
+          intervalId = setInterval(pollStatus, 3500);
         }
       })
       .catch(err => console.warn("Sidebar fetch user:", err.message || err));
@@ -126,10 +145,10 @@ export default function Sidebar() {
 
   const rawNavItems = [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutGrid, exact: true, permission: 'view_dashboard' },
-    { label: 'Mensajes', href: '/dashboard/messages', icon: MessageSquare, badge: hasHandoffs, permission: 'view_messages' },
+    { label: 'Mensajes', href: '/dashboard/messages', icon: MessageSquare, count: chatsAttentionCount, badge: hasHandoffs, permission: 'view_messages' },
     { label: 'Inbox Gmail', href: '/dashboard/inbox', icon: Mail, permission: 'view_inbox' },
     { label: 'Calendario & Meet', href: '/dashboard/calendar', icon: Calendar, permission: 'view_calendar' },
-    { label: 'Tickets Helpdesk', href: '/dashboard/tickets', icon: Ticket, permission: 'view_tickets' },
+    { label: 'Tickets Helpdesk', href: '/dashboard/tickets', icon: Ticket, count: pendingTicketsCount, permission: 'view_tickets' },
     { label: 'Agenda CRM', href: '/dashboard/crm', icon: Users, permission: 'view_crm' },
     { label: 'Equipo & Roles', href: '/dashboard/roles', icon: ShieldCheck, permission: 'view_roles' },
     { label: 'Router Multi-IA', href: '/dashboard/models', icon: Cpu, permission: 'view_models' },
@@ -197,18 +216,27 @@ export default function Sidebar() {
                 {/* Icon wrapper */}
                 <div className="w-5 h-5 min-w-[20px] flex items-center justify-center relative">
                   <Icon className="w-5 h-5 transition-transform group-hover/item:scale-110" />
-                  {item.badge && (
+                  {item.count > 0 ? (
+                    <span className="absolute -top-1.5 -right-2 min-w-[17px] h-4 px-1 bg-red-600 text-white text-[9px] font-black rounded-full flex items-center justify-center border border-black/40 shadow-md animate-pulse">
+                      {item.count > 99 ? '99+' : item.count}
+                    </span>
+                  ) : item.badge ? (
                     <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border border-black animate-pulse shadow-sm" />
-                  )}
+                  ) : null}
                 </div>
 
                 {/* Label displayed on sidebar hover */}
-                <span className="ml-3.5 text-xs font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-[-6px] group-hover:translate-x-0 overflow-hidden">
-                  {item.label}
+                <span className="ml-3.5 text-xs font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-[-6px] group-hover:translate-x-0 overflow-hidden flex items-center gap-2 w-full">
+                  <span>{item.label}</span>
+                  {item.count > 0 && (
+                    <span className="ml-auto px-1.5 py-0.2 text-[10px] font-black bg-red-600 text-white rounded-full shadow-sm">
+                      {item.count}
+                    </span>
+                  )}
                 </span>
 
                 {/* Active Arrow indicator when expanded */}
-                {isActive && (
+                {isActive && !item.count && (
                   <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-0 group-hover:opacity-60 transition-opacity duration-200" />
                 )}
               </Link>

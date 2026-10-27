@@ -42,7 +42,8 @@ export default function ContactActionMenu({
   // Form states
   const [teamForm, setTeamForm] = useState({
     rol_asignado: contact?.categoria || contact?.rol_asignado || 'General',
-    usuario_asignado_id: contact?.usuario_asignado_id || ''
+    usuario_asignado_id: contact?.usuario_asignado_id || '',
+    resumen_necesidad: contact?.resumen_necesidad || ''
   });
 
   const [hierarchyForm, setHierarchyForm] = useState({
@@ -94,7 +95,8 @@ export default function ContactActionMenu({
     setMenuOpen(false);
     setTeamForm({
       rol_asignado: contact?.categoria || contact?.rol_asignado || 'General',
-      usuario_asignado_id: contact?.usuario_asignado_id || ''
+      usuario_asignado_id: contact?.usuario_asignado_id || '',
+      resumen_necesidad: contact?.resumen_necesidad || ''
     });
     loadContextData();
     setShowTeamModal(true);
@@ -126,6 +128,10 @@ export default function ContactActionMenu({
     setSubmitting(true);
     try {
       const selectedUser = users.find(u => u.id === teamForm.usuario_asignado_id);
+      const userRole = (currentUser?.rol_nombre || currentUser?.role || '').toLowerCase();
+      const isSoporte = userRole.includes('soporte') || (currentUser?.email || '').toLowerCase().includes('damduff');
+      const fromSector = isSoporte ? 'Soporte Técnico' : (currentUser?.rol_nombre || 'Operador');
+
       const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/contacts/${contact.id}/assign-team`, {
         method: 'POST',
         headers: {
@@ -136,16 +142,18 @@ export default function ContactActionMenu({
           rol_asignado: teamForm.rol_asignado,
           usuario_asignado_id: teamForm.usuario_asignado_id || null,
           usuario_nombre: selectedUser ? `${selectedUser.first_name || ''} ${selectedUser.last_name || ''}`.trim() : null,
+          derivado_desde: fromSector,
+          resumen_necesidad: teamForm.resumen_necesidad || null,
           updated_by: {
             id: currentUser?.id,
-            name: `${currentUser?.firstName || ''} ${currentUser?.lastName || ''}`.trim() || 'Administrador',
-            role: 'master'
+            name: `${currentUser?.firstName || currentUser?.first_name || ''} ${currentUser?.lastName || currentUser?.last_name || ''}`.trim() || 'Operador',
+            role: userRole || 'soporte'
           }
         })
       });
       const data = await res.json();
       if (data.success) {
-        toast.success(`Conversación derivada al equipo ${teamForm.rol_asignado}`);
+        toast.success(`Conversación derivada a ${teamForm.rol_asignado}. Se abrió ticket en Helpdesk y quedó marcada como pendiente.`);
         setShowTeamModal(false);
         onUpdated?.();
       } else {
@@ -281,19 +289,22 @@ export default function ContactActionMenu({
             </div>
           </button>
 
-          <button
-            type="button"
-            onClick={handleOpenHierarchyModal}
-            className="w-full text-left px-3.5 py-2.5 text-xs hover:bg-gray-50 flex items-center gap-2.5 transition group"
-          >
-            <div className="w-7 h-7 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-105 transition shrink-0">
-              <GitBranch className="w-3.5 h-3.5" />
-            </div>
-            <div>
-              <span className="font-extrabold text-gray-900 block leading-tight">2. Asignar Líder o Asesor</span>
-              <span className="text-[10px] text-gray-500 font-medium">Vincular en árbol de dependencias</span>
-            </div>
-          </button>
+          {/* Solo usuarios que no sean Soporte pueden asignar Líder o Asesor */}
+          {!((currentUser?.rol_nombre || currentUser?.role || '').toLowerCase().includes('soporte') || (currentUser?.email || '').toLowerCase().includes('damduff')) && (
+            <button
+              type="button"
+              onClick={handleOpenHierarchyModal}
+              className="w-full text-left px-3.5 py-2.5 text-xs hover:bg-gray-50 flex items-center gap-2.5 transition group"
+            >
+              <div className="w-7 h-7 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-105 transition shrink-0">
+                <GitBranch className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <span className="font-extrabold text-gray-900 block leading-tight">2. Asignar Líder o Asesor</span>
+                <span className="text-[10px] text-gray-500 font-medium">Vincular en árbol de dependencias</span>
+              </div>
+            </button>
+          )}
 
           <button
             type="button"
@@ -377,8 +388,21 @@ export default function ContactActionMenu({
                 </select>
               </div>
 
+              <div>
+                <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider block mb-1">
+                  Resumen de la necesidad del cliente (Visible en el encabezado)
+                </label>
+                <textarea
+                  rows={2}
+                  value={teamForm.resumen_necesidad}
+                  onChange={(e) => setTeamForm({ ...teamForm, resumen_necesidad: e.target.value })}
+                  className="w-full px-3 py-2 text-xs text-gray-900 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black"
+                  placeholder="Ej: Requiere inscribirse en capacitación virtual / Problema técnico de login..."
+                />
+              </div>
+
               <div className="p-3 bg-blue-50/70 rounded-xl border border-blue-100 text-[11px] text-blue-900">
-                La derivación quedará registrada en el log de auditoría oficial de <strong>colaboratium@gmail.com</strong>.
+                Al derivar, la conversación se marcará como <strong>PENDIENTE</strong>, se creará un ticket en <strong>Helpdesk</strong> y se registrará en auditoría.
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">

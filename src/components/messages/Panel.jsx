@@ -18,6 +18,8 @@ export default function MessagesPanel() {
   const [codigoEmpresa, setCodigoEmpresa] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const [currentUserData, setCurrentUserData] = useState(null);
+
   // 1. Get user from DB to know their codigo_empresa
   useEffect(() => {
     if (isLoaded && user) {
@@ -26,6 +28,7 @@ export default function MessagesPanel() {
         .then(data => {
           if (data.codigo_empresa) {
             setCodigoEmpresa(data.codigo_empresa);
+            setCurrentUserData(data);
           }
         })
         .catch(err => console.error("Error fetching user data:", err));
@@ -51,6 +54,8 @@ export default function MessagesPanel() {
         usuario_asignado_id: c.usuario_asignado_id,
         estado_resolucion: c.estado_resolucion || 'RESUELTO',
         nota_pendiente: c.nota_pendiente || null,
+        derivado_desde: c.derivado_desde || null,
+        resumen_necesidad: c.resumen_necesidad || null,
         lider_id: c.lider_id || null,
         asesor_id: c.asesor_id || null,
         avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(c.nombre || 'Usuario')}`,
@@ -62,6 +67,10 @@ export default function MessagesPanel() {
       })) : [];
       
       setContacts(formatted);
+      if (activeContact) {
+        const updatedActive = formatted.find(c => c.id === activeContact.id);
+        if (updatedActive) setActiveContact(updatedActive);
+      }
       if (loading) setLoading(false);
     } catch (err) {
       console.error('Error fetching contacts:', err);
@@ -218,7 +227,7 @@ export default function MessagesPanel() {
              onSelectContact={(c) => setActiveContact(c)}
              activeContact={activeContact}
              codigoEmpresa={codigoEmpresa}
-             currentUser={user}
+             currentUser={currentUserData || user}
              onRefreshContacts={fetchContacts}
           />
 

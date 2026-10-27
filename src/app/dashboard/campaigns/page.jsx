@@ -39,6 +39,7 @@ import {
   CheckCircle,
   ShieldCheck,
   AlertTriangle,
+  Zap,
   X
 } from 'lucide-react';
 
@@ -142,10 +143,10 @@ export default function CampaignsPage() {
   }, [isLoaded, user]);
 
   // 2. Cargar datos consolidados
-  const fetchAllData = async () => {
+  const fetchAllData = async (isInitial = false) => {
     if (!codigoEmpresa) return;
     try {
-      setLoading(true);
+      if (isInitial) setLoading(true);
       const headers = { 'ngrok-skip-browser-warning': 'true' };
 
       const [resCamp, resPlan, resMed, resCont, resMetaTpls] = await Promise.all([
@@ -173,7 +174,7 @@ export default function CampaignsPage() {
     } catch (e) {
       console.error('Error fetching campaign hub data:', e);
     } finally {
-      setLoading(false);
+      if (isInitial) setLoading(false);
     }
   };
 
@@ -242,11 +243,12 @@ export default function CampaignsPage() {
   };
 
   useEffect(() => {
-    fetchAllData();
-    const hasActiveCampaign = campaigns.some(c => c.estado === 'en_progreso');
-    const interval = setInterval(fetchAllData, hasActiveCampaign ? 2500 : 8000);
+    fetchAllData(true);
+    const interval = setInterval(() => {
+      fetchAllData(false);
+    }, 7000);
     return () => clearInterval(interval);
-  }, [codigoEmpresa, campaigns]);
+  }, [codigoEmpresa]);
 
   // Obtener URL completa y accesible para medios y estáticos
   const getMediaUrl = (url) => {

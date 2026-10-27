@@ -811,23 +811,32 @@ export default function FlowEditorPage() {
 
             {/* PANEL LATERAL DE CONFIGURACIÓN DE NODO (SLIDE-OVER DRAWER) */}
             {editingNode && (
-              <div className="absolute top-0 right-0 w-[380px] h-full bg-slate-950/95 backdrop-blur-2xl border-l border-white/15 z-50 p-6 flex flex-col shadow-2xl animate-in slide-in-from-right-8 duration-300 pointer-events-auto overflow-y-auto custom-scrollbar">
+              <div className="absolute top-0 right-0 w-[310px] max-w-[85vw] h-full bg-slate-950/95 backdrop-blur-2xl border-l border-white/15 z-50 p-4 pb-28 flex flex-col shadow-2xl animate-in slide-in-from-right-8 duration-300 pointer-events-auto overflow-y-auto custom-scrollbar">
                 
                 {/* Header Drawer */}
-                <div className="flex justify-between items-center pb-4 border-b border-white/10 mb-6">
-                  <div className="flex items-center gap-2.5">
+                <div className="flex justify-between items-center pb-3 border-b border-white/10 mb-4">
+                  <div className="flex items-center gap-2">
                     {getNodeIcon(editingNode.type)}
                     <div>
-                      <h4 className="text-sm font-black text-white uppercase tracking-wider">Configurar Nodo</h4>
-                      <p className="text-[10px] text-slate-400 font-mono">Tipo: {editingNode.type.toUpperCase()}</p>
+                      <h4 className="text-xs font-black text-white uppercase tracking-wider">Configurar Nodo</h4>
+                      <p className="text-[9px] text-slate-400 font-mono">Tipo: {editingNode.type.toUpperCase()}</p>
                     </div>
                   </div>
-                  <button 
-                    onClick={() => setEditingNode(null)} 
-                    className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
-                  >
-                    <X size={18} />
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setEditingNode(null)}
+                      className="bg-sky-500 hover:bg-sky-400 text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider shadow-sm transition-all"
+                    >
+                      Listo
+                    </button>
+                    <button 
+                      onClick={() => setEditingNode(null)} 
+                      className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+                      title="Cerrar configuración"
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Formulario de Campos */}
@@ -1060,7 +1069,7 @@ export default function FlowEditorPage() {
                 </div>
 
                 {/* Botón Borrar Nodo */}
-                <div className="pt-6 border-t border-white/10 mt-6 flex justify-between items-center">
+                <div className="pt-4 border-t border-white/10 mt-5 mb-14 flex justify-between items-center shrink-0">
                   <button 
                     onClick={() => handleDeleteNode(editingNode.id)}
                     className="text-red-400 hover:text-red-300 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors"
@@ -1070,9 +1079,9 @@ export default function FlowEditorPage() {
                   </button>
                   <button 
                     onClick={() => setEditingNode(null)}
-                    className="bg-sky-500 hover:bg-sky-400 text-white px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider shadow-lg transition-all"
+                    className="bg-sky-500 hover:bg-sky-400 text-white px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-lg transition-all"
                   >
-                    Listo
+                    Guardar y Cerrar
                   </button>
                 </div>
               </div>
