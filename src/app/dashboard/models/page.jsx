@@ -22,7 +22,9 @@ import {
   ArrowRight,
   TrendingDown,
   ShieldCheck,
-  Send
+  Send,
+  MessageSquare,
+  Coins
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -147,11 +149,19 @@ export default function AiModelsPage() {
     }
   ];
 
-  // Cálculo de costos estimados
+  // Cálculo de costos estimados de IA
   const totalTokens = metrics.summary?.totalTokens || 0;
   const cloudTokens = Math.max(0, totalTokens - (metrics.summary?.ollamaTokens || 0));
   const estimatedCostUsd = ((cloudTokens / 1000) * costPer1k).toFixed(4);
   const ollamaSavedUsd = (((metrics.summary?.ollamaTokens || 0) / 1000) * costPer1k).toFixed(4);
+
+  // Costo de plantillas oficiales de Meta ($0.06 USD por plantilla enviada)
+  const totalTemplates = metrics.summary?.totalTemplates || 0;
+  const metaCostPerTemplate = metrics.summary?.metaCostPerTemplate || 0.06;
+  const metaTemplatesCostUsd = (metrics.summary?.metaTemplatesCostUsd !== undefined)
+    ? Number(metrics.summary.metaTemplatesCostUsd).toFixed(2)
+    : (totalTemplates * metaCostPerTemplate).toFixed(2);
+  const totalConsolidatedCost = (parseFloat(estimatedCostUsd) + parseFloat(metaTemplatesCostUsd)).toFixed(4);
 
   // Probar el Router con una consulta rápida
   const handleTestRouter = async (e) => {
@@ -227,11 +237,11 @@ export default function AiModelsPage() {
           </div>
 
           {/* KPI Métricas Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {/* Tokens Totales */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            {/* Tokens Totales IA */}
             <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Tokens Totales</p>
+                <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Tokens Totales IA</p>
                 <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
                   <Layers className="w-4 h-4" />
                 </div>
@@ -240,14 +250,14 @@ export default function AiModelsPage() {
                 {totalTokens.toLocaleString()}
               </p>
               <p className="text-[11px] text-gray-400 mt-1">
-                Procesados en todas las solicitudes
+                Procesados en todas las solicitudes del Router
               </p>
             </div>
 
-            {/* Costo USD */}
+            {/* Consumo IA (Nube) */}
             <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Consumo USD (Nube)</p>
+                <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Inferencia IA (Nube)</p>
                 <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
                   <DollarSign className="w-4 h-4" />
                 </div>
@@ -257,6 +267,38 @@ export default function AiModelsPage() {
               </p>
               <p className="text-[11px] text-gray-400 mt-1">
                 Tasa estimada: ${costPer1k * 1000} / 1M tkns
+              </p>
+            </div>
+
+            {/* Costo META Plantillas */}
+            <div className="bg-white p-5 rounded-3xl border border-cyan-200/80 shadow-sm relative overflow-hidden bg-gradient-to-br from-white via-cyan-50/20 to-sky-50/40">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] font-extrabold text-cyan-800 uppercase tracking-wider">Costo META Plantillas</p>
+                <div className="w-8 h-8 rounded-xl bg-cyan-100 text-cyan-700 flex items-center justify-center">
+                  <MessageSquare className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="text-2xl font-black text-cyan-700 font-mono">
+                ${metaTemplatesCostUsd} <span className="text-xs font-bold text-gray-400">USD</span>
+              </p>
+              <p className="text-[11px] text-cyan-900/80 font-semibold mt-1">
+                {totalTemplates} plantillas enviadas • $0.06 USD c/u
+              </p>
+            </div>
+
+            {/* Gasto Total Consolidado */}
+            <div className="bg-white p-5 rounded-3xl border border-indigo-200 shadow-sm relative overflow-hidden bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/40">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] font-extrabold text-indigo-800 uppercase tracking-wider">Gasto Total Consolidado</p>
+                <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                  <Coins className="w-4 h-4" />
+                </div>
+              </div>
+              <p className="text-2xl font-black text-indigo-700 font-mono">
+                ${totalConsolidatedCost} <span className="text-xs font-bold text-gray-400">USD</span>
+              </p>
+              <p className="text-[11px] text-indigo-900/70 font-semibold mt-1">
+                IA (${estimatedCostUsd}) + Meta (${metaTemplatesCostUsd})
               </p>
             </div>
 
@@ -347,7 +389,7 @@ export default function AiModelsPage() {
           <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 mb-8">
             <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
               <Server className="w-4 h-4 text-gray-400" />
-              Estado y Consumo por Proveedor de IA
+              Estado y Consumo por Proveedor (IA + Meta Cloud API)
             </h3>
 
             <div className="overflow-x-auto">
@@ -355,8 +397,8 @@ export default function AiModelsPage() {
                 <thead className="bg-gray-50 text-gray-500 uppercase tracking-wider font-extrabold text-[10px]">
                   <tr>
                     <th className="py-3 px-4">Modelo / Proveedor</th>
-                    <th className="py-3 px-4">Rol en la Cascada</th>
-                    <th className="py-3 px-4">Tokens Usados</th>
+                    <th className="py-3 px-4">Rol / Canal</th>
+                    <th className="py-3 px-4">Tokens / Envíos</th>
                     <th className="py-3 px-4">Latencia Promedio</th>
                     <th className="py-3 px-4">Costo USD</th>
                     <th className="py-3 px-4 text-right">Estado</th>
@@ -394,6 +436,31 @@ export default function AiModelsPage() {
                       </tr>
                     );
                   })}
+                  {/* Meta Cloud API (WhatsApp Business) Templates */}
+                  <tr className="hover:bg-emerald-50/40 bg-emerald-50/20 transition border-t-2 border-emerald-100">
+                    <td className="py-3 px-4 font-bold text-gray-900 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      Meta Cloud API (WhatsApp)
+                    </td>
+                    <td className="py-3 px-4 text-emerald-800 font-medium">
+                      Plantillas HSM Salientes (Ventana 24h)
+                    </td>
+                    <td className="py-3 px-4 font-mono font-bold text-gray-800">
+                      {totalTemplates} envíos
+                    </td>
+                    <td className="py-3 px-4 font-mono text-gray-500">
+                      ~120 ms
+                    </td>
+                    <td className="py-3 px-4 font-mono font-bold text-emerald-700">
+                      ${metaTemplatesCostUsd} <span className="text-[10px] text-gray-500 font-normal">($0.06/u)</span>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border border-emerald-200 text-emerald-700 bg-emerald-50">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        Activo (Meta Verified)
+                      </span>
+                    </td>
+                  </tr>
                 </tbody>
               </table>
             </div>
