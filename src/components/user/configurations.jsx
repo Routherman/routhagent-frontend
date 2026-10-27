@@ -38,16 +38,18 @@ export default function Configurations() {
               key={color.id}
               onClick={() => changeTheme(color.id)}
               className={`relative flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${
-                activeTheme === color.id ? 'border-gray-900 shadow-md' : 'border-gray-100 hover:border-gray-300'
+                activeTheme === color.id 
+                  ? 'border-gray-900 dark:border-sky-400 shadow-lg bg-black/5 dark:bg-sky-500/10' 
+                  : 'border-gray-100 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20'
               }`}
             >
               <div 
-                className="w-12 h-12 rounded-full mb-3 shadow-inner"
+                className="w-12 h-12 rounded-full mb-3 shadow-inner border border-white/20"
                 style={{ backgroundColor: color.hex }}
               />
-              <span className="text-sm font-medium text-gray-700">{color.name}</span>
+              <span className="text-sm font-bold text-gray-700 dark:text-white">{color.name}</span>
               {activeTheme === color.id && (
-                <div className="absolute top-3 right-3 w-5 h-5 bg-gray-900 rounded-full flex items-center justify-center">
+                <div className="absolute top-3 right-3 w-5 h-5 bg-gray-900 dark:bg-sky-500 rounded-full flex items-center justify-center shadow-md">
                   <Check className="w-3 h-3 text-white" />
                 </div>
               )}

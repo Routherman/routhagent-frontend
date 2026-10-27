@@ -85,17 +85,17 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-[#f8f9fa] border-l border-r border-gray-100 min-w-0 relative">
+    <div className="flex-1 flex flex-col bg-[#f8f9fa] dark:bg-[#080d19] border-l border-r border-gray-100 dark:border-white/10 min-w-0 relative">
       {/* Chat Header */}
       <div 
-        className="h-[76px] min-h-[76px] flex items-center justify-between px-6 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
+        className="h-[76px] min-h-[76px] flex items-center justify-between px-6 border-b border-gray-100 dark:border-white/10 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
         onClick={onHeaderClick}
       >
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="font-bold text-[15px] text-gray-900">{contact?.name || 'Desconocido'} ({contact?.telefono || ''})</h2>
+            <h2 className="font-bold text-[15px] text-gray-900 dark:text-white">{contact?.name || 'Desconocido'} ({contact?.telefono || ''})</h2>
             {contact?.categoria && contact?.categoria !== 'general' && (
-              <span className="bg-gray-200 text-gray-700 text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
+              <span className="bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-slate-300 text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
                 {contact.categoria}
               </span>
             )}
@@ -106,32 +106,32 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
             ) : (
                <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></span>
             )}
-            <span className="text-[12px] text-gray-500">{contact?.estado_bot === 'ACTIVO' ? 'IA Respondiendo' : 'Pausado (Modo Humano)'}</span>
+            <span className="text-[12px] text-gray-500 dark:text-slate-400">{contact?.estado_bot === 'ACTIVO' ? 'IA Respondiendo' : 'Pausado (Modo Humano)'}</span>
             {isWithin24Hours && (
-              <span className="ml-2 text-[11px] font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded border border-green-100">
+              <span className="ml-2 text-[11px] font-medium text-green-600 dark:text-emerald-300 bg-green-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded border border-green-100 dark:border-emerald-800/40">
                 {remainingTimeStr}
               </span>
             )}
             {!isWithin24Hours && messages.length > 0 && (
-              <span className="ml-2 text-[11px] font-medium text-red-500 bg-red-50 px-2 py-0.5 rounded border border-red-100">
+              <span className="ml-2 text-[11px] font-medium text-red-500 dark:text-rose-300 bg-red-50 dark:bg-rose-950/50 px-2 py-0.5 rounded border border-red-100 dark:border-rose-800/40">
                 Fuera de la ventana de 24h
               </span>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-4 text-gray-500">
+        <div className="flex items-center gap-4 text-gray-500 dark:text-slate-400">
            {/* Botón para activar/desactivar la IA */}
            <button 
              onClick={(e) => { e.stopPropagation(); onToggleBot(contact); }}
-             className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${contact?.estado_bot === 'ACTIVO' ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}
+             className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${contact?.estado_bot === 'ACTIVO' ? 'bg-red-50 text-red-600 dark:bg-rose-950/40 dark:text-rose-300 hover:bg-red-100 dark:hover:bg-rose-900/50' : 'bg-green-50 text-green-600 dark:bg-emerald-950/40 dark:text-emerald-300 hover:bg-green-100 dark:hover:bg-emerald-900/50'}`}
            >
              {contact?.estado_bot === 'ACTIVO' ? 'Desactivar IA' : 'Activar IA'}
            </button>
            
-           <button className="hover:text-gray-800 transition-colors">
+           <button className="hover:text-gray-800 dark:hover:text-white transition-colors">
              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
            </button>
-           <button className="hover:text-gray-800 transition-colors">
+           <button className="hover:text-gray-800 dark:hover:text-white transition-colors">
              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
            </button>
         </div>
@@ -144,7 +144,7 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
             <div key={m.id} className={`flex flex-col max-w-[80%] ${m.isMine ? 'self-end items-end' : 'self-start items-start'}`}>
               
               {/* Message Bubble */}
-              <div className={`p-4 rounded-[20px] ${m.isMine ? 'bg-[#c2dce0] text-gray-800 rounded-tr-sm' : 'bg-white border border-gray-100 shadow-sm text-gray-600 rounded-tl-sm'}`}>
+              <div className={`p-4 rounded-[20px] ${m.isMine ? 'bg-sky-600 dark:bg-sky-500 text-white rounded-tr-sm shadow-sm' : 'bg-white dark:bg-[#11192a] border border-gray-100 dark:border-white/10 shadow-sm text-gray-700 dark:text-slate-100 rounded-tl-sm'}`}>
                 
                 {m.image && (
                   <div className="flex flex-col items-center">
@@ -223,46 +223,46 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
       
       {/* Input Area */}
       {isWithin24Hours || messages.length === 0 ? (
-        <div className="p-4 mx-6 mb-6 bg-white border border-gray-200 rounded-[20px] shadow-sm flex flex-col gap-3">
+        <div className="p-4 mx-6 mb-6 bg-white dark:bg-[#0d1322] border border-gray-200 dark:border-white/10 rounded-[20px] shadow-sm flex flex-col gap-3">
            <input 
               type="text" 
               placeholder="Enter to send, Shift + Enter to add new line" 
-              className="w-full outline-none text-[14px] text-gray-700 bg-transparent placeholder-gray-300"
+              className="w-full outline-none text-[14px] text-gray-700 dark:text-slate-100 bg-transparent placeholder-gray-400 dark:placeholder-slate-500"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
            />
-           <div className="flex justify-between items-center text-gray-400 pt-3 border-t border-gray-50 mt-1">
+           <div className="flex justify-between items-center text-gray-400 dark:text-slate-400 pt-3 border-t border-gray-50 dark:border-white/10 mt-1">
               <div className="flex gap-4 items-center">
-                <span className="font-serif font-bold text-[15px] cursor-pointer hover:text-gray-600 transition-colors">B</span>
-                <span className="font-serif italic text-[15px] cursor-pointer hover:text-gray-600 transition-colors">I</span>
-                <span className="font-serif underline text-[15px] cursor-pointer hover:text-gray-600 transition-colors">U</span>
-                <div className="w-px h-4 bg-gray-200 mx-1"></div>
-                <svg className="w-[18px] h-[18px] cursor-pointer hover:text-gray-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" /></svg>
-                <svg className="w-[18px] h-[18px] cursor-pointer hover:text-gray-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" /></svg>
+                <span className="font-serif font-bold text-[15px] cursor-pointer hover:text-gray-600 dark:hover:text-white transition-colors">B</span>
+                <span className="font-serif italic text-[15px] cursor-pointer hover:text-gray-600 dark:hover:text-white transition-colors">I</span>
+                <span className="font-serif underline text-[15px] cursor-pointer hover:text-gray-600 dark:hover:text-white transition-colors">U</span>
+                <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1"></div>
+                <svg className="w-[18px] h-[18px] cursor-pointer hover:text-gray-600 dark:hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" /></svg>
+                <svg className="w-[18px] h-[18px] cursor-pointer hover:text-gray-600 dark:hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" /></svg>
               </div>
               <div className="flex gap-4 items-center">
-                <svg className="w-5 h-5 cursor-pointer hover:text-gray-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-                <svg className="w-5 h-5 cursor-pointer hover:text-gray-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+                <svg className="w-5 h-5 cursor-pointer hover:text-gray-600 dark:hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                <svg className="w-5 h-5 cursor-pointer hover:text-gray-600 dark:hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
               </div>
            </div>
         </div>
       ) : (
         <div className="p-4 mx-6 mb-6">
           {templateSent ? (
-            <div className="w-full py-5 px-6 bg-gray-50 border border-gray-200 rounded-2xl flex flex-col items-center gap-2 text-center">
-              <div className="flex items-center gap-2 text-green-600">
+            <div className="w-full py-5 px-6 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl flex flex-col items-center gap-2 text-center">
+              <div className="flex items-center gap-2 text-green-600 dark:text-emerald-400">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
                 <span className="font-bold text-sm">Plantilla enviada</span>
               </div>
-              <p className="text-gray-500 text-xs">Esperando respuesta del cliente para reabrir la conversación.</p>
+              <p className="text-gray-500 dark:text-slate-400 text-xs">Esperando respuesta del cliente para reabrir la conversación.</p>
             </div>
           ) : (
             <button 
               onClick={handleOpenTemplates}
-              className="w-full py-4 bg-gray-900 text-white font-bold rounded-2xl hover:bg-black transition-colors flex items-center justify-center gap-2"
+              className="w-full py-4 bg-gray-900 dark:bg-sky-600 hover:dark:bg-sky-500 text-white font-bold rounded-2xl hover:bg-black transition-colors flex items-center justify-center gap-2 border border-white/10"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
@@ -275,9 +275,9 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
 
       {/* Template Modal */}
       {showTemplateModal && (
-        <div className="absolute inset-0 bg-white z-50 flex flex-col">
+        <div className="absolute inset-0 bg-white dark:bg-[#070b14] z-50 flex flex-col">
           {/* Header del modal */}
-          <div className="h-[76px] min-h-[76px] flex items-center justify-between px-6 border-b border-gray-100 bg-white">
+          <div className="h-[76px] min-h-[76px] flex items-center justify-between px-6 border-b border-gray-100 dark:border-white/10 bg-white dark:bg-[#0d1322]">
             <div>
               <h3 className="text-lg font-bold text-gray-900">Seleccionar Plantilla de Meta</h3>
               <p className="text-gray-500 text-xs mt-0.5">Debes seleccionar una plantilla aprobada para reabrir la ventana.</p>

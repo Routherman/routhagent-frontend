@@ -4,22 +4,19 @@ import { useTheme } from '@/context/ThemeContext';
 import FloatingCopilot from './FloatingCopilot';
 
 export default function ThemeWrapper({ children }) {
-    const { themeData } = useTheme();
-
-    // Determine if the text in the Sidebar/Navigation should be dark or light 
-    // based on the background color. (Using a simple check since we know our colors)
-    const isLightBg = themeData.id === 'yellow';
+    const { activeTheme, themeData, isDark } = useTheme();
+    const isLightBg = activeTheme === 'yellow';
 
     return (
         <div 
-            className="h-screen w-full flex p-2 md:p-3 font-sans overflow-hidden transition-colors duration-500 ease-in-out relative"
+            className={`h-screen w-full flex p-2 md:p-3 font-sans overflow-hidden transition-colors duration-300 ease-in-out relative ${isDark ? 'dark bg-[#060911]' : 'bg-[#DBDF1F]'}`}
             style={{ 
-                backgroundColor: themeData.hex,
-                color: isLightBg ? '#1a1c1e' : '#ffffff' 
+                backgroundColor: themeData?.hex || (isDark ? '#060911' : '#DBDF1F'),
+                color: isLightBg ? '#1a1c1e' : '#f8fafc' 
             }}
         >
-            {/* The CSS variable will help child components like Sidebar easily inherit text colors if needed */}
-            <div className={`flex w-full h-full ${isLightBg ? 'theme-light' : 'theme-dark'}`}>
+            {/* The CSS classes ensure child components easily inherit text and dark styles */}
+            <div className={`flex w-full h-full ${isLightBg ? 'theme-light' : 'theme-dark dark'}`}>
                 {children}
             </div>
 

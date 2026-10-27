@@ -199,15 +199,15 @@ export default function MessagesPanel() {
 
   if (!isLoaded || loading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center h-full bg-white rounded-[32px]">
-        <div className="w-8 h-8 border-4 border-gray-200 border-t-[#c2dce0] rounded-full animate-spin mb-4"></div>
-        <p className="text-sm text-gray-500 font-medium">Cargando bandeja de entrada...</p>
+      <div className="flex-1 flex flex-col items-center justify-center h-full bg-white dark:bg-[#070b14] rounded-[32px]">
+        <div className="w-8 h-8 border-4 border-gray-200 dark:border-white/20 border-t-[#c2dce0] dark:border-t-sky-400 rounded-full animate-spin mb-4"></div>
+        <p className="text-sm text-gray-500 dark:text-slate-400 font-medium">Cargando bandeja de entrada...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-white rounded-[32px] shadow-sm relative">
+    <div className="flex h-full w-full overflow-hidden bg-white dark:bg-[#070b14] rounded-[32px] shadow-sm relative">
       {view === 'massive' ? (
         <MassivePanel contacts={contacts} onCancel={() => setView('chat')} codigoEmpresa={codigoEmpresa} />
       ) : (
@@ -233,12 +233,12 @@ export default function MessagesPanel() {
               onToggleBot={handleToggleBot}
             />
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center bg-[#f8f9fa] border-l border-r border-gray-100">
-              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+            <div className="flex-1 flex flex-col items-center justify-center bg-[#f8f9fa] dark:bg-[#090e1a] border-l border-r border-gray-100 dark:border-white/10">
+              <div className="w-16 h-16 bg-gray-200 dark:bg-white/10 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-8 h-8 text-gray-400 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-700">No hay chats activos</h3>
-              <p className="text-gray-500 mt-2 text-sm text-center max-w-sm">
+              <h3 className="text-xl font-bold text-gray-700 dark:text-white">No hay chats activos</h3>
+              <p className="text-gray-500 dark:text-slate-400 mt-2 text-sm text-center max-w-sm">
                 Cuando tu bot de WhatsApp reciba un mensaje, aparecerá aquí automáticamente.
               </p>
             </div>

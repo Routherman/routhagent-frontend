@@ -1,26 +1,269 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  color-scheme: light;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --background: #070b14;
+  --foreground: #f8fafc;
+  color-scheme: dark;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* ==========================================================================
+   SISTEMA DE MODO OSCURO UNIFICADO Y TOTAL (ALTO CONTRASTE)
+   Garantiza que TODAS las secciones, subsecciones, paneles, modales,
+   tablas y chats se vean oscuros de forma homogénea con contraste perfecto.
+   ========================================================================== */
+
+/* Fondo general de contenedor principal y cabeceras */
+.dark main,
+.dark [class*="bg-[#EAE8E3]"],
+.dark [class*="bg-[#f8f9fa]"],
+.dark [class*="bg-[#f0f2f5]"],
+.dark [class*="bg-[#f3f4f6]"],
+.dark [class*="bg-[#f9fafb]"],
+.dark [class*="bg-[#fafafa]"] {
+  background-color: #070b14 !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark header {
+  background-color: transparent !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Tarjetas y superficies blancas transformadas en superficies oscuras de alta gama */
+.dark .bg-white,
+.dark [class*="bg-white/9"],
+.dark [class*="bg-white/8"] {
+  background-color: #0d1322 !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Superficies intermedias (pills, filtros, headers de tabla, barras secundarias con y sin opacidad) */
+.dark .bg-gray-50,
+.dark .bg-gray-100,
+.dark [class*="bg-gray-50"],
+.dark [class*="bg-gray-100"],
+.dark [class*="bg-slate-50"],
+.dark [class*="bg-slate-100"],
+.dark [class*="bg-zinc-50"] {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .bg-gray-200,
+.dark [class*="bg-gray-200"],
+.dark [class*="bg-slate-200"] {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Badges y etiquetas temáticas en modo oscuro con alto contraste */
+.dark [class*="bg-emerald-50"],
+.dark [class*="bg-emerald-100"] {
+  background-color: rgba(16, 185, 129, 0.16) !important;
+  color: #6ee7b7 !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+}
+
+.dark [class*="bg-blue-50"],
+.dark [class*="bg-blue-100"] {
+  background-color: rgba(59, 130, 246, 0.16) !important;
+  color: #93c5fd !important;
+  border-color: rgba(59, 130, 246, 0.35) !important;
+}
+
+.dark [class*="bg-indigo-50"],
+.dark [class*="bg-indigo-100"] {
+  background-color: rgba(99, 102, 241, 0.16) !important;
+  color: #a5b4fc !important;
+  border-color: rgba(99, 102, 241, 0.35) !important;
+}
+
+.dark [class*="bg-sky-50"],
+.dark [class*="bg-sky-100"] {
+  background-color: rgba(14, 165, 233, 0.16) !important;
+  color: #7dd3fc !important;
+  border-color: rgba(14, 165, 233, 0.35) !important;
+}
+
+.dark [class*="bg-purple-50"],
+.dark [class*="bg-purple-100"] {
+  background-color: rgba(168, 85, 247, 0.16) !important;
+  color: #d8b4fe !important;
+  border-color: rgba(168, 85, 247, 0.35) !important;
+}
+
+.dark [class*="bg-amber-50"],
+.dark [class*="bg-amber-100"],
+.dark [class*="bg-yellow-50"],
+.dark [class*="bg-yellow-100"] {
+  background-color: rgba(245, 158, 11, 0.16) !important;
+  color: #fde68a !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+}
+
+.dark [class*="bg-red-50"],
+.dark [class*="bg-red-100"] {
+  background-color: rgba(239, 68, 68, 0.16) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(239, 68, 68, 0.35) !important;
+}
+
+/* Tipografía de Alto Contraste en Modo Oscuro */
+.dark .text-gray-950,
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-slate-900,
+.dark .text-slate-800,
+.dark .text-zinc-900,
+.dark .text-zinc-800,
+.dark .text-black {
+  color: #ffffff !important;
+}
+
+.dark .text-gray-700,
+.dark .text-gray-600,
+.dark .text-slate-700,
+.dark .text-slate-600,
+.dark .text-zinc-700,
+.dark .text-zinc-600 {
+  color: #cbd5e1 !important;
+}
+
+.dark .text-gray-500,
+.dark .text-slate-500,
+.dark .text-zinc-500 {
+  color: #94a3b8 !important;
+}
+
+.dark .text-gray-400,
+.dark .text-slate-400,
+.dark .text-zinc-400 {
+  color: #64748b !important;
+}
+
+/* Bordes y divisores en modo oscuro */
+.dark [class*="border-gray-50"],
+.dark [class*="border-gray-100"],
+.dark [class*="border-gray-200"],
+.dark [class*="border-slate-100"],
+.dark [class*="border-slate-200"] {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark [class*="border-gray-300"],
+.dark [class*="border-slate-300"] {
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+.dark [class*="divide-gray-50"] > :not([hidden]) ~ :not([hidden]),
+.dark [class*="divide-gray-100"] > :not([hidden]) ~ :not([hidden]),
+.dark [class*="divide-gray-200"] > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* Tablas en modo oscuro */
+.dark table thead th {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark table tbody tr {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.dark table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+.dark table td {
+  color: #e2e8f0 !important;
+}
+
+/* Inputs, Selects, Options y Textareas en modo oscuro */
+.dark input[type="text"],
+.dark input[type="search"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark input[type="number"],
+.dark input[type="date"],
+.dark input[type="time"],
+.dark input[type="datetime-local"],
+.dark select,
+.dark textarea {
+  background-color: #090e1a !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+.dark select option {
+  background-color: #0d1322 !important;
+  color: #f8fafc !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2) !important;
+}
+
+/* Modales y sombras */
+.dark .shadow-sm,
+.dark .shadow-md,
+.dark .shadow-lg,
+.dark .shadow-xl,
+.dark .shadow-2xl {
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Botones negros sobre fondos oscuros: otorgarles relieve y contraste */
+.dark .bg-black,
+.dark .bg-gray-950,
+.dark .bg-gray-900 {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Scrollbars estilizados */
+.dark ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #070b14;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
 }

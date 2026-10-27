@@ -56,19 +56,19 @@ export default function Header() {
   }, [user]);
 
   return (
-    <header className="flex items-center justify-between pt-8 pb-4 px-8 relative">
-      <h1 className="text-[28px] font-bold text-gray-900 tracking-tight">Routh Agent</h1>
+    <header className="flex items-center justify-between pt-8 pb-4 px-8 relative bg-transparent text-gray-900 dark:text-white transition-colors">
+      <h1 className="text-[28px] font-bold text-gray-900 dark:text-white tracking-tight">Routh Agent</h1>
 
       <div className="flex items-center gap-3">
         {/* Search */}
-        <button className="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 transition-colors">
+        <button className="w-10 h-10 rounded-full bg-gray-50 dark:bg-slate-800/80 hover:bg-gray-100 dark:hover:bg-slate-700 border border-transparent dark:border-white/10 flex items-center justify-center text-gray-500 dark:text-slate-300 transition-colors shadow-sm">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-[18px] h-[18px]">
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
           </svg>
         </button>
 
         {/* Notifications */}
-        <button className="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 transition-colors relative">
+        <button className="w-10 h-10 rounded-full bg-gray-50 dark:bg-slate-800/80 hover:bg-gray-100 dark:hover:bg-slate-700 border border-transparent dark:border-white/10 flex items-center justify-center text-gray-500 dark:text-slate-300 transition-colors relative shadow-sm">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-[18px] h-[18px]">
             <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
           </svg>
@@ -79,7 +79,7 @@ export default function Header() {
         <div className="relative ml-1" ref={dropdownRef}>
           <div 
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center gap-2.5 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full pl-1.5 pr-4 py-1.5 cursor-pointer transition-colors"
+            className="flex items-center gap-2.5 bg-gray-50 dark:bg-slate-800/80 hover:bg-gray-100 dark:hover:bg-slate-700 border border-transparent dark:border-white/10 rounded-full pl-1.5 pr-4 py-1.5 cursor-pointer transition-colors shadow-sm"
           >
             {user ? (
               <>
@@ -88,7 +88,7 @@ export default function Header() {
                   alt={user.firstName || 'Usuario'}
                   className="w-7 h-7 rounded-full object-cover"
                 />
-                <span className="text-[13px] font-semibold text-gray-700 dark:text-gray-200">
+                <span className="text-[13px] font-semibold text-gray-700 dark:text-white">
                   {user.firstName || 'Usuario'}
                 </span>
               </>
@@ -105,7 +105,7 @@ export default function Header() {
               viewBox="0 0 24 24" 
               strokeWidth={2.5} 
               stroke="currentColor" 
-              className={`w-3 h-3 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+              className={`w-3 h-3 text-gray-400 dark:text-slate-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
             </svg>
@@ -113,17 +113,17 @@ export default function Header() {
 
           {/* Dropdown Menu */}
           {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 py-2 z-50">
+            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-white/15 py-2 z-50">
               <Link 
                 href="/dashboard/user" 
                 onClick={() => setIsDropdownOpen(false)}
-                className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium"
+                className="block px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-white/10 font-medium"
               >
                 Configuraciones
               </Link>
               <button 
                 onClick={() => signOut({ redirectUrl: '/' })}
-                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 font-medium"
+                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 font-medium"
               >
                 Cerrar sesión
               </button>

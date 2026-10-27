@@ -74,14 +74,14 @@ export default function UserPanel() {
     }
 
     return (
-        <div className="w-full h-full bg-[#EAE8E3] flex flex-col relative font-sans">
+        <div className="w-full h-full bg-[#EAE8E3] dark:bg-[#070b14] flex flex-col relative font-sans text-gray-800 dark:text-white transition-colors">
             {/* Top Header Area */}
             <div className="flex items-center justify-between px-6 pt-6 pb-4">
                 <div className="flex items-center gap-4">
-                    <h1 className="text-3xl font-medium text-gray-800 tracking-tight">Usuario</h1>
+                    <h1 className="text-3xl font-bold text-gray-800 dark:text-white tracking-tight">Usuario</h1>
                 </div>
 
-                <div className="flex bg-white/50 backdrop-blur-md rounded-full p-1.5 shadow-sm items-center gap-1">
+                <div className="flex bg-white/50 dark:bg-slate-900/90 backdrop-blur-md rounded-full p-1.5 shadow-sm items-center gap-1 border border-transparent dark:border-white/10">
                     {tabs.map((tab) => {
                         const isActive = activeTab === tab.id;
                         return (
@@ -89,8 +89,8 @@ export default function UserPanel() {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${isActive
-                                    ? 'bg-white shadow-sm text-gray-800'
-                                    : 'text-gray-500 hover:text-gray-800 hover:bg-white/50'
+                                    ? 'bg-white dark:bg-slate-800 shadow-sm text-gray-800 dark:text-white font-bold'
+                                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10'
                                     }`}
                             >
                                 <tab.icon className="w-4 h-4" />
