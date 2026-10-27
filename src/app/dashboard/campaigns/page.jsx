@@ -896,44 +896,44 @@ export default function CampaignsPage() {
           {activeTab === 'meta' && (
             <div className="flex-1 flex flex-col overflow-hidden space-y-5 animate-in fade-in duration-200">
               
-              {/* Tarjetas de Métricas WhatsApp */}
+              {/* Tarjetas de Métricas WhatsApp con Alto Contraste */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-                <div className="bg-[#f8fafc] border border-slate-200 rounded-2xl p-4">
-                  <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Campañas WhatsApp</p>
-                  <p className="text-2xl font-black text-slate-900 mt-1">{metaCampaigns.length}</p>
+                <div className="bg-white dark:bg-[#0c1424] border border-slate-200 dark:border-white/10 rounded-2xl p-4 shadow-sm">
+                  <p className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Campañas WhatsApp</p>
+                  <p className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1">{metaCampaigns.length}</p>
                 </div>
-                <div className="bg-[#f8fafc] border border-slate-200 rounded-2xl p-4">
-                  <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Total Enviados</p>
-                  <p className="text-2xl font-black text-slate-900 mt-1">{metaEnviados}</p>
+                <div className="bg-white dark:bg-[#0c1424] border border-slate-200 dark:border-white/10 rounded-2xl p-4 shadow-sm">
+                  <p className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Enviados</p>
+                  <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{metaEnviados}</p>
                 </div>
-                <div className="bg-[#f8fafc] border border-slate-200 rounded-2xl p-4">
-                  <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Entregados en Celular</p>
-                  <p className="text-2xl font-black text-emerald-600 mt-1">{metaEntregados}</p>
+                <div className="bg-white dark:bg-[#0c1424] border border-slate-200 dark:border-white/10 rounded-2xl p-4 shadow-sm">
+                  <p className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Entregados en Celular</p>
+                  <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{metaEntregados}</p>
                 </div>
-                <div className="bg-[#f8fafc] border border-slate-200 rounded-2xl p-4">
-                  <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Tasa de Respuesta Bot</p>
+                <div className="bg-white dark:bg-[#0c1424] border border-slate-200 dark:border-white/10 rounded-2xl p-4 shadow-sm">
+                  <p className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tasa de Respuesta Bot</p>
                   <div className="flex items-baseline gap-2 mt-1">
-                    <p className="text-2xl font-black text-indigo-600">{metaTasaRespuesta}%</p>
-                    <span className="text-xs font-bold text-indigo-800">({metaRespondidos})</span>
+                    <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400">{metaTasaRespuesta}%</p>
+                    <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">({metaRespondidos})</span>
                   </div>
                 </div>
               </div>
 
               {/* Barra de Acciones */}
-              <div className="flex justify-between items-center bg-emerald-50/70 border border-emerald-200/80 p-4 rounded-2xl">
+              <div className="flex justify-between items-center bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-500/20 p-4 rounded-2xl">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-xs">
                     <MessageSquare className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-emerald-950">Disparador de Campañas WhatsApp Meta</h3>
-                    <p className="text-xs font-semibold text-emerald-700">Envíos masivos con multimedia adjunta (audios de voz PTT, imágenes y PDFs)</p>
+                    <h3 className="text-sm font-black text-emerald-950 dark:text-emerald-100">Disparador de Campañas WhatsApp Meta</h3>
+                    <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300/80">Envíos masivos con multimedia adjunta (audios de voz PTT, imágenes y PDFs)</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <button
                     onClick={() => handleTabChange('templates')}
-                    className="px-3.5 py-2 rounded-xl bg-white border border-emerald-300 text-xs font-extrabold text-emerald-900 hover:bg-emerald-50 transition"
+                    className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-500/30 text-xs font-extrabold text-emerald-900 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-slate-800 transition"
                   >
                     Ver Plantillas WhatsApp ({plantillas.filter(p => p.tipo === 'whatsapp').length})
                   </button>

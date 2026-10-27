@@ -88,8 +88,8 @@ export default function Sidebar() {
           setEmpresaCode(codigoEmpresa);
           const pollStatus = async () => {
             try {
-              // 1. Polling de contactos y handoffs
-              const res = await fetch(`${API_URL}/contacts/${codigoEmpresa}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+              // 1. Polling de contactos y handoffs (solo los que tienen mensajes)
+              const res = await fetch(`${API_URL}/contacts/${codigoEmpresa}?onlyWithMessages=true`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
               const data = await res.json();
 
               let currentHandoffs = 0;
@@ -111,7 +111,8 @@ export default function Sidebar() {
                     }
                   }
 
-                  if (c.estado_bot === 'HANDOFF' || c.estado_resolucion === 'PENDIENTE' || (c.unread_count && c.unread_count > 0)) {
+                  // Solo mostrar los que están en pendiente o de atención humana (HANDOFF)
+                  if (c.estado_bot === 'HANDOFF' || c.estado_resolucion === 'PENDIENTE') {
                     attentionCount++;
                   }
                 });

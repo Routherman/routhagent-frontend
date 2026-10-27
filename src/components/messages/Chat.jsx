@@ -13,6 +13,23 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
   const [showNewResponseModal, setShowNewResponseModal] = useState(false);
   const [newResponseTitle, setNewResponseTitle] = useState('');
   const [newResponseText, setNewResponseText] = useState('');
+  const [newResponseActivateBot, setNewResponseActivateBot] = useState(false);
+  const [calendarSlots, setCalendarSlots] = useState([]);
+
+  // Cargar slots de calendario oficiales desde la base de datos de la empresa
+  useEffect(() => {
+    const empCode = contact?.codigo_empresa || 'KRZMJI';
+    fetch(`${API_URL}/empresas/${empCode}/calendar/slots`, { 
+      headers: { 'ngrok-skip-browser-warning': 'true' } 
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.slots)) {
+          setCalendarSlots(data.slots);
+        }
+      })
+      .catch(err => console.warn('Chat calendar slots:', err));
+  }, [contact?.codigo_empresa]);
 
   // Cargar respuestas rápidas guardadas del operador desde localStorage
   useEffect(() => {
@@ -22,9 +39,9 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
         setCustomResponses(JSON.parse(saved));
       } else {
         const initial = [
-          { id: '1', title: 'Saludo Inicial', text: '¡Hola! Gracias por comunicarte con Colaboratium. ¿En qué podemos ayudarte hoy?' },
-          { id: '2', title: 'Derivación Asesor', text: 'Te estamos derivando con un asesor comercial senior de Colaboratium para darte atención inmediata.' },
-          { id: '3', title: 'Cierre y Gracias', text: '¡Muchas gracias por tu tiempo! Quedamos a tu entera disposición ante cualquier otra inquietud.' }
+          { id: '1', title: 'Saludo Inicial', text: '¡Hola! Gracias por comunicarte con Colaboratium. ¿En qué podemos ayudarte hoy?', activateBot: false },
+          { id: '2', title: 'Derivación Asesor', text: 'Te estamos derivando con un asesor comercial senior de Colaboratium para darte atención inmediata.', activateBot: false },
+          { id: '3', title: 'Cierre y Gracias', text: '¡Muchas gracias por tu tiempo! Quedamos a tu entera disposición ante cualquier otra inquietud.', activateBot: false }
         ];
         setCustomResponses(initial);
         localStorage.setItem('routh_operator_quick_responses', JSON.stringify(initial));
@@ -42,12 +59,18 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
     }
     const updated = [
       ...customResponses,
-      { id: Date.now().toString(), title: newResponseTitle.trim(), text: newResponseText.trim() }
+      { 
+        id: Date.now().toString(), 
+        title: newResponseTitle.trim(), 
+        text: newResponseText.trim(),
+        activateBot: newResponseActivateBot
+      }
     ];
     setCustomResponses(updated);
     localStorage.setItem('routh_operator_quick_responses', JSON.stringify(updated));
     setNewResponseTitle('');
     setNewResponseText('');
+    setNewResponseActivateBot(false);
     setShowNewResponseModal(false);
     toast.success('Respuesta rápida guardada con éxito');
   };
@@ -101,6 +124,20 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
     }
   }
 
+  // Generación dinámica de la respuesta de eventos con datos reales de la base de calendario
+  let dynamicCalendarText = 'El próximo Webinar Informativo para Asesores Comerciales es este Lunes a las 10:30 hs vía Google Meet. Te enviaremos el enlace directo 15 minutos antes del inicio.';
+  if (calendarSlots.length > 0) {
+    const isLider = contact?.grupo === 'LIDERES' || contact?.rol_asignado === 'Lideres';
+    const filteredSlots = calendarSlots
+      .filter(s => isLider ? (s.categoria === 'LIDERES' || s.categoria === 'all') : (s.categoria !== 'LIDERES'))
+      .slice(0, 3);
+    const chosenSlots = filteredSlots.length > 0 ? filteredSlots : calendarSlots.slice(0, 3);
+    const optionsText = chosenSlots.map((s, idx) => 
+      `• *Opción ${idx + 1}:* ${s.titulo} - ${s.fechaStr} a las ${s.horarioStr} (${s.modalidad === 'PRESENCIAL' ? 'Presencial: ' + (s.ubicacion || 'Vicente López') : 'Virtual Google Meet'})`
+    ).join('\n');
+    dynamicCalendarText = `¡Hola! Te compartimos los próximos encuentros y capacitaciones oficiales de Colaboratium:\n\n${optionsText}\n\nPor favor respondé con el *número de opción (1, 2 o 3)* y tu *correo electrónico* para registrarte y enviarte el acceso directo.`;
+  }
+
   // Sugerencias Inteligentes por Estadísticas de Consultas Frecuentes
   const defaultKnowledgeSuggestions = [
     {
@@ -119,7 +156,7 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
       id: 'webinar_meet',
       keywords: ['webinar', 'capacitacion', 'meet', 'reunion', 'horario', 'virtual', 'cuando es', 'charla', 'induccion'],
       title: '📅 Próximo Webinar & Meet Virtual',
-      text: 'El próximo Webinar Informativo para Asesores Comerciales es este Lunes a las 10:30 hs vía Google Meet. Te enviaremos el enlace directo 15 minutos antes del inicio.'
+      text: dynamicCalendarText
     },
     {
       id: 'inversiones',
@@ -342,7 +379,7 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
       
       {/* Quick Suggestions & Operator Responses Toolbar */}
       <div className="px-6 mb-2 flex flex-col gap-2">
-        {/* Sugerencia Inteligente según consulta del cliente (IA / Estadísticas) */}
+        {/* Sugerencia Inteligente según consulta del cliente (IA / Calendario / Estadísticas) */}
         {matchedSuggestion && (
           <div className="flex items-center gap-2 p-2.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 text-xs">
             <span className="flex items-center gap-1 font-bold text-amber-700 dark:text-amber-400 shrink-0">
@@ -352,15 +389,31 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
             <span className="font-semibold text-gray-800 dark:text-slate-200 truncate flex-1">
               {matchedSuggestion.title}
             </span>
-            <button
-              onClick={() => {
-                setInputValue(matchedSuggestion.text);
-                toast.success('Respuesta sugerida insertada en el mensaje');
-              }}
-              className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-black font-extrabold text-[11px] shadow-xs shrink-0 transition"
-            >
-              Insertar Respuesta
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={() => {
+                  setInputValue(matchedSuggestion.text);
+                  toast.success('Respuesta sugerida insertada en el mensaje');
+                }}
+                className="px-2.5 py-1 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-800 dark:text-white font-extrabold text-[11px] shadow-xs transition"
+              >
+                Insertar Respuesta
+              </button>
+              <button
+                onClick={() => {
+                  onSendMessage(matchedSuggestion.text);
+                  if (contact?.estado_bot !== 'ACTIVO' && onToggleBot) {
+                    onToggleBot(contact);
+                  }
+                  toast.success('Opciones de calendario enviadas y bot activado');
+                }}
+                className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-black font-extrabold text-[11px] shadow-xs transition flex items-center gap-1"
+                title="Envía la respuesta con los eventos y activa la IA para continuar la inscripción"
+              >
+                <Sparkles className="w-3 h-3 text-black" />
+                <span>Enviar y Activar IA</span>
+              </button>
+            </div>
           </div>
         )}
 
@@ -376,11 +429,19 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
               key={r.id}
               onClick={() => {
                 setInputValue(r.text);
-                toast.success(`Respuesta "${r.title}" cargada`);
+                if (r.activateBot && contact?.estado_bot !== 'ACTIVO' && onToggleBot) {
+                  onToggleBot(contact);
+                  toast.success(`Respuesta "${r.title}" cargada y bot activado`);
+                } else {
+                  toast.success(`Respuesta "${r.title}" cargada`);
+                }
               }}
               className="group flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 border border-transparent dark:border-white/10 shrink-0 cursor-pointer transition select-none"
-              title={r.text}
+              title={`${r.text}${r.activateBot ? ' (Activa IA al usar)' : ''}`}
             >
+              {r.activateBot && (
+                <Sparkles className="w-2.5 h-2.5 text-amber-500 shrink-0 animate-pulse" />
+              )}
               <span className="font-bold text-[11px]">{r.title}</span>
               <button
                 onClick={(e) => handleDeleteCustomResponse(r.id, e)}
@@ -504,6 +565,25 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
                   className="w-full px-3 py-2 text-xs font-semibold bg-gray-50 dark:bg-slate-900 text-gray-950 dark:text-white border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 />
               </div>
+
+              {/* Trigger opcional: Activar IA automáticamente al enviar esta respuesta */}
+              <label className="flex items-start gap-2.5 p-3 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50/70 dark:bg-slate-900 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800 transition">
+                <input
+                  type="checkbox"
+                  checked={newResponseActivateBot}
+                  onChange={(e) => setNewResponseActivateBot(e.target.checked)}
+                  className="w-4 h-4 mt-0.5 text-emerald-600 rounded focus:ring-emerald-500 border-gray-300"
+                />
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    Activar IA automáticamente al enviar esta respuesta
+                  </span>
+                  <span className="text-[10px] text-gray-500 dark:text-slate-400 mt-0.5">
+                    Al seleccionar esta respuesta rápida, reactivará el bot (estado ACTIVO) para que la IA continúe atendiendo al cliente.
+                  </span>
+                </div>
+              </label>
 
               <div className="flex justify-end gap-2 pt-2">
                 <button

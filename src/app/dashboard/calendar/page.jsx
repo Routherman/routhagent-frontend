@@ -67,10 +67,13 @@ export default function CalendarPage() {
     titulo: "",
     modalidad: "VIRTUAL",
     categoria: "ASESORES",
-    fecha: "",
-    horario: "",
+    fechaDate: new Date().toISOString().split('T')[0],
+    fecha: "Hoy",
+    horaInicio: "10:30",
+    horaFin: "12:00",
+    horario: "10:30 a 12:00 hs",
     cupos: 25,
-    meetLink: "https://meet.google.com/qmv-wqzk-hxo",
+    meetLink: "https://meet.google.com/new",
     ubicacion: "Google Meet"
   });
 
@@ -206,14 +209,25 @@ export default function CalendarPage() {
 
   const openCreateModal = (type = 'webinar') => {
     setCreateModalType(type);
+    const now = new Date();
+    const targetDate = new Date(now);
+    targetDate.setDate(now.getDate() + 1);
+    const dateStr = targetDate.toISOString().split('T')[0];
+    const dayName = targetDate.toLocaleDateString('es-AR', { weekday: 'long' });
+    const monthName = targetDate.toLocaleDateString('es-AR', { month: 'long' });
+    const fechaFormatted = `${dayName.charAt(0).toUpperCase() + dayName.slice(1)} ${targetDate.getDate()} de ${monthName.charAt(0).toUpperCase() + monthName.slice(1)}`;
+
     setCreateForm({
       titulo: type === 'webinar' ? 'Webinar Virtual de Capacitación Líderes' : 'Reunión Meet de Inversión',
       modalidad: 'VIRTUAL',
       categoria: type === 'webinar' ? 'LIDERES' : 'INVERSORES',
-      fecha: 'Lunes 26 de Octubre',
-      horario: '16:30 a 17:30 hs',
+      fechaDate: dateStr,
+      fecha: fechaFormatted,
+      horaInicio: '10:30',
+      horaFin: '12:00',
+      horario: '10:30 a 12:00 hs',
       cupos: type === 'webinar' ? 25 : 5,
-      meetLink: 'https://meet.google.com/qmv-wqzk-hxo',
+      meetLink: 'https://meet.google.com/new',
       ubicacion: 'Google Meet'
     });
     setShowCreateModal(true);
@@ -239,8 +253,11 @@ export default function CalendarPage() {
           modalidad: createForm.modalidad,
           categoria: createForm.categoria,
           fecha: createForm.fecha,
+          fechaDate: createForm.fechaDate,
           horario: createForm.horario,
-          meetLink: createForm.meetLink,
+          horaInicio: createForm.horaInicio,
+          horaFin: createForm.horaFin,
+          meetLink: createForm.meetLink || 'https://meet.google.com/new',
           ubicacion: createForm.ubicacion,
           cupos: parseInt(createForm.cupos, 10) || 25,
           userId: user?.id,
@@ -250,7 +267,12 @@ export default function CalendarPage() {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success("¡Evento creado y registrado en Google Calendar (colaboratium@gmail.com)!");
+        toast.success("¡Evento creado y registrado en Google Calendar (colaboratium@gmail.com)!", {
+          action: data.googleCalendarUrl ? {
+            label: "Ver en Google Calendar",
+            onClick: () => window.open(data.googleCalendarUrl, '_blank')
+          } : undefined
+        });
         setShowCreateModal(false);
         fetchSlots();
       } else {
@@ -1048,28 +1070,81 @@ export default function CalendarPage() {
                     </div>
                   </div>
 
+                  {/* Selector de Fecha Estilo Google Calendar */}
+                  <div>
+                    <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                      <CalendarIcon className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>Fecha del Evento (Desplegable Google Calendar)</span>
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      min={new Date().toISOString().split('T')[0]}
+                      value={createForm.fechaDate}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCreateForm(prev => {
+                          let str = prev.fecha;
+                          if (val) {
+                            const [y, m, d] = val.split('-').map(Number);
+                            const dt = new Date(y, m - 1, d);
+                            const dayName = dt.toLocaleDateString('es-AR', { weekday: 'long' });
+                            const monthName = dt.toLocaleDateString('es-AR', { month: 'long' });
+                            str = `${dayName.charAt(0).toUpperCase() + dayName.slice(1)} ${d} de ${monthName.charAt(0).toUpperCase() + monthName.slice(1)}`;
+                          }
+                          return { ...prev, fechaDate: val, fecha: str };
+                        });
+                      }}
+                      className="w-full mt-1 px-3 py-2 text-xs text-gray-900 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-bold cursor-pointer"
+                    />
+                    {createForm.fecha && (
+                      <p className="text-[10px] text-indigo-600 font-bold mt-1">
+                        📅 Fecha seleccionada: {createForm.fecha}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Horario de Inicio y Fin */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider">Fecha (ej. Lunes 26 de Octubre)</label>
+                      <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Hora Inicio</span>
+                      </label>
                       <input
-                        type="text"
+                        type="time"
                         required
-                        value={createForm.fecha}
-                        onChange={(e) => setCreateForm({ ...createForm, fecha: e.target.value })}
-                        placeholder="ej. Lunes 26 de Octubre"
-                        className="w-full mt-1 px-3 py-2 text-xs text-gray-900 placeholder-gray-500 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-bold"
+                        value={createForm.horaInicio}
+                        onChange={(e) => {
+                          const start = e.target.value;
+                          setCreateForm(prev => ({
+                            ...prev,
+                            horaInicio: start,
+                            horario: `${start} a ${prev.horaFin} hs`
+                          }));
+                        }}
+                        className="w-full mt-1 px-3 py-2 text-xs text-gray-900 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-bold cursor-pointer"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider">Horario (ej. 16:30 a 17:30 hs)</label>
+                      <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Hora Fin</span>
+                      </label>
                       <input
-                        type="text"
+                        type="time"
                         required
-                        value={createForm.horario}
-                        onChange={(e) => setCreateForm({ ...createForm, horario: e.target.value })}
-                        placeholder="ej. 16:30 a 17:30 hs"
-                        className="w-full mt-1 px-3 py-2 text-xs text-gray-900 placeholder-gray-500 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-bold"
+                        value={createForm.horaFin}
+                        onChange={(e) => {
+                          const end = e.target.value;
+                          setCreateForm(prev => ({
+                            ...prev,
+                            horaFin: end,
+                            horario: `${prev.horaInicio} a ${end} hs`
+                          }));
+                        }}
+                        className="w-full mt-1 px-3 py-2 text-xs text-gray-900 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-bold cursor-pointer"
                       />
                     </div>
                   </div>
@@ -1088,12 +1163,23 @@ export default function CalendarPage() {
                     </div>
 
                     <div className="col-span-2">
-                      <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider">Sala Google Meet</label>
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider">Sala Google Meet</label>
+                        <a
+                          href="https://meet.google.com/new"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[10px] text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1 transition"
+                        >
+                          <Video className="w-3 h-3" />
+                          <span>Iniciar Sala Nueva</span>
+                        </a>
+                      </div>
                       <input
                         type="text"
                         value={createForm.meetLink}
                         onChange={(e) => setCreateForm({ ...createForm, meetLink: e.target.value })}
-                        placeholder="https://meet.google.com/..."
+                        placeholder="https://meet.google.com/new"
                         className="w-full mt-1 px-3 py-2 text-xs text-gray-900 placeholder-gray-500 bg-white border border-gray-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-black font-mono font-bold"
                       />
                     </div>

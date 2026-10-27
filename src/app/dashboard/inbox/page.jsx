@@ -52,7 +52,7 @@ const EMAIL_TEMPLATES = [
     body: `¡Hola! Te confirmamos tu lugar en el Webinar Virtual de Capacitación para Asesores Comerciales de Colaboratium (Global Loan S.A., Registro Oficial BCRA Nº 40.015).
 
 💻 Acceso directo a Google Meet:
-https://meet.google.com/qmv-wqzk-hxo
+https://meet.google.com/new
 
 En esta sesión de 40 minutos veremos:
 1. Esquema de comisiones (4%, 5% y 6%) y devengamiento inmediato al calce (3%).
@@ -959,7 +959,7 @@ export default function InboxPage() {
 
                   <button
                     onClick={() => {
-                      navigator.clipboard.writeText("https://meet.google.com/qmv-wqzk-hxo");
+                      navigator.clipboard.writeText("https://meet.google.com/new");
                       toast.success("Enlace de Google Meet copiado");
                     }}
                     className="px-4 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold transition flex items-center gap-1.5"

@@ -850,6 +850,11 @@ export default function Equipo({ userData, privilegios }) {
                                                         <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-gray-200/80 text-gray-700">
                                                             {log.entidad}
                                                         </span>
+                                                        {log.detalles?.includes('Tiempo') && (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                                                ⏱️ {log.detalles.match(/Tiempo[^:.]*:?\s*[^,.]+/)?.[0] || 'Tiempo registrado'}
+                                                            </span>
+                                                        )}
                                                         <span className="text-[10px] text-gray-400 font-mono">
                                                             {log.google_scope || 'colaboratium@gmail.com'}
                                                         </span>

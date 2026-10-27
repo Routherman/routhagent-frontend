@@ -304,13 +304,20 @@ export default function TicketsPage() {
   // Actualizar estado de ticket directamente desde selector
   const handleUpdateStatus = async (ticketId, newStatus) => {
     try {
+      const opName = `${currentUserData?.first_name || ''} ${currentUserData?.last_name || ''}`.trim() || user?.firstName || 'Operador';
+      const opRole = currentUserData?.rol_nombre || 'Soporte';
       const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/tickets/${ticketId}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
           'ngrok-skip-browser-warning': 'true'
         },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ 
+          status: newStatus,
+          usuario_nombre: opName,
+          userRole: opRole,
+          userId: user?.id
+        })
       });
       const data = await res.json();
       if (data.success) {

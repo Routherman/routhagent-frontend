@@ -312,7 +312,7 @@ export default function FloatingCopilot() {
 
         <div class="section-title">Auditoría de Calendario & Webinars de Capacitación</div>
         <p style="font-size: 12px; color: #475569; line-height: 1.6;">
-          • Sesión Virtual Oficial Google Meet: <code>meet.google.com/qmv-wqzk-hxo</code>.<br>
+          • Sesión Virtual Oficial Google Meet: <code>meet.google.com/new</code>.<br>
           • Presencial Vicente López: Miércoles 14:30 hs.<br>
           • Inscripción de Asesores: Devengamiento 3% al calce inmediato, esquema de comisiones al 4%, 5% y 6%.
         </p>
