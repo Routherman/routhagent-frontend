@@ -6,13 +6,14 @@ import Sidebar from '@/components/dashboard/Sidebar';
 import Panel from '@/components/dashboard/Panel';
 import Header from '@/components/dashboard/Header';
 import Link from 'next/link';
+import { Workflow, Plus, Trash2, Zap, Play, ArrowRight, Sparkles, MessageSquare } from 'lucide-react';
 import { API_URL } from '@/config/api';
 
 export default function FlowsPage() {
   const { user, isLoaded } = useUser();
   const [flows, setFlows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [codigoEmpresa, setCodigoEmpresa] = useState(null);
+  const [codigoEmpresa, setCodigoEmpresa] = useState('KRZMJI');
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,20 +26,20 @@ export default function FlowsPage() {
     fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } })
       .then(res => res.json())
       .then(userData => {
-        setCodigoEmpresa(userData.codigo_empresa);
-        if (userData.codigo_empresa) {
-          fetchFlows(userData.codigo_empresa);
-        }
+        const cod = userData.codigo_empresa || 'KRZMJI';
+        setCodigoEmpresa(cod);
+        fetchFlows(cod);
       })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
+      .catch(() => {
+        fetchFlows('KRZMJI');
       });
   }, [isLoaded, user]);
 
   const fetchFlows = async (codigo) => {
     try {
-      const res = await fetch(`${API_URL}/empresas/${codigo}/flujos`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+      const res = await fetch(`${API_URL}/empresas/${codigo}/flujos`, { 
+        headers: { 'ngrok-skip-browser-warning': 'true' } 
+      });
       const data = await res.json();
       setFlows(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -67,7 +68,8 @@ export default function FlowsPage() {
           id: 'node_trigger',
           type: 'webhook',
           name: 'Punto de Inicio',
-          position: { x: 50, y: 200 }
+          position: { x: 50, y: 200 },
+          data: {}
         }],
         edges: []
       };
@@ -110,7 +112,7 @@ export default function FlowsPage() {
   };
 
   const deleteFlow = async (id) => {
-    if(!confirm("¿Seguro que quieres eliminar este flujo?")) return;
+    if(!confirm("¿Seguro que deseas eliminar este flujo?")) return;
     try {
       const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/flujos/${id}`, {
         method: 'DELETE'
@@ -129,7 +131,10 @@ export default function FlowsPage() {
         <Sidebar />
         <Panel>
           <Header />
-          <div className="flex items-center justify-center h-full">Cargando flujos...</div>
+          <div className="flex flex-col items-center justify-center h-full gap-4 bg-slate-950 text-white">
+            <div className="w-10 h-10 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="font-mono text-sm tracking-widest text-slate-400">Cargando flujos...</p>
+          </div>
         </Panel>
       </>
     );
@@ -140,104 +145,171 @@ export default function FlowsPage() {
       <Sidebar />
       <Panel>
         <Header />
-        <div className="flex flex-col h-full w-full p-8 overflow-y-auto">
-          <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col h-full w-full p-8 overflow-y-auto bg-[#070b14] text-white">
+          
+          {/* Header Superior */}
+          <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
             <div>
-              <h2 className="text-3xl font-bold text-black mb-2">Flujos Conversacionales</h2>
-              <p className="text-black">Diseña diagramas para automatizar la atención paso a paso.</p>
-            </div>
-            <button 
-              onClick={openCreateModal}
-              className="bg-black text-[#c6f432] px-6 py-3 rounded-full font-semibold shadow-sm hover:scale-105 transition-transform"
-            >
-              + Nuevo Flujo
-            </button>
-          </div>
-
-          {flows.length === 0 ? (
-            <div className="bg-white rounded-[32px] p-12 text-center shadow-sm">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-10 h-10 text-black">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
-                </svg>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] font-black bg-sky-500/20 text-sky-400 border border-sky-500/30 px-2.5 py-0.5 rounded-full uppercase tracking-widest">
+                  Pipelines & Nodos
+                </span>
+                <span className="text-[10px] font-bold text-slate-400">Motor SaaSIA</span>
               </div>
-              <h3 className="text-xl font-bold text-black mb-2">Aún no tienes flujos</h3>
-              <p className="text-black mb-6">Crea flujos visuales para atender a tus clientes de manera guiada.</p>
+              <h2 className="text-3xl font-black text-white tracking-tight uppercase italic flex items-center gap-2">
+                Flujos Conversacionales
+              </h2>
+              <p className="text-slate-400 text-xs font-medium mt-1">
+                Diseña diagramas nodales interactivos y automatiza la atención con el Copiloto IA.
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-3">
               <button 
                 onClick={openCreateModal}
-                className="bg-black text-[#c6f432] px-6 py-3 rounded-full font-semibold shadow-sm hover:scale-105 transition-transform"
+                className="bg-gradient-to-r from-[#c6f432] to-emerald-400 hover:brightness-110 text-slate-950 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-[0_0_25px_rgba(198,244,50,0.3)] transition-all flex items-center gap-2 hover:scale-105 active:scale-95"
               >
-                Comenzar ahora
+                <Plus size={16} />
+                Nuevo Flujo Nodal
+              </button>
+            </div>
+          </div>
+
+          {/* Listado de Flujos */}
+          {flows.length === 0 ? (
+            <div className="bg-slate-900/60 border border-white/10 rounded-[2.5rem] p-16 text-center shadow-2xl backdrop-blur-xl">
+              <div className="w-20 h-20 bg-sky-500/10 border border-sky-500/20 rounded-3xl flex items-center justify-center mx-auto mb-4 text-sky-400">
+                <Workflow size={36} />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Aún no tienes flujos creados</h3>
+              <p className="text-slate-400 text-sm mb-6 max-w-md mx-auto">
+                Crea flujos visuales paso a paso para guiar las conversaciones de tus prospectos e inversores.
+              </p>
+              <button 
+                onClick={openCreateModal}
+                className="bg-[#c6f432] text-slate-950 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg hover:scale-105 transition-transform"
+              >
+                Crear Mi Primer Flujo
               </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {flows.map(flow => (
-                <div key={flow.id} className="bg-white rounded-[32px] p-6 shadow-sm flex flex-col justify-between border border-gray-100 hover:border-gray-200 transition-colors">
-                  <div>
-                    <div className="flex justify-between items-start mb-4">
-                      <div className={`px-3 py-1 text-xs font-bold rounded-full ${flow.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                        {flow.activo ? 'Activo' : 'Inactivo'}
+              {flows.map(flow => {
+                let nodeCount = 0;
+                try {
+                  const parsed = typeof flow.data_json === 'string' ? JSON.parse(flow.data_json) : flow.data_json;
+                  nodeCount = parsed?.nodes?.length || 0;
+                } catch(e) {}
+
+                return (
+                  <div 
+                    key={flow.id} 
+                    className="bg-slate-900/80 border border-white/10 hover:border-sky-500/40 rounded-[2.5rem] p-6 shadow-2xl backdrop-blur-xl flex flex-col justify-between transition-all hover:-translate-y-1 group"
+                  >
+                    <div>
+                      {/* Estado y Acciones */}
+                      <div className="flex justify-between items-center mb-4">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-full border ${
+                            flow.activo 
+                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.2)]' 
+                              : 'bg-slate-800 text-slate-400 border-slate-700'
+                          }`}>
+                            {flow.activo ? '● ACTIVO' : 'PAUSADO'}
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-400 bg-white/5 px-2.5 py-1 rounded-full border border-white/5">
+                            {nodeCount} nodos
+                          </span>
+                        </div>
+                        <button 
+                          onClick={() => deleteFlow(flow.id)} 
+                          className="w-8 h-8 rounded-xl bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white flex items-center justify-center transition-all opacity-60 group-hover:opacity-100"
+                          title="Eliminar Flujo"
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
-                      <button onClick={() => deleteFlow(flow.id)} className="text-gray-400 hover:text-red-500 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                        </svg>
+
+                      {/* Nombre del Flujo */}
+                      <h3 className="text-lg font-black text-white mb-2 line-clamp-1 group-hover:text-sky-300 transition-colors" title={flow.nombre}>
+                        {flow.nombre}
+                      </h3>
+
+                      {/* Palabras Clave */}
+                      <div className="bg-black/30 rounded-2xl p-3 border border-white/5 mb-4">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                          Triggers de activación:
+                        </p>
+                        <p className="text-xs text-slate-300 font-mono line-clamp-2">
+                          {flow.trigger_keyword || 'default'}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Botones de Acción */}
+                    <div className="flex gap-2.5 pt-4 border-t border-white/10 mt-auto">
+                      <Link 
+                        href={`/dashboard/flows/${flow.id}`}
+                        className="flex-1 bg-gradient-to-r from-sky-500 to-indigo-600 hover:brightness-110 text-white text-center py-2.5 rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <Zap size={14} />
+                        Abrir Editor Nodal
+                      </Link>
+                      <button 
+                        onClick={() => toggleFlow(flow)}
+                        className={`px-4 py-2.5 rounded-2xl font-bold text-xs uppercase tracking-wider transition-colors border ${
+                          flow.activo 
+                            ? 'border-white/10 text-slate-300 hover:bg-white/10' 
+                            : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                        }`}
+                      >
+                        {flow.activo ? 'Pausar' : 'Activar'}
                       </button>
                     </div>
-                    <h3 className="text-xl font-bold text-black mb-1 line-clamp-1" title={flow.nombre}>{flow.nombre}</h3>
-                    <p className="text-sm text-black mb-4">Palabra clave: <span className="font-semibold text-black">{flow.trigger_keyword}</span></p>
                   </div>
-                  
-                  <div className="flex gap-3 mt-4 pt-4 border-t border-gray-100">
-                    <Link 
-                      href={`/dashboard/flows/${flow.id}`}
-                      className="flex-1 bg-black text-white text-center py-2.5 rounded-xl font-medium text-sm hover:bg-gray-800 transition-colors"
-                    >
-                      Editar Flujo
-                    </Link>
-                    <button 
-                      onClick={() => toggleFlow(flow)}
-                      className={`px-4 py-2.5 rounded-xl font-medium text-sm transition-colors border ${flow.activo ? 'border-gray-200 text-black hover:bg-gray-50' : 'bg-[#c6f432] text-black hover:bg-[#b0d92b] border-transparent'}`}
-                    >
-                      {flow.activo ? 'Pausar' : 'Activar'}
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
       </Panel>
 
-      {/* Modal for creating a new flow */}
+      {/* MODAL CREAR NUEVO FLUJO */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-md rounded-3xl p-8 shadow-xl animate-in zoom-in-95 duration-200">
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">Nuevo Flujo</h3>
-            <p className="text-gray-500 text-sm mb-6">Completa los datos para crear tu nuevo flujo conversacional.</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+          <div className="bg-slate-900 border border-white/15 w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-200 text-white">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles size={18} className="text-[#c6f432]" />
+              <h3 className="text-xl font-black uppercase tracking-tight">Nuevo Flujo Conversacional</h3>
+            </div>
+            <p className="text-slate-400 text-xs mb-6">
+              Define el nombre y las palabras clave que activarán este flujo automáticamente en WhatsApp.
+            </p>
 
-            <div className="space-y-4 mb-8">
+            <div className="space-y-4 mb-8 text-xs">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre del flujo</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                  Nombre del flujo
+                </label>
                 <input 
                   type="text" 
                   value={newFlowName}
                   onChange={e => setNewFlowName(e.target.value)}
-                  placeholder="Ej. Venta de Perros" 
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
+                  placeholder="Ej. Flujo de Calificación Inversores" 
+                  className="w-full bg-slate-950 border border-white/15 rounded-2xl px-4 py-3 text-white text-xs outline-none focus:border-sky-500 transition-all font-semibold"
                   autoFocus
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Palabra clave de activación</label>
-                <p className="text-xs text-gray-400 mb-2">Si el cliente escribe esto, el flujo iniciará automáticamente. Deja vacío para "default".</p>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                  Palabras clave de activación (separadas por coma)
+                </label>
                 <input 
                   type="text" 
                   value={newFlowTrigger}
                   onChange={e => setNewFlowTrigger(e.target.value)}
-                  placeholder="Ej. default, comprar, info" 
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
+                  placeholder="Ej. invertir, inversion, tasas, 1" 
+                  className="w-full bg-slate-950 border border-white/15 rounded-2xl px-4 py-3 text-white text-xs font-mono outline-none focus:border-sky-500 transition-all"
                 />
               </div>
             </div>
@@ -245,14 +317,14 @@ export default function FlowsPage() {
             <div className="flex gap-3">
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+                className="flex-1 px-4 py-3 bg-white/5 hover:bg-white/10 text-slate-300 rounded-2xl font-bold text-xs uppercase tracking-wider transition-colors border border-white/5"
                 disabled={isCreating}
               >
                 Cancelar
               </button>
               <button 
                 onClick={submitNewFlow}
-                className="flex-1 px-4 py-3 bg-black hover:bg-gray-800 text-[#c6f432] rounded-xl font-semibold shadow-sm transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-3 bg-[#c6f432] hover:brightness-110 text-slate-950 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg transition-transform disabled:opacity-50"
                 disabled={!newFlowName.trim() || isCreating}
               >
                 {isCreating ? 'Creando...' : 'Crear Flujo'}

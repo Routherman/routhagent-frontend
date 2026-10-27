@@ -143,13 +143,13 @@ export default function FloatingCopilot() {
     if (pathname.includes("/automation") || pathname.includes("/flows")) {
       return {
         id: "flows",
-        name: "Automatizaciones & Flujos",
+        name: "Editor de Flujos Nodal",
         icon: Workflow,
-        color: "text-pink-400 bg-pink-500/10 border-pink-500/20",
+        color: "text-sky-400 bg-sky-500/10 border-sky-500/20",
         suggestions: [
-          "Localiza el flujo del bot para que pueda modificar el saludo",
-          "¿Cuáles son los guardarraíles obligatorios del BCRA 40.015?",
-          "Explicar escala de comisiones del Flujo A"
+          "Modifica el saludo inicial para que dé la bienvenida oficial",
+          "Agrega un nodo que pida el DNI y celular del cliente",
+          "Crea un flujo para calificar prospectos comerciales"
         ]
       };
     }
@@ -535,7 +535,8 @@ export default function FloatingCopilot() {
             section: sectionInfo.name,
             pathname: pathname,
             history: messages.slice(-4),
-            userRole: 'master'
+            userRole: 'master',
+            currentFlowConfig: (typeof window !== 'undefined' && window.__ROUTH_ACTIVE_FLOW__) ? window.__ROUTH_ACTIVE_FLOW__ : null
           },
           user: {
             id: user?.id,
@@ -610,6 +611,13 @@ export default function FloatingCopilot() {
         router.push('/dashboard/tickets');
       }
       toast.info("Filtro prioritario aplicado en Tickets Helpdesk");
+    }
+
+    if (action.type === 'APPLY_FLOW_CONFIG') {
+      if (action.payload?.targetUrl && !pathname.includes(action.payload.targetUrl)) {
+        router.push(action.payload.targetUrl);
+      }
+      toast.success("✨ Copiloto IA actualizó el flujo conversacional");
     }
 
     if (action.type === 'DOWNLOAD_REPORT_PDF') {
