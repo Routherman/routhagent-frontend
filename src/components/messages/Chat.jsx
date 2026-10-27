@@ -264,13 +264,17 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
 
           {/* Banner de Derivación y Resumen de Necesidad del Cliente */}
           {(contact?.derivado_desde || contact?.resumen_necesidad || contact?.nota_pendiente) && (
-            <div className="flex items-center gap-2 mt-1.5 px-2.5 py-1 rounded-xl bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/40 text-[11px] text-indigo-950 dark:text-indigo-200 animate-in fade-in duration-150">
-              <span className="font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-400 shrink-0 flex items-center gap-1">
-                ↪️ Derivado desde: {contact.derivado_desde || 'Soporte Técnico'}
-              </span>
-              <span className="text-gray-300 dark:text-gray-600 shrink-0">•</span>
-              <span className="font-semibold truncate">
-                <strong className="text-indigo-800 dark:text-indigo-300">Necesidad:</strong> {contact.resumen_necesidad || contact.nota_pendiente || 'Atención personalizada requerida'}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 mt-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-50/95 via-purple-50/90 to-blue-50/80 dark:from-indigo-950/60 dark:via-purple-950/40 dark:to-blue-950/30 border border-indigo-200 dark:border-indigo-700/50 text-[11px] text-indigo-950 dark:text-indigo-200 shadow-xs animate-in fade-in duration-150">
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-300 flex items-center gap-1 bg-indigo-100 dark:bg-indigo-900/60 px-2 py-0.5 rounded-md">
+                  ↪️ Origen: {contact.derivado_desde || 'Soporte'}
+                </span>
+                <span className="px-1.5 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-extrabold flex items-center gap-1">
+                  ✨ Resumen IA
+                </span>
+              </div>
+              <span className="font-semibold text-gray-800 dark:text-slate-200">
+                {contact.resumen_necesidad || contact.nota_pendiente || 'Atención personalizada requerida'}
               </span>
             </div>
           )}
@@ -296,6 +300,23 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-6 space-y-5">
         <div className="flex flex-col gap-5">
+          {/* Card Destacada de Solicitud Derivada por IA en el Historial */}
+          {(contact?.resumen_necesidad || contact?.derivado_desde) && (
+            <div className="w-full my-1 p-3.5 rounded-2xl bg-gradient-to-r from-indigo-50 via-purple-50 to-sky-50 dark:from-indigo-950/40 dark:via-purple-950/30 dark:to-sky-950/20 border border-indigo-200 dark:border-indigo-800/40 shadow-xs animate-in fade-in">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-indigo-600 text-white text-[11px] font-black uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5" /> Solicitud Derivada (Resumen IA)
+                </span>
+                <span className="text-[11px] font-bold text-indigo-700 dark:text-indigo-400">
+                  Derivado desde: {contact.derivado_desde || 'Soporte / RAG'}
+                </span>
+              </div>
+              <p className="text-xs text-indigo-950 dark:text-indigo-100 font-medium leading-relaxed">
+                {contact.resumen_necesidad || contact.nota_pendiente}
+              </p>
+            </div>
+          )}
+
           {messages.map((m) => (
             <div key={m.id} className={`flex flex-col max-w-[80%] ${m.isMine ? 'self-end items-end' : 'self-start items-start'}`}>
               

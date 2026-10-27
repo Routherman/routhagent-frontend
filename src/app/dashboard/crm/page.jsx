@@ -134,7 +134,9 @@ export default function CrmPage() {
     try {
       setLoading(true);
       const queryGroup = selectedGroup === 'TODOS' ? '' : selectedGroup;
-      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/crm/contacts?grupo=${encodeURIComponent(queryGroup)}&search=${encodeURIComponent(search)}`, {
+      const roleParam = currentUserData?.rol_nombre ? `&role=${encodeURIComponent(currentUserData.rol_nombre)}&user_id=${currentUserData.id}` : '';
+      const clerkParam = user?.id ? `&clerkId=${user.id}` : '';
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/crm/contacts?grupo=${encodeURIComponent(queryGroup)}&search=${encodeURIComponent(search)}${roleParam}${clerkParam}`, {
         headers: { 'ngrok-skip-browser-warning': 'true' }
       });
       const data = await res.json();

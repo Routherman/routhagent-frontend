@@ -111,7 +111,7 @@ export default function TicketsPage() {
     try {
       setLoading(true);
       const statusParam = filter === 'all' ? '' : filter;
-      const roleParam = currentUserData?.rol_nombre ? `&role=${encodeURIComponent(currentUserData.rol_nombre)}&user_id=${currentUserData.id}` : '';
+      const roleParam = (currentUserData?.rol_nombre ? `&role=${encodeURIComponent(currentUserData.rol_nombre)}&user_id=${currentUserData.id}` : '') + (user?.id ? `&clerkId=${user.id}` : '');
       const [tRes, uRes] = await Promise.all([
         fetch(`${API_URL}/empresas/${codigoEmpresa}/tickets?status=${encodeURIComponent(statusParam)}${roleParam}`, {
           headers: { 'ngrok-skip-browser-warning': 'true' }

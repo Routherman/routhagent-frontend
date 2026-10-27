@@ -122,7 +122,7 @@ export default function Sidebar() {
               setHasHandoffs(currentHandoffs > 0);
 
               // 2. Polling de tickets pendientes
-              const roleParam = userData.rol_nombre ? `&role=${encodeURIComponent(userData.rol_nombre)}&user_id=${userData.id}` : '';
+              const roleParam = (userData.rol_nombre ? `&role=${encodeURIComponent(userData.rol_nombre)}&user_id=${userData.id}` : '') + `&clerkId=${user.id}`;
               const tRes = await fetch(`${API_URL}/empresas/${codigoEmpresa}/tickets?status=open,pending_auth${roleParam}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
               const tData = await tRes.json();
               if (tData.success && Array.isArray(tData.tickets)) {

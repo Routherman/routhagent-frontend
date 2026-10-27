@@ -39,7 +39,8 @@ export default function MessagesPanel() {
   const fetchContacts = async () => {
     if (!codigoEmpresa || !user?.id) return;
     try {
-      const res = await fetch(`${API_URL}/contacts/${codigoEmpresa}?clerkId=${user.id}&onlyWithMessages=true`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+      const roleParam = currentUserData?.rol_nombre ? `&role=${encodeURIComponent(currentUserData.rol_nombre)}&user_id=${currentUserData.id}` : '';
+      const res = await fetch(`${API_URL}/contacts/${codigoEmpresa}?clerkId=${user.id}${roleParam}&onlyWithMessages=true`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
       const data = await res.json();
       
       // Formatear datos para el frontend

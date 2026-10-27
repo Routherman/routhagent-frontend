@@ -12,7 +12,8 @@ import {
   DollarSign, 
   HelpCircle,
   Clock,
-  Pin
+  Pin,
+  Sparkles
 } from 'lucide-react';
 
 export default function ListChats({ 
@@ -288,6 +289,17 @@ export default function ListChats({
                       <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600">
                         <CheckCircle2 className="w-2.5 h-2.5" />
                         <span>Resuelto</span>
+                      </span>
+                    )}
+
+                    {/* Chip de Resumen IA si fue derivado */}
+                    {c.resumen_necesidad && (
+                      <span 
+                        title={`Resumen IA: ${c.resumen_necesidad}`}
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-black cursor-help shadow-xs"
+                      >
+                        <Sparkles className="w-2.5 h-2.5 text-purple-600" />
+                        <span>Resumen IA</span>
                       </span>
                     )}
 
