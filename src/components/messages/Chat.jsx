@@ -170,9 +170,28 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
                 )}
                 
                 {m.audio && (
-                  <div className="flex flex-col gap-2 min-w-[240px]">
+                  <div className="flex flex-col gap-2 min-w-[260px] max-w-[320px]">
                     {m.audio.url ? (
-                        <audio controls src={m.audio.url} className="w-full h-10" />
+                      <div className="flex flex-col gap-2">
+                        <audio 
+                          controls 
+                          preload="auto"
+                          className="w-full h-10 rounded-lg"
+                        >
+                          <source src={m.audio.url} type="audio/ogg; codecs=opus" />
+                          <source src={m.audio.url} type="audio/ogg" />
+                          <source src={m.audio.url} type="audio/mpeg" />
+                          Tu navegador no soporta reproducción de audio.
+                        </audio>
+                        {(m.text || m.audio.transcription) && (
+                          <div className="bg-black/5 rounded-xl p-2.5 border border-black/5 text-[12px] text-gray-800 leading-relaxed">
+                            <span className="font-extrabold text-[10px] uppercase text-emerald-700 tracking-wider block mb-0.5">
+                              🎙️ Transcripción IA:
+                            </span>
+                            "{m.text || m.audio.transcription}"
+                          </div>
+                        )}
+                      </div>
                     ) : (
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-white flex-shrink-0">

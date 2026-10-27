@@ -653,7 +653,7 @@ export default function Equipo({ userData, privilegios }) {
                                     value={roleForm.nombre} 
                                     onChange={e => setRoleForm({...roleForm, nombre: e.target.value})}
                                     disabled={editingRole?.is_system}
-                                    className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-white font-bold text-sm focus:ring-2 focus:ring-black outline-none disabled:opacity-50"
+                                    className="w-full px-4 py-3 rounded-2xl border-2 border-gray-300 bg-white text-gray-950 font-black text-sm focus:ring-2 focus:ring-black focus:border-black outline-none disabled:opacity-50 shadow-xs"
                                     placeholder="Ej. Líder Regional, Asesor Inversiones, Auditor..."
                                 />
                                 {editingRole?.is_system && (

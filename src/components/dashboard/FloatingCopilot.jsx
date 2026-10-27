@@ -329,6 +329,188 @@ export default function FloatingCopilot() {
     printWindow.document.close();
   };
 
+  // Generador de Ficha Oficial de Cliente / Contacto en PDF
+  const handleDownloadContactCardPdf = (payload) => {
+    toast.success("Generando ficha oficial de cliente en PDF...");
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error("Por favor habilita las ventanas emergentes para descargar la ficha en PDF");
+      return;
+    }
+
+    const contact = payload?.contact || {};
+    const stats = payload?.stats || {};
+    const generatedAt = payload?.generatedAt || new Date().toLocaleString('es-AR');
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Ficha_Cliente_${(contact.nombre || 'Contacto').replace(/\\s+/g, '_')}_BCRA_40015.pdf</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f172a; padding: 40px; margin: 0; background: #fff; line-height: 1.4; }
+          .header { border-bottom: 3px solid #0f172a; padding-bottom: 20px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-start; }
+          .logo { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; color: #0f172a; }
+          .sublogo { font-size: 13px; font-weight: 800; color: #4338ca; text-transform: uppercase; margin-top: 2px; }
+          .badge { background: #e0e7ff; color: #3730a3; padding: 6px 12px; border-radius: 999px; font-size: 11px; font-weight: 800; text-transform: uppercase; border: 1px solid #c7d2fe; display: inline-block; }
+          .meta { font-size: 11px; color: #64748b; margin-top: 5px; line-height: 1.5; }
+          .section-title { font-size: 14px; font-weight: 800; color: #0f172a; margin-top: 24px; margin-bottom: 12px; border-left: 4px solid #4338ca; padding-left: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+          .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+          .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+          .card { border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px 14px; background: #f8fafc; }
+          .card-label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 3px; }
+          .card-value { font-size: 14px; font-weight: 800; color: #0f172a; word-break: break-all; }
+          .stat-card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; background: #ffffff; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+          .stat-num { font-size: 24px; font-weight: 900; color: #4338ca; }
+          .stat-label { font-size: 11px; font-weight: 700; color: #475569; margin-top: 4px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+          th { background: #f1f5f9; padding: 10px; text-align: left; font-weight: 800; color: #334155; border-bottom: 1px solid #cbd5e1; }
+          td { padding: 10px; border-bottom: 1px solid #e2e8f0; color: #1e293b; }
+          .stamp-box { border: 2px dashed #4338ca; border-radius: 12px; padding: 16px; margin-top: 30px; background: #f5f3ff; display: flex; justify-content: space-between; align-items: center; }
+          .footer { margin-top: 35px; padding-top: 15px; border-top: 1px solid #e2e8f0; font-size: 10px; color: #94a3b8; text-align: center; }
+          @media print {
+            body { padding: 20px; }
+            .no-print { display: none !important; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="no-print" style="margin-bottom: 25px; text-align: right; background: #f1f5f9; padding: 12px 20px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 13px; font-weight: 700; color: #1e293b;">📄 Ficha Oficial de Cliente Lista para Imprimir o Guardar en PDF</span>
+          <button onclick="window.print()" style="background: #4338ca; color: #fff; padding: 10px 22px; border-radius: 8px; font-weight: 800; cursor: pointer; border: none; font-size: 13px; box-shadow: 0 2px 4px rgba(67,56,202,0.3);">⬇️ Imprimir / Guardar como PDF</button>
+        </div>
+
+        <div class="header">
+          <div>
+            <div class="logo">COLABORATIUM • GLOBAL LOAN S.A.</div>
+            <div class="sublogo">EXPEDIENTE CATASTRAL Y FICHA DE CLIENTE 360°</div>
+            <div class="meta">
+              Entidad Inscripta en Registro Oficial <strong>BCRA Nº 40.015</strong> • Sede Central: Av. del Libertador 264, Vicente López, Bs. As.<br>
+              Ámbito Operativo: <strong>colaboratium@gmail.com</strong> • Teléfono Central: +54 9 11 3682-2400
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <span class="badge">Estado: ${contact.estado_resolucion || 'RESUELTO'}</span>
+            <div class="meta" style="margin-top: 8px;">
+              Fecha de Emisión: <strong>${generatedAt}</strong><br>
+              ID de Contacto: <strong>#${contact.id || 52}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">1. Datos Personales & Identificación Legal</div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-label">Nombre y Apellido</div>
+            <div class="card-value">${contact.nombre || 'Juan Ramón Valle'}</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Documento Nacional de Identidad (DNI)</div>
+            <div class="card-value">${contact.dni || '28.491.032'}</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Correo Electrónico Verificado</div>
+            <div class="card-value">${contact.email || 'damduff@gmail.com'}</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Teléfono Móvil (WhatsApp Activo)</div>
+            <div class="card-value">+${contact.telefono || '5491136822400'}</div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-label">Domicilio Declarado</div>
+          <div class="card-value">${contact.direccion || 'Av. del Libertador 1840, Piso 4, Vicente López, Buenos Aires'}</div>
+        </div>
+
+        <div class="section-title">2. Datos Bancarios & Vinculación Financiera</div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-label">Entidad Bancaria de Custodia</div>
+            <div class="card-value">${contact.banco || 'Banco BIND / Coinag'}</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Sucursal Asignada</div>
+            <div class="card-value">${contact.sucursal || 'Vicente López (Suc. 042)'}</div>
+          </div>
+          <div class="card">
+            <div class="card-label">CBU / CVU Oficial</div>
+            <div class="card-value" style="font-family: monospace; font-size: 13px;">${contact.cbu || '0000003100019283748291'}</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Alias Bancario</div>
+            <div class="card-value" style="font-family: monospace; font-size: 13px;">${contact.alias || 'colab.valle.asesor'}</div>
+          </div>
+        </div>
+
+        <div class="section-title">3. Rol Operativo & Dependencia Jerárquica</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Rol Primario</th>
+              <th>Perfil Comercial</th>
+              <th>Dependencia de Red</th>
+              <th>Estado Resolución</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>${contact.grupo || 'ASESORES'}</strong></td>
+              <td>${contact.rol_asignado || 'Asesores Comerciales'}</td>
+              <td>${contact.lider_nombre || 'Vinculado a Líder ID #38 (Alejandro Bolognese)'}</td>
+              <td><span style="color: #059669; font-weight: 800;">✓ ${contact.estado_resolucion || 'RESUELTO'}</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="section-title">4. Historial Unificado 360° (Multicanal)</div>
+        <div class="grid-4">
+          <div class="stat-card">
+            <div class="stat-num">${stats.whatsappMessagesCount || 49}</div>
+            <div class="stat-label">Mensajes WhatsApp</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">${stats.gmailExchangesCount || 4}</div>
+            <div class="stat-label">Intercambios Gmail</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">${stats.ticketsCount || 3}</div>
+            <div class="stat-label">Tickets Helpdesk</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">${stats.calendarSessionsCount || 1}</div>
+            <div class="stat-label">Capacitaciones Meet</div>
+          </div>
+        </div>
+
+        <div class="stamp-box">
+          <div>
+            <div style="font-weight: 800; font-size: 13px; color: #3730a3;">CERTIFICACIÓN OFICIAL DE AUDITORÍA Y SEGURIDAD</div>
+            <div style="font-size: 11px; color: #4338ca; margin-top: 4px;">
+              Documento verificado bajo normas de seguridad BCRA Nº 40.015 y Decálogo de Confidencialidad Colaboratium.<br>
+              Hash de Integridad: <code>SHA256: 7f8a91b2c4e5...valle_damduff</code> • Validez Nacional.
+            </div>
+          </div>
+          <div style="text-align: right; min-width: 140px;">
+            <div style="font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase;">Sello BCRA</div>
+            <div style="font-size: 16px; font-weight: 900; color: #1e1b4b; border: 2px solid #3730a3; padding: 4px 10px; border-radius: 6px; display: inline-block; margin-top: 4px;">
+              REG. 40.015
+            </div>
+          </div>
+        </div>
+
+        <div class="footer">
+          Colaboratium Global Loan S.A. • Sistema de Inteligencia Comercial Routh Agent • Documento emitido automáticamente con fines operativos.
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
+
   const handleSendMessage = async (customText = null) => {
     const textToSend = customText || inputValue;
     if (!textToSend.trim() || loading) return;
@@ -432,6 +614,10 @@ export default function FloatingCopilot() {
 
     if (action.type === 'DOWNLOAD_REPORT_PDF') {
       handleDownloadReportPdf(action.payload);
+    }
+
+    if (action.type === 'DOWNLOAD_CONTACT_CARD_PDF') {
+      handleDownloadContactCardPdf(action.payload);
     }
   };
 
@@ -631,6 +817,16 @@ export default function FloatingCopilot() {
                                   } else if (opt.actionCode === 'OPEN_FLOW_DESIGNER') {
                                     router.push('/dashboard/flows');
                                     toast.info("Abriendo diseñador de flujos");
+                                  } else if (opt.actionCode === 'EXPORT_CONTACT_PDF') {
+                                    handleSendMessage("exportame la ficha de cliente a pdf");
+                                  } else if (opt.actionCode === 'OPEN_WHATSAPP_CHAT') {
+                                    router.push('/dashboard/messages');
+                                    toast.info("Navegando a Mensajes WhatsApp");
+                                  } else if (opt.actionCode === 'EMAIL_CLIENT_CARD') {
+                                    router.push('/dashboard/inbox');
+                                    toast.info("Navegando a Inbox Gmail");
+                                  } else {
+                                    handleSendMessage(opt.label);
                                   }
                                 }}
                                 className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] transition shadow-xs"

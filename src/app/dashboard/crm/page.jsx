@@ -38,11 +38,39 @@ import CrmHierarchyTree from '@/components/dashboard/CrmHierarchyTree';
 import ContactActionMenu from '@/components/dashboard/ContactActionMenu';
 import { toast } from 'sonner';
 
+// 9 Rubros requeridos ordenados según requerimientos de Colaboratium
+export const OFFICIAL_RUBROS = [
+  'TODOS',
+  'TEAM',
+  'ASESORES',
+  'LIDERES',
+  'MAIN',
+  'INVERSORES',
+  'SOPORTE',
+  'CREDITOS',
+  'MASTER',
+  'PROSPECTO ASESORES'
+];
+
+export const RUBROS_METADATA = {
+  'TODOS': { label: 'Todos', badge: 'Total', desc: 'Agenda Completa de Contactos' },
+  'TEAM': { label: 'TEAM', badge: 'Staff', desc: 'Empleados de Colaboratium' },
+  'ASESORES': { label: 'Asesores', badge: 'Activos', desc: 'Asesores comerciales activos' },
+  'LIDERES': { label: 'Líderes', badge: 'Red', desc: 'Líderes con al menos 1 asesor a cargo' },
+  'MAIN': { label: 'Main', badge: 'Nómina', desc: 'Líder de líderes y asesores en nómina' },
+  'INVERSORES': { label: 'Inversores', badge: 'Capital', desc: 'Inversores canalizados (WhatsApp, email, redes)' },
+  'SOPORTE': { label: 'Soporte', badge: 'Helpdesk', desc: 'Usuario TEAM para atención y soporte' },
+  'CREDITOS': { label: 'Créditos', badge: 'Scoring', desc: 'Analistas de créditos y tomadores' },
+  'MASTER': { label: 'Master', badge: 'Admin', desc: 'Super Administrador del sistema' },
+  'PROSPECTO ASESORES': { label: 'Prospecto Asesores', badge: 'Campañas', desc: 'Candidatos para campañas de captación' }
+};
+
 export default function CrmPage() {
   const { user, isLoaded } = useUser();
   const [codigoEmpresa, setCodigoEmpresa] = useState(null);
   const [contacts, setContacts] = useState([]);
-  const [rubros, setRubros] = useState(['TODOS', 'CLIENTES', 'INVERSORES', 'ASESORES', 'LIDERES', 'PROVEEDORES']);
+  const [allContacts, setAllContacts] = useState([]);
+  const [rubros, setRubros] = useState(OFFICIAL_RUBROS);
   const [selectedGroup, setSelectedGroup] = useState('TODOS');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -111,13 +139,33 @@ export default function CrmPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setContacts(Array.isArray(data.contacts) ? data.contacts : []);
+        const contactList = Array.isArray(data.contacts) ? data.contacts : [];
+        setContacts(contactList);
+        if (selectedGroup === 'TODOS' && !search) {
+          setAllContacts(contactList);
+        }
       }
     } catch (err) {
       console.error('Error fetching CRM contacts:', err);
       toast.error('Error al cargar la agenda');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Cargar todos los contactos para calcular contadores de cada rubro en los tabs
+  const fetchAllForCounts = async () => {
+    if (!codigoEmpresa) return;
+    try {
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/crm/contacts`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.contacts)) {
+        setAllContacts(data.contacts);
+      }
+    } catch (e) {
+      console.error('Error fetching contacts for counts:', e);
     }
   };
 
@@ -151,16 +199,42 @@ export default function CrmPage() {
       });
       const data = await res.json();
       if (data.success && Array.isArray(data.rubros)) {
-        setRubros(['TODOS', ...data.rubros]);
+        const fromDb = data.rubros.map(r => typeof r === 'string' ? r : r.nombre).filter(Boolean);
+        const combined = Array.from(new Set([...OFFICIAL_RUBROS, ...fromDb]));
+        setRubros(combined);
+      } else {
+        setRubros(OFFICIAL_RUBROS);
       }
     } catch (e) {
       console.error('Error fetching rubros:', e);
+      setRubros(OFFICIAL_RUBROS);
     }
   };
 
   useEffect(() => {
     fetchRubros();
+    fetchAllForCounts();
   }, [codigoEmpresa]);
+
+  const getRubroCount = (g) => {
+    const list = allContacts.length > 0 ? allContacts : contacts;
+    if (g === 'TODOS') return list.length;
+    const gUpper = g.toUpperCase();
+    return list.filter(c => {
+      const grp = (c.grupo || '').toUpperCase();
+      const rol = (c.rol_asignado || '').toUpperCase();
+      if (gUpper === 'PROSPECTO ASESORES') return grp.includes('PROSPECTO') || rol.includes('PROSPECTO');
+      if (gUpper === 'TEAM') return ['TEAM', 'STAFF', 'EMPLEADOS'].includes(grp) || ['TEAM', 'STAFF', 'EMPLEADO', 'EMPLEADOS'].includes(rol);
+      if (gUpper === 'ASESORES') return ['ASESORES', 'ASESOR'].includes(grp) || ['ASESORES', 'ASESOR'].includes(rol);
+      if (gUpper === 'LIDERES') return ['LIDERES', 'LIDER', 'LÍDERES', 'LÍDER'].includes(grp) || ['LIDERES', 'LIDER', 'LÍDERES', 'LÍDER'].includes(rol);
+      if (gUpper === 'INVERSORES') return ['INVERSORES', 'INVERSOR'].includes(grp) || ['INVERSORES', 'INVERSOR'].includes(rol);
+      if (gUpper === 'SOPORTE') return ['SOPORTE', 'SUPPORT'].includes(grp) || ['SOPORTE', 'SUPPORT'].includes(rol);
+      if (gUpper === 'CREDITOS') return ['CREDITOS', 'CRÉDITOS'].includes(grp) || ['CREDITOS', 'CRÉDITOS'].includes(rol);
+      if (gUpper === 'MAIN') return grp === 'MAIN' || rol === 'MAIN';
+      if (gUpper === 'MASTER') return grp === 'MASTER' || rol === 'MASTER';
+      return grp === gUpper || rol === gUpper;
+    }).length;
+  };
 
   // Guardar / Actualizar Contacto
   const handleSaveContact = async (e) => {
@@ -266,26 +340,85 @@ export default function CrmPage() {
     const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
     if (lines.length === 0) return;
 
-    const parsed = [];
-    // Determinar si la primera línea es encabezado
-    const hasHeader = lines[0].toLowerCase().includes('nombre') || lines[0].toLowerCase().includes('telefono') || lines[0].toLowerCase().includes('phone');
+    // Helper para parsear fila respetando comillas
+    const parseRow = (str) => {
+      const row = [];
+      let cur = '';
+      let inQ = false;
+      for (let i = 0; i < str.length; i++) {
+        const c = str[i];
+        if (c === '"') inQ = !inQ;
+        else if ((c === ',' || c === ';' || c === '\t') && !inQ) {
+          row.push(cur.replace(/^"|"$/g, '').trim());
+          cur = '';
+        } else cur += c;
+      }
+      row.push(cur.replace(/^"|"$/g, '').trim());
+      return row;
+    };
+
+    const firstRow = parseRow(lines[0]);
+    const lowerHeaders = firstRow.map(h => h.toLowerCase().trim());
+    const hasHeader = lowerHeaders.some(h => 
+      h.includes('nombre') || h.includes('name') || h.includes('tel') || h.includes('phone') || h.includes('email') || h.includes('dni')
+    );
+
+    let colNombre = lowerHeaders.findIndex(h => h.includes('nombre') || h.includes('name'));
+    let colTel = lowerHeaders.findIndex(h => h.includes('tel') || h.includes('phone') || h.includes('cel') || h.includes('whatsapp'));
+    let colDni = lowerHeaders.findIndex(h => h.includes('dni') || h.includes('doc'));
+    let colEmail = lowerHeaders.findIndex(h => h.includes('email') || h.includes('correo') || h.includes('mail'));
+    let colBanco = lowerHeaders.findIndex(h => h.includes('banco'));
+    let colCbu = lowerHeaders.findIndex(h => h.includes('cbu') || h.includes('cvu'));
+    let colAlias = lowerHeaders.findIndex(h => h.includes('alias'));
+    let colGrupo = lowerHeaders.findIndex(h => h.includes('grupo') || h.includes('rubro'));
+    let colZona = lowerHeaders.findIndex(h => h.includes('zona') || h.includes('ubicacion'));
+    let colRol = lowerHeaders.findIndex(h => h.includes('rol') || h.includes('puesto'));
+
+    if (colNombre === -1) colNombre = 0;
+    if (colTel === -1) colTel = 1;
+    if (colDni === -1) colDni = 2;
+    if (colEmail === -1) colEmail = 3;
+
     const startIdx = hasHeader ? 1 : 0;
+    const parsed = [];
 
     for (let i = startIdx; i < lines.length; i++) {
-      const row = lines[i].split(/[,;\t]/).map(item => item.trim().replace(/^["']|["']$/g, ''));
-      if (row.length > 0 && row[0]) {
-        parsed.push({
-          nombre: row[0] || '',
-          telefono: row[1] || '',
-          dni: row[2] || '',
-          email: row[3] || '',
-          banco: row[4] || '',
-          cbu: row[5] || '',
-          alias: row[6] || '',
-          grupo: row[7] || 'CLIENTES'
-        });
+      const row = parseRow(lines[i]);
+      if (row.length === 0 || !row[colNombre] || row[colNombre] === 'Sin Nombre' || row[colNombre] === '-') continue;
+
+      let rawPhone = colTel !== -1 ? (row[colTel] || '') : '';
+      if (!rawPhone || rawPhone === '-') continue;
+
+      let phoneNorm = rawPhone.replace(/[^\d]/g, '');
+      if (phoneNorm.startsWith('54011')) phoneNorm = '54911' + phoneNorm.slice(5);
+      else if (phoneNorm.startsWith('5415')) phoneNorm = '54911' + phoneNorm.slice(4);
+      else if (phoneNorm.startsWith('54') && !phoneNorm.startsWith('549')) phoneNorm = '549' + phoneNorm.slice(2);
+      else if (phoneNorm.startsWith('11') || phoneNorm.length === 10) phoneNorm = '549' + phoneNorm;
+
+      let rawDni = colDni !== -1 ? (row[colDni] || '') : '';
+      let cleanDni = rawDni.replace(/[^\d]/g, '');
+      if (cleanDni && cleanDni.length >= 6) {
+        cleanDni = cleanDni.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+      } else {
+        cleanDni = rawDni !== '-' ? rawDni : '';
       }
+
+      parsed.push({
+        nombre: row[colNombre] || '',
+        telefono: phoneNorm || rawPhone,
+        dni: cleanDni,
+        email: colEmail !== -1 && row[colEmail] !== '-' ? row[colEmail] : '',
+        banco: colBanco !== -1 ? (row[colBanco] || '') : '',
+        cbu: colCbu !== -1 ? (row[colCbu] || '') : '',
+        alias: colAlias !== -1 ? (row[colAlias] || '') : '',
+        grupo: (colGrupo !== -1 && row[colGrupo]) ? row[colGrupo] : 'PROSPECTO ASESORES',
+        metadata_extra: {
+          zona: colZona !== -1 ? (row[colZona] || '') : '',
+          puesto: colRol !== -1 ? (row[colRol] || '') : ''
+        }
+      });
     }
+
     setParsedPreview(parsed);
   };
 
@@ -389,29 +522,28 @@ export default function CrmPage() {
             </div>
           </div>
 
-          {/* KPI Mini-cards (Clickeables para enfocar líneas del árbol de dependencias) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          {/* KPI Mini-cards (Clickeables para enfocar líneas del árbol y filtrar la tabla) */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
             {/* Total Contactos -> Todo el árbol */}
             <div 
               onClick={() => {
                 setSelectedGroup('TODOS');
                 setTreeBranch('TODOS');
-                setShowTree(true);
               }}
               className={`p-3.5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between group ${
-                treeBranch === 'TODOS' && selectedGroup === 'TODOS'
+                selectedGroup === 'TODOS'
                   ? 'bg-slate-900 text-white border-slate-800 ring-2 ring-black/20'
                   : 'bg-white hover:border-gray-300 border-gray-100 text-gray-900'
               }`}
-              title="Clic para mostrar todo el árbol de dependencias y todos los contactos"
+              title="Clic para ver todos los contactos registrados en la agenda"
             >
               <div>
-                <p className={`text-[10px] font-bold uppercase transition ${treeBranch === 'TODOS' && selectedGroup === 'TODOS' ? 'text-gray-300' : 'text-gray-400'}`}>
+                <p className={`text-[10px] font-bold uppercase transition ${selectedGroup === 'TODOS' ? 'text-gray-300' : 'text-gray-400'}`}>
                   Total Contactos
                 </p>
                 <div className="flex items-baseline gap-1 mt-0.5">
-                  <p className={`text-xl font-black ${treeBranch === 'TODOS' && selectedGroup === 'TODOS' ? 'text-white' : 'text-gray-900'}`}>
-                    {contacts.length}
+                  <p className={`text-xl font-black ${selectedGroup === 'TODOS' ? 'text-white' : 'text-gray-900'}`}>
+                    {allContacts.length || contacts.length}
                   </p>
                   <span className="text-[10px] font-medium opacity-70 group-hover:opacity-100">
                     ➔ Ver todo
@@ -419,81 +551,46 @@ export default function CrmPage() {
                 </div>
               </div>
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm ${
-                treeBranch === 'TODOS' && selectedGroup === 'TODOS' ? 'bg-white/10 text-white' : 'bg-gray-50 text-gray-700'
+                selectedGroup === 'TODOS' ? 'bg-white/10 text-white' : 'bg-gray-50 text-gray-700'
               }`}>
                 <Users className="w-4 h-4" />
               </div>
             </div>
 
-            {/* Clientes -> Línea de Clientes (Tomadores de Deuda) */}
+            {/* Prospecto Asesores (Candidatos para Campañas) */}
             <div 
               onClick={() => {
-                setSelectedGroup('CLIENTES');
-                setTreeBranch('CLIENTES');
-                setShowTree(true);
+                setSelectedGroup('PROSPECTO ASESORES');
+                setTreeBranch('TODOS');
               }}
               className={`p-3.5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between group ${
-                treeBranch === 'CLIENTES'
-                  ? 'bg-blue-600 text-white border-blue-700 ring-2 ring-blue-500/30'
-                  : 'bg-white hover:border-blue-200 border-gray-100 text-gray-900'
+                selectedGroup === 'PROSPECTO ASESORES'
+                  ? 'bg-amber-600 text-white border-amber-700 ring-2 ring-amber-500/30'
+                  : 'bg-white hover:border-amber-200 border-gray-100 text-gray-900'
               }`}
-              title="Clic para mostrar solo la línea de Clientes (tomadores de deuda) en el árbol"
+              title="Clic para ver prospectos de asesores para campañas de incorporación"
             >
               <div>
-                <p className={`text-[10px] font-bold uppercase transition ${treeBranch === 'CLIENTES' ? 'text-blue-100' : 'text-gray-400'}`}>
-                  Clientes (Deuda)
+                <p className={`text-[10px] font-bold uppercase transition ${selectedGroup === 'PROSPECTO ASESORES' ? 'text-amber-100' : 'text-amber-600'}`}>
+                  Prospectos Asesores
                 </p>
                 <div className="flex items-baseline gap-1 mt-0.5">
-                  <p className={`text-xl font-black ${treeBranch === 'CLIENTES' ? 'text-white' : 'text-blue-600'}`}>
-                    {contacts.filter(c => (c.grupo || '').toUpperCase() === 'CLIENTES').length}
+                  <p className={`text-xl font-black ${selectedGroup === 'PROSPECTO ASESORES' ? 'text-white' : 'text-amber-600'}`}>
+                    {(allContacts.length ? allContacts : contacts).filter(c => (c.grupo || '').toUpperCase().includes('PROSPECTO')).length}
                   </p>
                   <span className="text-[10px] font-medium opacity-70 group-hover:opacity-100">
-                    ➔ Filtrar
+                    ➔ Campañas
                   </span>
                 </div>
               </div>
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm ${
-                treeBranch === 'CLIENTES' ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-600'
+                selectedGroup === 'PROSPECTO ASESORES' ? 'bg-white/20 text-white' : 'bg-amber-50 text-amber-600'
               }`}>
-                C
+                ★
               </div>
             </div>
 
-            {/* Inversores -> Línea de Inversores (iaboxeeuu) */}
-            <div 
-              onClick={() => {
-                setSelectedGroup('INVERSORES');
-                setTreeBranch('INVERSORES');
-                setShowTree(true);
-              }}
-              className={`p-3.5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between group ${
-                treeBranch === 'INVERSORES'
-                  ? 'bg-emerald-600 text-white border-emerald-700 ring-2 ring-emerald-500/30'
-                  : 'bg-white hover:border-emerald-200 border-gray-100 text-gray-900'
-              }`}
-              title="Clic para mostrar solo la línea de Inversores en el árbol de dependencias"
-            >
-              <div>
-                <p className={`text-[10px] font-bold uppercase transition ${treeBranch === 'INVERSORES' ? 'text-emerald-100' : 'text-gray-400'}`}>
-                  Inversores
-                </p>
-                <div className="flex items-baseline gap-1 mt-0.5">
-                  <p className={`text-xl font-black ${treeBranch === 'INVERSORES' ? 'text-white' : 'text-emerald-600'}`}>
-                    {contacts.filter(c => (c.grupo || '').toUpperCase() === 'INVERSORES').length}
-                  </p>
-                  <span className="text-[10px] font-medium opacity-70 group-hover:opacity-100">
-                    ➔ Filtrar
-                  </span>
-                </div>
-              </div>
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm ${
-                treeBranch === 'INVERSORES' ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-600'
-              }`}>
-                $
-              </div>
-            </div>
-
-            {/* Asesores / Líderes -> Línea de Líderes y Asesores */}
+            {/* Asesores / Líderes -> Red Comercial */}
             <div 
               onClick={() => {
                 setSelectedGroup('ASESORES');
@@ -501,29 +598,96 @@ export default function CrmPage() {
                 setShowTree(true);
               }}
               className={`p-3.5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between group ${
-                treeBranch === 'ASESORES_LIDERES'
+                ['ASESORES', 'LIDERES'].includes(selectedGroup)
                   ? 'bg-purple-600 text-white border-purple-700 ring-2 ring-purple-500/30'
                   : 'bg-white hover:border-purple-200 border-gray-100 text-gray-900'
               }`}
-              title="Clic para mostrar solo la línea de Líderes y Asesores en el árbol"
+              title="Clic para ver Asesores y Líderes activos"
             >
               <div>
-                <p className={`text-[10px] font-bold uppercase transition ${treeBranch === 'ASESORES_LIDERES' ? 'text-purple-100' : 'text-gray-400'}`}>
+                <p className={`text-[10px] font-bold uppercase transition ${['ASESORES', 'LIDERES'].includes(selectedGroup) ? 'text-purple-100' : 'text-purple-600'}`}>
                   Asesores / Líderes
                 </p>
                 <div className="flex items-baseline gap-1 mt-0.5">
-                  <p className={`text-xl font-black ${treeBranch === 'ASESORES_LIDERES' ? 'text-white' : 'text-purple-600'}`}>
-                    {contacts.filter(c => ['ASESORES', 'LIDERES'].includes((c.grupo || '').toUpperCase())).length}
+                  <p className={`text-xl font-black ${['ASESORES', 'LIDERES'].includes(selectedGroup) ? 'text-white' : 'text-purple-600'}`}>
+                    {(allContacts.length ? allContacts : contacts).filter(c => ['ASESORES', 'LIDERES'].includes((c.grupo || '').toUpperCase())).length}
                   </p>
                   <span className="text-[10px] font-medium opacity-70 group-hover:opacity-100">
-                    ➔ Filtrar
+                    ➔ Red
                   </span>
                 </div>
               </div>
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm ${
-                treeBranch === 'ASESORES_LIDERES' ? 'bg-white/20 text-white' : 'bg-purple-50 text-purple-600'
+                ['ASESORES', 'LIDERES'].includes(selectedGroup) ? 'bg-white/20 text-white' : 'bg-purple-50 text-purple-600'
               }`}>
-                ★
+                👑
+              </div>
+            </div>
+
+            {/* Inversores */}
+            <div 
+              onClick={() => {
+                setSelectedGroup('INVERSORES');
+                setTreeBranch('INVERSORES');
+                setShowTree(true);
+              }}
+              className={`p-3.5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between group ${
+                selectedGroup === 'INVERSORES'
+                  ? 'bg-emerald-600 text-white border-emerald-700 ring-2 ring-emerald-500/30'
+                  : 'bg-white hover:border-emerald-200 border-gray-100 text-gray-900'
+              }`}
+              title="Clic para ver inversores registrados"
+            >
+              <div>
+                <p className={`text-[10px] font-bold uppercase transition ${selectedGroup === 'INVERSORES' ? 'text-emerald-100' : 'text-emerald-600'}`}>
+                  Inversores
+                </p>
+                <div className="flex items-baseline gap-1 mt-0.5">
+                  <p className={`text-xl font-black ${selectedGroup === 'INVERSORES' ? 'text-white' : 'text-emerald-600'}`}>
+                    {(allContacts.length ? allContacts : contacts).filter(c => (c.grupo || '').toUpperCase() === 'INVERSORES').length}
+                  </p>
+                  <span className="text-[10px] font-medium opacity-70 group-hover:opacity-100">
+                    ➔ Capital
+                  </span>
+                </div>
+              </div>
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm ${
+                selectedGroup === 'INVERSORES' ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-600'
+              }`}>
+                $
+              </div>
+            </div>
+
+            {/* TEAM / Staff Colaboratium */}
+            <div 
+              onClick={() => {
+                setSelectedGroup('TEAM');
+                setTreeBranch('TODOS');
+              }}
+              className={`p-3.5 rounded-2xl border transition-all cursor-pointer shadow-sm flex items-center justify-between group ${
+                ['TEAM', 'SOPORTE', 'CREDITOS', 'MAIN', 'MASTER'].includes(selectedGroup)
+                  ? 'bg-blue-600 text-white border-blue-700 ring-2 ring-blue-500/30'
+                  : 'bg-white hover:border-blue-200 border-gray-100 text-gray-900'
+              }`}
+              title="Clic para ver equipo interno y staff de Colaboratium"
+            >
+              <div>
+                <p className={`text-[10px] font-bold uppercase transition ${['TEAM', 'SOPORTE', 'CREDITOS', 'MAIN', 'MASTER'].includes(selectedGroup) ? 'text-blue-100' : 'text-blue-600'}`}>
+                  TEAM / Staff
+                </p>
+                <div className="flex items-baseline gap-1 mt-0.5">
+                  <p className={`text-xl font-black ${['TEAM', 'SOPORTE', 'CREDITOS', 'MAIN', 'MASTER'].includes(selectedGroup) ? 'text-white' : 'text-blue-600'}`}>
+                    {(allContacts.length ? allContacts : contacts).filter(c => ['TEAM', 'SOPORTE', 'CREDITOS', 'MAIN', 'MASTER'].includes((c.grupo || '').toUpperCase())).length}
+                  </p>
+                  <span className="text-[10px] font-medium opacity-70 group-hover:opacity-100">
+                    ➔ Staff
+                  </span>
+                </div>
+              </div>
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm ${
+                ['TEAM', 'SOPORTE', 'CREDITOS', 'MAIN', 'MASTER'].includes(selectedGroup) ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-600'
+              }`}>
+                🏢
               </div>
             </div>
           </div>
@@ -566,32 +730,60 @@ export default function CrmPage() {
           )}
 
           {/* Group Filter Tabs & Search */}
-          <div className="bg-gray-50 p-3 rounded-2xl border border-gray-200/80 mb-6 flex flex-col md:flex-row gap-3 items-center justify-between">
-            <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
-              {rubros.map(g => (
-                <button
-                  key={g}
-                  onClick={() => setSelectedGroup(g)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-                    selectedGroup === g
-                      ? 'bg-white text-gray-950 shadow-sm border border-gray-200'
-                      : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
-                  }`}
-                >
-                  {g}
-                </button>
-              ))}
+          <div className="bg-gray-50/90 p-3 rounded-2xl border border-gray-200/90 mb-6 flex flex-col gap-3 shadow-xs">
+            {/* Rubros Tabs Pill Grid / Scroll */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+              {rubros.map(g => {
+                const info = RUBROS_METADATA[g] || { label: g, badge: null, desc: g };
+                const count = getRubroCount(g);
+                const isSelected = selectedGroup === g;
+                return (
+                  <button
+                    key={g}
+                    onClick={() => {
+                      setSelectedGroup(g);
+                      if (g === 'INVERSORES') setTreeBranch('INVERSORES');
+                      else if (g === 'ASESORES' || g === 'LIDERES') setTreeBranch('ASESORES_LIDERES');
+                      else setTreeBranch('TODOS');
+                    }}
+                    title={info.desc}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap shrink-0 ${
+                      isSelected
+                        ? 'bg-gray-950 text-white shadow-md ring-2 ring-black/20'
+                        : 'bg-white text-gray-700 hover:text-black hover:bg-gray-100 border border-gray-200'
+                    }`}
+                  >
+                    <span>{info.label}</span>
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-extrabold ${
+                      isSelected 
+                        ? 'bg-white/20 text-white' 
+                        : (count > 0 ? 'bg-indigo-50 text-indigo-700 border border-indigo-200/60' : 'bg-gray-100 text-gray-400')
+                    }`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
-            <div className="relative w-full md:w-72">
-              <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Buscar por DNI, CBU, alias, teléfono..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 bg-white border border-gray-300 rounded-xl text-xs text-gray-950 font-bold placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black"
-              />
+            {/* Sub-bar with search and active filter indicator */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-gray-200/60">
+              <div className="text-xs text-gray-500 font-semibold flex items-center gap-2 self-start sm:self-center">
+                <Filter className="w-3.5 h-3.5 text-gray-400" />
+                <span>Rubro Activo: <strong className="text-gray-900 font-black">{RUBROS_METADATA[selectedGroup]?.label || selectedGroup}</strong></span>
+                <span className="text-gray-400 hidden md:inline">• {RUBROS_METADATA[selectedGroup]?.desc}</span>
+              </div>
+
+              <div className="relative w-full sm:w-80">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre, DNI, teléfono, CBU..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 bg-white border border-gray-300 rounded-xl text-xs text-gray-950 font-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
             </div>
           </div>
 

@@ -20,7 +20,8 @@ import {
   ChevronRight,
   ShieldCheck,
   Mail,
-  Calendar
+  Calendar,
+  FolderOpen
 } from 'lucide-react';
 import { API_URL } from '@/config/api';
 
@@ -108,7 +109,7 @@ export default function Sidebar() {
 
               setHasHandoffs(currentHandoffs > 0);
             } catch (err) {
-              console.error(err);
+              console.warn("Sidebar pollContacts:", err.message || err);
             }
           };
 
@@ -116,7 +117,7 @@ export default function Sidebar() {
           intervalId = setInterval(pollContacts, 3000);
         }
       })
-      .catch(err => console.error(err));
+      .catch(err => console.warn("Sidebar fetch user:", err.message || err));
 
     return () => {
       if (intervalId) clearInterval(intervalId);
@@ -132,7 +133,8 @@ export default function Sidebar() {
     { label: 'Agenda CRM', href: '/dashboard/crm', icon: Users, permission: 'view_crm' },
     { label: 'Equipo & Roles', href: '/dashboard/roles', icon: ShieldCheck, permission: 'view_roles' },
     { label: 'Router Multi-IA', href: '/dashboard/models', icon: Cpu, permission: 'view_models' },
-    { label: 'Campañas', href: '/dashboard/campaigns', icon: BarChart3, permission: 'view_campaigns' },
+    { label: 'Campañas (Meta & Mail)', href: '/dashboard/campaigns', icon: BarChart3, permission: 'view_campaigns' },
+    { label: 'Biblioteca de Medios', href: '/dashboard/campaigns?tab=media', icon: FolderOpen, permission: 'view_campaigns' },
     { label: 'Automatización', href: '/dashboard/automation', icon: Zap, permission: 'view_flows' },
     { label: 'Flujos Bot', href: '/dashboard/flows', icon: GitFork, permission: 'view_flows' },
     { label: 'Configuración', href: '/dashboard/user', icon: Settings, permission: 'view_settings' },

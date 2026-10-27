@@ -48,7 +48,7 @@ export default function Header() {
             window.location.href = '/create_account';
           }
         } catch (error) {
-          console.error("Error syncing user:", error);
+          console.warn("Syncing user with backend:", error.message || error);
         }
       };
       syncUser();

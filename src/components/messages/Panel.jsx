@@ -32,11 +32,11 @@ export default function MessagesPanel() {
     }
   }, [isLoaded, user]);
 
-  // 2. Poll contacts for this enterprise
+  // 2. Poll contacts for this enterprise (solo con mensajes reales intercambiados)
   const fetchContacts = async () => {
     if (!codigoEmpresa || !user?.id) return;
     try {
-      const res = await fetch(`${API_URL}/contacts/${codigoEmpresa}?clerkId=${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+      const res = await fetch(`${API_URL}/contacts/${codigoEmpresa}?clerkId=${user.id}&onlyWithMessages=true`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
       const data = await res.json();
       
       // Formatear datos para el frontend
@@ -47,15 +47,17 @@ export default function MessagesPanel() {
         email: c.email,
         grupo: c.grupo,
         estado_bot: c.estado_bot,
-        categoria: c.rol_asignado || 'General',
+        categoria: c.rol_asignado || c.grupo || 'General',
         usuario_asignado_id: c.usuario_asignado_id,
         estado_resolucion: c.estado_resolucion || 'RESUELTO',
         nota_pendiente: c.nota_pendiente || null,
         lider_id: c.lider_id || null,
         asesor_id: c.asesor_id || null,
-        avatar: `https://ui-avatars.com/api/?name=${c.nombre || 'Usuario'}`,
-        time: new Date(c.creado_en).toLocaleDateString(),
-        unread: 0,
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(c.nombre || 'Usuario')}`,
+        time: c.last_message_time ? new Date(c.last_message_time).toLocaleDateString('es-AR') : new Date(c.creado_en).toLocaleDateString('es-AR'),
+        lastMessageTime: c.last_message_time ? new Date(c.last_message_time) : new Date(c.creado_en),
+        lastMessage: c.last_message ? (typeof c.last_message === 'string' && c.last_message.startsWith('{') ? '📎 Archivo multimedia' : c.last_message) : (c.telefono || 'Sin mensajes'),
+        unread: c.unread_count || 0,
         online: c.estado_bot === 'ACTIVO',
       })) : [];
       
@@ -106,11 +108,32 @@ export default function MessagesPanel() {
             status: m.estado_entrega
           };
 
-          // Construimos la URL completa para el frontend
-          const fullMediaUrl = parsedMedia && parsedMedia.url ? `${BASE_URL}${parsedMedia.url}` : null;
+          // Construimos la URL completa para el frontend asegurando compatibilidad con ngrok y localhost
+          let fullMediaUrl = null;
+          if (parsedMedia && parsedMedia.url) {
+            let u = parsedMedia.url;
+            if (u.startsWith('http://') || u.startsWith('https://')) {
+              fullMediaUrl = u.includes('ngrok') && !u.includes('ngrok-skip-browser-warning')
+                ? (u.includes('?') ? `${u}&ngrok-skip-browser-warning=true` : `${u}?ngrok-skip-browser-warning=true`)
+                : u;
+            } else {
+              const isLocal = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+              const domain = isLocal ? 'http://localhost:8080' : BASE_URL;
+              const full = `${domain}${u}`;
+              fullMediaUrl = full.includes('ngrok') ? `${full}${full.includes('?') ? '&' : '?'}ngrok-skip-browser-warning=true` : full;
+            }
+          }
+
+          const transcriptionText = parsedMedia?.transcription || (m.tipo === 'audio' ? parsedMedia?.caption : '') || '';
 
           if (m.tipo === 'audio') {
-             msgObj.audio = { url: fullMediaUrl };
+             msgObj.audio = { 
+               url: fullMediaUrl,
+               transcription: transcriptionText
+             };
+             if (!msgObj.text && transcriptionText) {
+               msgObj.text = transcriptionText;
+             }
           } else if (m.tipo === 'image') {
              msgObj.image = { url: fullMediaUrl };
           } else if (m.tipo === 'document' || m.tipo === 'file' || m.tipo === 'pdf') {

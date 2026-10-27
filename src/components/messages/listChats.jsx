@@ -25,6 +25,8 @@ export default function ListChats({
   onRefreshContacts
 }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedRole, setSelectedRole] = useState('TODOS');
+  const [timeFilter, setTimeFilter] = useState('TODOS'); // 'TODOS', '24H', 'SEMANA', 'MES'
   const [hoveredNoteId, setHoveredNoteId] = useState(null);
 
   // Escuchar acciones de entorno emitidas por el Copiloto Routh IA
@@ -55,16 +57,36 @@ export default function ListChats({
     return () => window.removeEventListener('routh-copilot-action', handleCopilotAction);
   }, [contacts, onSelectContact]);
 
-  // Filtrado de contactos por nombre, teléfono, categoría o nota pendiente
+  // Filtrado de contactos por búsqueda, rol y tiempo
   const filteredContacts = contacts.filter((c) => {
+    // 1. Filtro de búsqueda
     const term = searchTerm.toLowerCase().trim();
-    if (!term) return true;
-    return (
-      (c.name || '').toLowerCase().includes(term) ||
-      (c.phone || c.telefono || '').toLowerCase().includes(term) ||
-      (c.categoria || '').toLowerCase().includes(term) ||
-      (c.nota_pendiente || '').toLowerCase().includes(term)
-    );
+    if (term) {
+      const matchesSearch = 
+        (c.name || '').toLowerCase().includes(term) ||
+        (c.phone || c.telefono || '').toLowerCase().includes(term) ||
+        (c.categoria || '').toLowerCase().includes(term) ||
+        (c.nota_pendiente || '').toLowerCase().includes(term) ||
+        (c.lastMessage || '').toLowerCase().includes(term);
+      if (!matchesSearch) return false;
+    }
+
+    // 2. Filtro por Rol / Rubro
+    if (selectedRole !== 'TODOS') {
+      const roleStr = (c.categoria || c.grupo || '').toUpperCase();
+      if (roleStr !== selectedRole.toUpperCase()) return false;
+    }
+
+    // 3. Filtro por Tiempo
+    if (timeFilter !== 'TODOS') {
+      const msgDate = c.lastMessageTime ? new Date(c.lastMessageTime) : (c.time ? new Date(c.time) : new Date(c.creado_en));
+      const diffMs = Date.now() - msgDate.getTime();
+      if (timeFilter === '24H' && diffMs > 24 * 3600 * 1000) return false;
+      if (timeFilter === 'SEMANA' && diffMs > 7 * 24 * 3600 * 1000) return false;
+      if (timeFilter === 'MES' && diffMs > 30 * 24 * 3600 * 1000) return false;
+    }
+
+    return true;
   });
 
   const getRoleBadgeStyle = (cat) => {
@@ -101,15 +123,70 @@ export default function ListChats({
         </div>
       </div>
 
+      {/* Filtros: Roles y Tiempo */}
+      <div className="px-3.5 py-2.5 border-b border-gray-100 bg-gray-50/70 space-y-2">
+        {/* Selector de Rol */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-black uppercase text-gray-500 tracking-wider shrink-0">Rol:</span>
+          <select
+            value={selectedRole}
+            onChange={(e) => setSelectedRole(e.target.value)}
+            className="flex-1 text-[11px] font-extrabold bg-white border border-gray-200 rounded-lg px-2.5 py-1 text-gray-900 focus:outline-none focus:ring-1 focus:ring-black shadow-2xs"
+          >
+            <option value="TODOS">Todos los roles ({contacts.length})</option>
+            <option value="ASESORES">Asesores</option>
+            <option value="LIDERES">Líderes</option>
+            <option value="INVERSORES">Inversores</option>
+            <option value="SOPORTE">Soporte</option>
+            <option value="MASTER">Master</option>
+            <option value="PROSPECTO ASESORES">Prospecto Asesores</option>
+          </select>
+        </div>
+
+        {/* Selector de Tiempo */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-black uppercase text-gray-500 tracking-wider shrink-0 mr-0.5">Tiempo:</span>
+          <div className="grid grid-cols-4 gap-1 flex-1">
+            {[
+              { id: 'TODOS', label: 'Todos' },
+              { id: '24H', label: '24 hs' },
+              { id: 'SEMANA', label: '7 días' },
+              { id: 'MES', label: '30 días' }
+            ].map((tf) => (
+              <button
+                key={tf.id}
+                type="button"
+                onClick={() => setTimeFilter(tf.id)}
+                className={`text-[10px] py-1 rounded-md font-bold transition text-center shadow-2xs ${
+                  timeFilter === tf.id
+                    ? 'bg-gray-950 text-white font-extrabold shadow-xs'
+                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                {tf.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Action Button */}
-      <div className="px-3.5 py-2.5 border-b border-gray-100 bg-gray-50/50">
+      <div className="px-3.5 py-2 border-b border-gray-100 bg-gray-50/50">
         <button 
           onClick={onStartMassive}
-          className="w-full bg-[#111215] hover:bg-black text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 hover:shadow"
+          className="w-full bg-[#111215] hover:bg-black text-white font-bold text-xs py-2 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 hover:shadow"
         >
           <Send className="w-3.5 h-3.5" />
           Generar envío masivo
         </button>
+      </div>
+
+      {/* Barra de Conteo */}
+      <div className="px-3.5 py-1.5 bg-gray-50/40 border-b border-gray-100 flex items-center justify-between text-[11px] font-bold text-gray-500">
+        <span>Conversaciones con mensajes:</span>
+        <span className="text-gray-900 font-extrabold bg-gray-200/80 px-2 py-0.5 rounded-full text-[10px]">
+          {filteredContacts.length}
+        </span>
       </div>
 
       {/* Contacts List */}

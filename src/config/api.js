@@ -1,4 +1,4 @@
-const defaultBackend = 'https://carditic-laci-unmerrily.ngrok-free.dev';
+const defaultBackend = 'http://localhost:8080';
 const rawUrl = (process.env.NEXT_PUBLIC_API_URL || defaultBackend).trim().replace(/\/+$/, '');
 
 export const BASE_URL = rawUrl.endsWith('/api') ? rawUrl.slice(0, -4) : rawUrl;

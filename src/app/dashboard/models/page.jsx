@@ -59,7 +59,7 @@ export default function AiModelsPage() {
             setCodigoEmpresa(data.codigo_empresa);
           }
         })
-        .catch(err => console.error("Error fetching user data:", err));
+        .catch(err => console.warn("Error fetching user data:", err.message || err));
     }
   }, [isLoaded, user]);
 
@@ -76,7 +76,7 @@ export default function AiModelsPage() {
         setMetrics(data);
       }
     } catch (err) {
-      console.error('Error fetching AI metrics:', err);
+      console.warn('Error fetching AI metrics:', err.message || err);
     } finally {
       setLoading(false);
     }
