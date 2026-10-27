@@ -607,7 +607,7 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
 
       {/* Template Modal (Reabrir ventana 24h) */}
       {showTemplateModal && (
-        <div className="absolute inset-0 bg-white dark:bg-[#070b14] z-50 flex flex-col">
+        <div className="fixed inset-0 bg-white dark:bg-[#070b14] z-[120] flex flex-col animate-in fade-in duration-200">
           {/* Header del modal */}
           <div className="h-[76px] min-h-[76px] flex items-center justify-between px-6 border-b border-gray-100 dark:border-white/10 bg-white dark:bg-[#0d1322]">
             <div>
@@ -701,7 +701,8 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
                     body: JSON.stringify({
                       templateName: selectedTemplate.name,
                       languageCode: selectedTemplate.language,
-                      bodyText: bodyText
+                      bodyText: bodyText,
+                      parameters: [contact.name || contact.nombre || 'Estimado/a']
                     })
                   });
                   
@@ -711,7 +712,7 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
                     setShowTemplateModal(false);
                   } else {
                     const errData = await res.json();
-                    toast.error(errData.error || 'Error al enviar plantilla');
+                    toast.error(errData.error || errData.details?.message || 'Error al enviar plantilla');
                   }
                 } catch (err) {
                   toast.error('Error de red al enviar plantilla');
