@@ -5,9 +5,10 @@ const ThemeContext = createContext();
 
 export const themeOptions = {
   dark: { id: 'dark', hex: '#080C16', name: 'Oscuro', isDark: true },
-  yellow: { id: 'yellow', hex: '#DBDF1F', name: 'Amarillo Lima', isDark: false },
+  light: { id: 'light', hex: '#F1F5F9', name: 'Modo Claro', isDark: false },
   blue: { id: 'blue', hex: '#0B132B', name: 'Azul Noche', isDark: true },
   purple: { id: 'purple', hex: '#140D24', name: 'Púrpura Oscuro', isDark: true },
+  yellow: { id: 'yellow', hex: '#DBDF1F', name: 'Amarillo Lima', isDark: false },
 };
 
 export function ThemeProvider({ children }) {
@@ -21,10 +22,12 @@ export function ThemeProvider({ children }) {
     }
   }, []);
 
+  const currentThemeData = themeOptions[activeTheme] || themeOptions.dark;
+  const isDark = currentThemeData.isDark;
+
   // Sync dark class on document.documentElement whenever activeTheme changes
   useEffect(() => {
     if (typeof document !== 'undefined') {
-      const isDark = activeTheme !== 'yellow';
       if (isDark) {
         document.documentElement.classList.add('dark');
         document.documentElement.setAttribute('data-theme', 'dark');
@@ -35,7 +38,7 @@ export function ThemeProvider({ children }) {
         document.documentElement.style.colorScheme = 'light';
       }
     }
-  }, [activeTheme]);
+  }, [activeTheme, isDark]);
 
   const changeTheme = (themeId) => {
     if (themeOptions[themeId]) {
@@ -44,12 +47,10 @@ export function ThemeProvider({ children }) {
     }
   };
 
-  const isDark = activeTheme !== 'yellow';
-
   return (
     <ThemeContext.Provider value={{ 
       activeTheme, 
-      themeData: themeOptions[activeTheme] || themeOptions.dark,
+      themeData: currentThemeData,
       changeTheme,
       isDark,
       allThemes: Object.values(themeOptions)

@@ -121,6 +121,12 @@ export default function CampaignsPage() {
     archivos_adjuntos: []
   });
 
+  // Estados para Lanzador Rápido de Envíos y Plantillas Meta Aprobadas
+  const [metaApprovedTemplates, setMetaApprovedTemplates] = useState([]);
+  const [quickDispatchChannel, setQuickDispatchChannel] = useState('whatsapp'); // 'whatsapp' | 'email'
+  const [quickSelectedTemplateId, setQuickSelectedTemplateId] = useState('');
+  const [quickSelectedGroup, setQuickSelectedGroup] = useState('TODOS');
+
   // 1. Obtener código de empresa del usuario autenticado
   useEffect(() => {
     if (isLoaded && user) {
@@ -142,11 +148,12 @@ export default function CampaignsPage() {
       setLoading(true);
       const headers = { 'ngrok-skip-browser-warning': 'true' };
 
-      const [resCamp, resPlan, resMed, resCont] = await Promise.all([
+      const [resCamp, resPlan, resMed, resCont, resMetaTpls] = await Promise.all([
         fetch(`${API_URL}/empresas/${codigoEmpresa}/campanas`, { headers }),
         fetch(`${API_URL}/empresas/${codigoEmpresa}/plantillas`, { headers }),
         fetch(`${API_URL}/empresas/${codigoEmpresa}/medios`, { headers }),
-        fetch(`${API_URL}/empresas/${codigoEmpresa}/crm/contacts`, { headers })
+        fetch(`${API_URL}/empresas/${codigoEmpresa}/crm/contacts`, { headers }),
+        fetch(`${API_URL}/empresas/${codigoEmpresa}/templates`, { headers }).catch(() => ({ ok: false }))
       ]);
 
       if (resCamp.ok) setCampaigns(await resCamp.json());
@@ -157,10 +164,80 @@ export default function CampaignsPage() {
         const list = Array.isArray(contData) ? contData : (contData.contacts || []);
         setCrmContacts(list);
       }
+      if (resMetaTpls && resMetaTpls.ok) {
+        const metaTplData = await resMetaTpls.json();
+        if (Array.isArray(metaTplData)) {
+          setMetaApprovedTemplates(metaTplData.filter(t => t.status === 'APPROVED'));
+        }
+      }
     } catch (e) {
       console.error('Error fetching campaign hub data:', e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Enviar plantilla a Meta Cloud API para aprobación oficial
+  const handleSubmitTemplateToMeta = async (plantillaId, templateName) => {
+    try {
+      toast.info(`Enviando plantilla "${templateName}" a Meta para aprobación oficial...`);
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/plantillas/${plantillaId}/submit-meta`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(`🚀 ¡Plantilla "${data.metaName}" enviada a Meta con éxito! Estado: ${data.status}`);
+        fetchAllData();
+      } else {
+        toast.error(data.error || 'Error al enviar plantilla a Meta');
+      }
+    } catch (err) {
+      console.error('Error submitting template to Meta:', err);
+      toast.error('Error de red al enviar plantilla a Meta');
+    }
+  };
+
+  // Lanzador Rápido de Campañas
+  const handleLaunchQuickDispatch = () => {
+    if (quickDispatchChannel === 'whatsapp') {
+      let chosenTpl = plantillas.find(p => p.id === Number(quickSelectedTemplateId) && p.tipo === 'whatsapp');
+      let metaTpl = metaApprovedTemplates.find(t => t.name === quickSelectedTemplateId || t.id === quickSelectedTemplateId);
+      
+      setMetaForm({
+        nombre: `Campaña WhatsApp - ${chosenTpl?.nombre || metaTpl?.name || 'General'} (${new Date().toLocaleDateString('es-AR')})`,
+        plantillaId: chosenTpl ? chosenTpl.id : (metaTpl?.name || ''),
+        targetGroup: quickSelectedGroup,
+        selectedContactIds: [],
+        customMessage: chosenTpl ? chosenTpl.contenido : (metaTpl?.components?.find(c => c.type === 'BODY')?.text || ''),
+        selectedMedia: chosenTpl?.archivos_adjuntos || [],
+        messagesPerMinute: 15
+      });
+      setShowMetaModal(true);
+    } else {
+      let chosenTpl = plantillas.find(p => p.id === Number(quickSelectedTemplateId) && p.tipo === 'email');
+      if (!chosenTpl) {
+        chosenTpl = plantillas.find(p => p.tipo === 'email');
+      }
+      const initialTargets = crmContacts
+        .filter(c => c.email && c.email.includes('@'))
+        .filter(c => quickSelectedGroup === 'TODOS' || (c.grupo || '').toUpperCase() === quickSelectedGroup.toUpperCase());
+
+      setEmailForm({
+        nombre: `Envío Email - ${chosenTpl?.nombre || 'General'} (${new Date().toLocaleDateString('es-AR')})`,
+        asunto: chosenTpl?.asunto || 'Comunicación Oficial • Colaboratium',
+        plantillaId: chosenTpl?.id || '',
+        targetGroup: quickSelectedGroup,
+        selectedContactIds: initialTargets.map(c => c.id),
+        htmlContent: chosenTpl?.contenido || '',
+        selectedMedia: chosenTpl?.archivos_adjuntos || [],
+        humanPacing: true
+      });
+      setShowEmailPreview(true);
+      setShowEmailModal(true);
     }
   };
 
@@ -598,33 +675,33 @@ export default function CampaignsPage() {
       <Sidebar />
       <Panel>
         <Header />
-        <div className="flex flex-col h-full w-full bg-white rounded-[32px] p-6 md:p-8 shadow-sm overflow-hidden text-gray-950 font-sans">
+        <div className="flex flex-col h-full w-full bg-white dark:bg-[#070b14] rounded-[32px] p-6 md:p-8 shadow-sm overflow-hidden text-gray-950 dark:text-white font-sans transition-colors">
           
           {/* Header & Tabs de Navegación Principal */}
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6 border-b border-gray-100 pb-5">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-5 border-b border-gray-100 dark:border-white/10 pb-5">
             <div>
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase bg-indigo-100 text-indigo-800 tracking-wider">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase bg-indigo-100 dark:bg-indigo-500/20 text-indigo-800 dark:text-indigo-300 tracking-wider">
                   Marketing & Envíos 360°
                 </span>
                 <span className="text-xs font-bold text-gray-400 font-mono">BCRA Nº 40.015</span>
               </div>
-              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-gray-950 mt-1">
+              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-gray-950 dark:text-white mt-1">
                 Centro de Campañas & Medios
               </h1>
-              <p className="text-xs font-semibold text-gray-600 mt-0.5">
+              <p className="text-xs font-semibold text-gray-600 dark:text-slate-400 mt-0.5">
                 Organización de envíos masivos por WhatsApp Meta, Correos Gmail, Biblioteca de Medios y Plantillas
               </p>
             </div>
 
             {/* Menú de Sub-Navegación por Canales */}
-            <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-gray-100/80 rounded-2xl border border-gray-200">
+            <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-gray-100/80 dark:bg-slate-900/80 rounded-2xl border border-gray-200 dark:border-white/10">
               <button
                 onClick={() => handleTabChange('meta')}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all ${
                   activeTab === 'meta'
                     ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'text-gray-700 hover:text-gray-950 hover:bg-white/60'
+                    : 'text-gray-700 dark:text-slate-300 hover:text-gray-950 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/10'
                 }`}
               >
                 <MessageSquare className="w-4 h-4" />
@@ -637,7 +714,7 @@ export default function CampaignsPage() {
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all ${
                   activeTab === 'email'
                     ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-gray-700 hover:text-gray-950 hover:bg-white/60'
+                    : 'text-gray-700 dark:text-slate-300 hover:text-gray-950 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/10'
                 }`}
               >
                 <Mail className="w-4 h-4" />
@@ -650,7 +727,7 @@ export default function CampaignsPage() {
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all ${
                   activeTab === 'media'
                     ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-gray-700 hover:text-gray-950 hover:bg-white/60'
+                    : 'text-gray-700 dark:text-slate-300 hover:text-gray-950 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/10'
                 }`}
               >
                 <FolderOpen className="w-4 h-4" />
@@ -663,13 +740,151 @@ export default function CampaignsPage() {
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all ${
                   activeTab === 'templates'
                     ? 'bg-amber-600 text-white shadow-sm'
-                    : 'text-gray-700 hover:text-gray-950 hover:bg-white/60'
+                    : 'text-gray-700 dark:text-slate-300 hover:text-gray-950 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/10'
                 }`}
               >
                 <FileText className="w-4 h-4" />
                 <span>Editores de Plantillas</span>
                 <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-bold">{plantillas.length}</span>
               </button>
+            </div>
+          </div>
+
+          {/* LANZADOR RÁPIDO DE ENVÍOS MASIVOS (WHATSAPP META / GMAIL) */}
+          <div className="mb-5 bg-gradient-to-r from-gray-50 via-white to-gray-50 dark:from-[#0c1424] dark:via-[#0e1628] dark:to-[#0c1424] border border-gray-200 dark:border-white/10 rounded-2xl p-4 shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-gray-100 dark:border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-emerald-500 text-white flex items-center justify-center font-bold shadow-xs">
+                  <Zap className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-gray-950 dark:text-white">Lanzador Directo de Envíos Masivos</h3>
+                  <p className="text-[11px] font-semibold text-gray-500 dark:text-slate-400">
+                    Elige el canal (WhatsApp Meta o Email Gmail), selecciona la plantilla deseada y lanza el envío en 1 clic.
+                  </p>
+                </div>
+              </div>
+
+              {/* Selector de Canal */}
+              <div className="flex items-center bg-gray-100 dark:bg-slate-900/90 p-1 rounded-xl border border-gray-200 dark:border-white/10 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuickDispatchChannel('whatsapp');
+                    setQuickSelectedTemplateId('');
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all ${
+                    quickDispatchChannel === 'whatsapp'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'text-gray-600 dark:text-slate-400 hover:text-gray-950 dark:hover:text-white'
+                  }`}
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>WhatsApp Meta</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuickDispatchChannel('email');
+                    setQuickSelectedTemplateId('');
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all ${
+                    quickDispatchChannel === 'email'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-gray-600 dark:text-slate-400 hover:text-gray-950 dark:hover:text-white'
+                  }`}
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Email Gmail</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end pt-3">
+              {/* Seleccionar Plantilla */}
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-gray-600 dark:text-slate-300 mb-1">
+                  {quickDispatchChannel === 'whatsapp' ? 'Plantilla WhatsApp (Aprobada / Configurada)' : 'Plantilla Email Activa'}
+                </label>
+                <select
+                  value={quickSelectedTemplateId}
+                  onChange={(e) => setQuickSelectedTemplateId(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                >
+                  <option value="">-- Elige una plantilla --</option>
+                  {quickDispatchChannel === 'whatsapp' ? (
+                    <>
+                      <optgroup label="Plantillas WhatsApp Colaboratium">
+                        {plantillas.filter(p => p.tipo === 'whatsapp').map(p => (
+                          <option key={p.id} value={p.id}>
+                            {p.nombre} ({p.categoria})
+                          </option>
+                        ))}
+                      </optgroup>
+                      {metaApprovedTemplates.length > 0 && (
+                        <optgroup label="Plantillas Aprobadas en Meta WABA">
+                          {metaApprovedTemplates.map(t => (
+                            <option key={t.id} value={t.name}>
+                              Meta: {t.name} ({t.language})
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                    </>
+                  ) : (
+                    <optgroup label="Plantillas de Correo Electrónico">
+                      {plantillas.filter(p => p.tipo === 'email').map(p => (
+                        <option key={p.id} value={p.id}>
+                          {p.nombre} ({p.categoria})
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+              </div>
+
+              {/* Destinatarios */}
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-wider text-gray-600 dark:text-slate-300 mb-1">
+                  Público Destino
+                </label>
+                <select
+                  value={quickSelectedGroup}
+                  onChange={(e) => setQuickSelectedGroup(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                >
+                  <option value="TODOS">Todos los Contactos ({crmContacts.length})</option>
+                  <option value="PROSPECTO ASESORES">Prospecto Asesores ({crmContacts.filter(c => (c.grupo || '').toUpperCase() === 'PROSPECTO ASESORES' || (c.grupo || '').toUpperCase() === 'ASESORES').length})</option>
+                  <option value="LIDERES">Líderes de Equipo ({crmContacts.filter(c => (c.grupo || '').toUpperCase() === 'LIDERES').length})</option>
+                  <option value="INVERSORES">Inversores Fintech ({crmContacts.filter(c => (c.grupo || '').toUpperCase() === 'INVERSORES').length})</option>
+                  <option value="CLIENTES">Clientes Tomadores ({crmContacts.filter(c => (c.grupo || '').toUpperCase() === 'CLIENTES').length})</option>
+                </select>
+              </div>
+
+              {/* Botón de Lanzamiento */}
+              <div>
+                <button
+                  type="button"
+                  onClick={handleLaunchQuickDispatch}
+                  className={`w-full py-2 px-4 rounded-xl text-xs font-black shadow-sm flex items-center justify-center gap-2 transition hover:scale-[1.01] ${
+                    quickDispatchChannel === 'whatsapp'
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`}
+                >
+                  {quickDispatchChannel === 'whatsapp' ? (
+                    <>
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>Configurar e Iniciar Envío WhatsApp</span>
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>Configurar e Iniciar Envío Email</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1207,10 +1422,10 @@ export default function CampaignsPage() {
             <div className="flex-1 flex flex-col overflow-hidden space-y-4 animate-in fade-in duration-200">
               
               {/* Barra superior de Plantillas */}
-              <div className="flex justify-between items-center bg-amber-50/70 border border-amber-200/80 p-4 rounded-2xl">
+              <div className="flex justify-between items-center bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-500/30 p-4 rounded-2xl">
                 <div>
-                  <h3 className="text-sm font-black text-amber-950">Gestor de Plantillas para WhatsApp y Email</h3>
-                  <p className="text-xs font-semibold text-amber-700">Crea, modifica y borra plantillas con variables dinámicas y previsualización en vivo</p>
+                  <h3 className="text-sm font-black text-amber-950 dark:text-amber-300">Gestor de Plantillas para WhatsApp y Email</h3>
+                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-400/80">Crea, modifica y borra plantillas con variables dinámicas y previsualización en vivo</p>
                 </div>
                 <button
                   onClick={() => {
@@ -1238,26 +1453,28 @@ export default function CampaignsPage() {
                   {plantillas.map((plan) => {
                     const isWhatsApp = plan.tipo === 'whatsapp';
                     return (
-                      <div key={plan.id} className="flex flex-col bg-white border border-gray-200 rounded-2xl p-4 hover:border-amber-400 hover:shadow-md transition">
+                      <div key={plan.id} className="flex flex-col bg-white dark:bg-[#0e1628] border border-gray-200 dark:border-white/10 rounded-2xl p-4 hover:border-amber-400 dark:hover:border-amber-400/60 hover:shadow-md transition">
                         
                         <div className="flex justify-between items-start mb-2">
                           <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                            isWhatsApp ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-blue-100 text-blue-800 border border-blue-200'
+                            isWhatsApp 
+                              ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30' 
+                              : 'bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30'
                           }`}>
                             {isWhatsApp ? '📱 WhatsApp Meta' : '✉️ Email Gmail'}
                           </span>
-                          <span className="text-[10px] font-bold text-gray-500 uppercase">{plan.categoria}</span>
+                          <span className="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase">{plan.categoria}</span>
                         </div>
 
-                        <h4 className="font-black text-sm text-gray-950 mb-1">{plan.nombre}</h4>
+                        <h4 className="font-black text-sm text-gray-950 dark:text-white mb-1">{plan.nombre}</h4>
                         {plan.asunto && (
-                          <p className="text-xs font-bold text-indigo-700 mb-2 truncate">
+                          <p className="text-xs font-bold text-indigo-700 dark:text-indigo-400 mb-2 truncate">
                             Asunto: {plan.asunto}
                           </p>
                         )}
 
                         {/* Previsualización del Contenido */}
-                        <div className="flex-1 bg-gray-50 rounded-xl p-3 border border-gray-100 text-xs text-gray-700 font-sans line-clamp-4 leading-relaxed mb-3">
+                        <div className="flex-1 bg-gray-50 dark:bg-[#090e1c] rounded-xl p-3 border border-gray-100 dark:border-white/10 text-xs text-gray-700 dark:text-slate-200 font-sans line-clamp-4 leading-relaxed mb-3">
                           {plan.contenido.replace(/<[^>]*>?/gm, '')}
                         </div>
 
@@ -1265,7 +1482,7 @@ export default function CampaignsPage() {
                         {plan.archivos_adjuntos && plan.archivos_adjuntos.length > 0 && (
                           <div className="mb-3 flex flex-wrap gap-1">
                             {plan.archivos_adjuntos.map((att, aIdx) => (
-                              <span key={aIdx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 text-[10px] font-bold text-gray-700">
+                              <span key={aIdx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 dark:bg-slate-800 text-[10px] font-bold text-gray-700 dark:text-slate-300 border border-transparent dark:border-white/10">
                                 <Paperclip className="w-2.5 h-2.5" />
                                 {att.nombre}
                               </span>
@@ -1274,7 +1491,17 @@ export default function CampaignsPage() {
                         )}
 
                         {/* Botones de Acción */}
-                        <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                        <div className="flex items-center gap-2 pt-2 border-t border-gray-100 dark:border-white/10">
+                          {isWhatsApp && (
+                            <button
+                              onClick={() => handleSubmitTemplateToMeta(plan.id, plan.nombre)}
+                              className="flex items-center justify-center gap-1 py-1.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-[11px] font-black text-white transition shadow-xs"
+                              title="Enviar plantilla a Meta WhatsApp API para aprobación oficial"
+                            >
+                              <Send className="w-3 h-3" />
+                              <span>Aprobar en Meta</span>
+                            </button>
+                          )}
                           <button
                             onClick={() => {
                               setEditingTemplate(plan);
@@ -1288,14 +1515,14 @@ export default function CampaignsPage() {
                               });
                               setShowTemplateModal(true);
                             }}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-xs font-bold text-gray-800 transition"
+                            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-xs font-bold text-gray-800 dark:text-slate-200 transition"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                             <span>Editar</span>
                           </button>
                           <button
                             onClick={() => handleDeleteTemplate(plan.id, plan.nombre)}
-                            className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition"
+                            className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 transition"
                             title="Eliminar plantilla"
                           >
                             <Trash2 className="w-3.5 h-3.5" />

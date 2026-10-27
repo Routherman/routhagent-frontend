@@ -39,8 +39,8 @@ export default function Sidebar() {
   const [userRole, setUserRole] = useState('master');
   const [userPrivs, setUserPrivs] = useState(null);
 
-  // if background is yellow (light), icons should be darker.
-  const isLightBg = themeData?.id === 'yellow';
+  // if background is light, icons should be darker.
+  const isLightBg = themeData?.isDark === false;
 
   const defaultColor = isLightBg ? 'text-gray-600' : 'text-white/70';
   const hoverColor = isLightBg ? 'hover:text-gray-950 hover:bg-black/5' : 'hover:text-white hover:bg-white/10';
@@ -160,11 +160,11 @@ export default function Sidebar() {
             <img src="/icono.svg" alt="Routh Logo" className="w-7 h-7 rounded-lg object-contain" />
           </div>
           <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
-            <h1 className="text-sm font-extrabold tracking-wider uppercase text-white font-mono">
+            <h1 className={`text-sm font-extrabold tracking-wider uppercase font-mono ${isLightBg ? 'text-gray-900' : 'text-white'}`}>
               ROUTH AGENT
             </h1>
-            <div className="flex items-center gap-1.5 text-[10px] text-amber-300 font-semibold tracking-wide">
-              <ShieldCheck className="w-3 h-3 text-emerald-400" />
+            <div className={`flex items-center gap-1.5 text-[10px] font-semibold tracking-wide ${isLightBg ? 'text-amber-800' : 'text-amber-300'}`}>
+              <ShieldCheck className="w-3 h-3 text-emerald-500" />
               <span>{empresaCode ? `Empresa: ${empresaCode}` : 'Colaboratium'}</span>
             </div>
           </div>

@@ -1,10 +1,64 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { API_URL } from '@/config/api';
+import { toast } from 'sonner';
+import { Sparkles, Plus, Zap, MessageSquare, Trash2, X, Send, Check } from 'lucide-react';
 
 export default function Chat({ messages = [], contact, onHeaderClick, onSendMessage, onToggleBot }) {
   const [inputValue, setInputValue] = useState('');
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const messagesEndRef = useRef(null);
+
+  // States for Operator Quick Responses and Intelligent Statistical Suggestions
+  const [customResponses, setCustomResponses] = useState([]);
+  const [showNewResponseModal, setShowNewResponseModal] = useState(false);
+  const [newResponseTitle, setNewResponseTitle] = useState('');
+  const [newResponseText, setNewResponseText] = useState('');
+
+  // Cargar respuestas rápidas guardadas del operador desde localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('routh_operator_quick_responses');
+      if (saved) {
+        setCustomResponses(JSON.parse(saved));
+      } else {
+        const initial = [
+          { id: '1', title: 'Saludo Inicial', text: '¡Hola! Gracias por comunicarte con Colaboratium. ¿En qué podemos ayudarte hoy?' },
+          { id: '2', title: 'Derivación Asesor', text: 'Te estamos derivando con un asesor comercial senior de Colaboratium para darte atención inmediata.' },
+          { id: '3', title: 'Cierre y Gracias', text: '¡Muchas gracias por tu tiempo! Quedamos a tu entera disposición ante cualquier otra inquietud.' }
+        ];
+        setCustomResponses(initial);
+        localStorage.setItem('routh_operator_quick_responses', JSON.stringify(initial));
+      }
+    } catch (e) {
+      console.error('Error cargando respuestas rápidas:', e);
+    }
+  }, []);
+
+  const handleSaveCustomResponse = (e) => {
+    e.preventDefault();
+    if (!newResponseTitle.trim() || !newResponseText.trim()) {
+      toast.error('Completa el título y texto de la respuesta');
+      return;
+    }
+    const updated = [
+      ...customResponses,
+      { id: Date.now().toString(), title: newResponseTitle.trim(), text: newResponseText.trim() }
+    ];
+    setCustomResponses(updated);
+    localStorage.setItem('routh_operator_quick_responses', JSON.stringify(updated));
+    setNewResponseTitle('');
+    setNewResponseText('');
+    setShowNewResponseModal(false);
+    toast.success('Respuesta rápida guardada con éxito');
+  };
+
+  const handleDeleteCustomResponse = (id, e) => {
+    e.stopPropagation();
+    const updated = customResponses.filter(r => r.id !== id);
+    setCustomResponses(updated);
+    localStorage.setItem('routh_operator_quick_responses', JSON.stringify(updated));
+    toast.success('Respuesta eliminada');
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -46,6 +100,53 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
       }
     }
   }
+
+  // Sugerencias Inteligentes por Estadísticas de Consultas Frecuentes
+  const defaultKnowledgeSuggestions = [
+    {
+      id: 'login_caps',
+      keywords: ['loguearme', 'login', 'contraseña', 'clave', 'bloq', 'caps', 'entrar', 'ingresar', 'acceso', 'cuenta', 'usuario', 'no puedo ingresar'],
+      title: '🔑 Problema de Login / Bloq Mayús',
+      text: 'Hola! Verificá si tenés activada la tecla Bloq Mayús (Caps Lock) en tu teclado o si tu navegador autocompletó un espacio al final de tu correo. Podés restablecer tu clave oficial desde: https://colaboratium.com.ar/recuperar'
+    },
+    {
+      id: 'comisiones',
+      keywords: ['comision', 'comisiones', 'cobro', 'pago', 'honorarios', 'porcentaje', 'ganancia', 'liquidacion', 'cuanto gano'],
+      title: '💼 Esquema de Comisiones & Cobro',
+      text: 'Las comisiones comerciales se liquidan quincenalmente contra factura B/C con acreditación inmediata en Banco BIND / Coinag. Contás con escala incremental del 3% al 6% según producción.'
+    },
+    {
+      id: 'webinar_meet',
+      keywords: ['webinar', 'capacitacion', 'meet', 'reunion', 'horario', 'virtual', 'cuando es', 'charla', 'induccion'],
+      title: '📅 Próximo Webinar & Meet Virtual',
+      text: 'El próximo Webinar Informativo para Asesores Comerciales es este Lunes a las 10:30 hs vía Google Meet. Te enviaremos el enlace directo 15 minutos antes del inicio.'
+    },
+    {
+      id: 'inversiones',
+      keywords: ['inversion', 'inversiones', 'plazo', 'rendimiento', 'simulador', 'interes', 'tasa', 'invertir'],
+      title: '📈 Simulador Oficial de Inversiones',
+      text: 'Podés calcular tu colocación en nuestro simulador oficial: https://colaboratium.com.ar/inversiones.php#simulador para operar con calce inmediato y respaldo institucional.'
+    },
+    {
+      id: 'banco_cbu',
+      keywords: ['cbu', 'alias', 'banco', 'transferencia', 'cuenta', 'deposito', 'donde transfiero'],
+      title: '🏦 Datos Bancarios Oficiales',
+      text: 'Nuestra cuenta institucional de custodia es: Banco BIND • CBU: 0000003100019283748291 • Alias: colab.valle.asesor (Global Loan S.A. BCRA Nº 40.015).'
+    },
+    {
+      id: 'requisitos_alta',
+      keywords: ['dni', 'requisito', 'requisitos', 'papeles', 'alta', 'monotributo', 'cuit', 'documentacion'],
+      title: '📄 Requisitos & Expediente 360°',
+      text: 'Para completar tu alta en Colaboratium necesitamos: Foto de DNI (frente y dorso), constancia de CUIT/Monotributo y comprobante de CBU a tu nombre.'
+    }
+  ];
+
+  const lastIncoming = [...messages].reverse().find(m => !m.isMine);
+  const lastIncomingText = (lastIncoming?.text || lastIncoming?.audio?.transcription || '').toLowerCase();
+
+  const matchedSuggestion = defaultKnowledgeSuggestions.find(s => 
+    s.keywords.some(kw => lastIncomingText.includes(kw))
+  );
 
   const [templates, setTemplates] = useState([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
@@ -221,6 +322,68 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
         </div>
       </div>
       
+      {/* Quick Suggestions & Operator Responses Toolbar */}
+      <div className="px-6 mb-2 flex flex-col gap-2">
+        {/* Sugerencia Inteligente según consulta del cliente (IA / Estadísticas) */}
+        {matchedSuggestion && (
+          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 text-xs">
+            <span className="flex items-center gap-1 font-bold text-amber-700 dark:text-amber-400 shrink-0">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Sugerencia Inteligente IA:</span>
+            </span>
+            <span className="font-semibold text-gray-800 dark:text-slate-200 truncate flex-1">
+              {matchedSuggestion.title}
+            </span>
+            <button
+              onClick={() => {
+                setInputValue(matchedSuggestion.text);
+                toast.success('Respuesta sugerida insertada en el mensaje');
+              }}
+              className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-black font-extrabold text-[11px] shadow-xs shrink-0 transition"
+            >
+              Insertar Respuesta
+            </button>
+          </div>
+        )}
+
+        {/* Barra de Respuestas Rápidas del Operador */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
+          <span className="text-[10px] font-black uppercase text-gray-400 dark:text-slate-500 tracking-wider shrink-0 flex items-center gap-1 mr-1">
+            <Zap className="w-3 h-3 text-amber-400" />
+            <span>Respuestas Rápidas:</span>
+          </span>
+
+          {customResponses.map((r) => (
+            <div
+              key={r.id}
+              onClick={() => {
+                setInputValue(r.text);
+                toast.success(`Respuesta "${r.title}" cargada`);
+              }}
+              className="group flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 border border-transparent dark:border-white/10 shrink-0 cursor-pointer transition select-none"
+              title={r.text}
+            >
+              <span className="font-bold text-[11px]">{r.title}</span>
+              <button
+                onClick={(e) => handleDeleteCustomResponse(r.id, e)}
+                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity ml-0.5"
+                title="Eliminar respuesta rápida"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </div>
+          ))}
+
+          <button
+            onClick={() => setShowNewResponseModal(true)}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 text-[11px] font-bold shrink-0 transition"
+          >
+            <Plus className="w-3 h-3" />
+            <span>+ Crear Respuesta</span>
+          </button>
+        </div>
+      </div>
+
       {/* Input Area */}
       {isWithin24Hours || messages.length === 0 ? (
         <div className="p-4 mx-6 mb-6 bg-white dark:bg-[#0d1322] border border-gray-200 dark:border-white/10 rounded-[20px] shadow-sm flex flex-col gap-3">
@@ -273,18 +436,89 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
         </div>
       )}
 
-      {/* Template Modal */}
+      {/* Modal: Crear Nueva Respuesta Rápida del Operador */}
+      {showNewResponseModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="bg-white dark:bg-[#0d1322] rounded-3xl p-6 max-w-md w-full shadow-2xl border border-gray-200 dark:border-white/10 text-gray-950 dark:text-white flex flex-col animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex justify-between items-center pb-3 border-b border-gray-100 dark:border-white/10">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold">
+                  <Zap className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-gray-950 dark:text-white">Nueva Respuesta Rápida</h3>
+                  <p className="text-[11px] font-semibold text-gray-500 dark:text-slate-400">Guarda una respuesta automática para tus chats</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowNewResponseModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCustomResponse} className="space-y-4 py-4">
+              <div>
+                <label className="block text-[11px] font-black uppercase text-gray-700 dark:text-slate-300 mb-1">
+                  Título / Atajo
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej: Acceso Bloq Mayús, Comisiones..."
+                  value={newResponseTitle}
+                  onChange={(e) => setNewResponseTitle(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-bold bg-gray-50 dark:bg-slate-900 text-gray-950 dark:text-white border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-black uppercase text-gray-700 dark:text-slate-300 mb-1">
+                  Texto de la Respuesta
+                </label>
+                <textarea
+                  rows={4}
+                  required
+                  placeholder="Escribe el texto que se insertará al hacer clic en este botón..."
+                  value={newResponseText}
+                  onChange={(e) => setNewResponseText(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold bg-gray-50 dark:bg-slate-900 text-gray-950 dark:text-white border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowNewResponseModal(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-xs transition"
+                >
+                  Guardar Respuesta
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Template Modal (Reabrir ventana 24h) */}
       {showTemplateModal && (
         <div className="absolute inset-0 bg-white dark:bg-[#070b14] z-50 flex flex-col">
           {/* Header del modal */}
           <div className="h-[76px] min-h-[76px] flex items-center justify-between px-6 border-b border-gray-100 dark:border-white/10 bg-white dark:bg-[#0d1322]">
             <div>
-              <h3 className="text-lg font-bold text-gray-900">Seleccionar Plantilla de Meta</h3>
-              <p className="text-gray-500 text-xs mt-0.5">Debes seleccionar una plantilla aprobada para reabrir la ventana.</p>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Seleccionar Plantilla de Meta</h3>
+              <p className="text-gray-500 dark:text-slate-400 text-xs mt-0.5">Debes seleccionar una plantilla aprobada para reabrir la ventana.</p>
             </div>
             <button 
               onClick={() => setShowTemplateModal(false)}
-              className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-50"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors p-2 rounded-full hover:bg-gray-50 dark:hover:bg-slate-800"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -292,30 +526,30 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
             </button>
           </div>
 
-          <div className="flex-1 overflow-hidden flex flex-col p-6 bg-[#f8f9fa]">
-            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-xl flex items-start gap-3 shadow-sm shrink-0">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="flex-1 overflow-hidden flex flex-col p-6 bg-[#f8f9fa] dark:bg-[#070b14]">
+            <div className="bg-yellow-50 dark:bg-amber-950/40 border-l-4 border-yellow-400 dark:border-amber-400 p-4 mb-6 rounded-r-xl flex items-start gap-3 shadow-sm shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-600 dark:text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
               <div>
-                <p className="font-bold text-yellow-800 text-sm">ATENCIÓN</p>
-                <p className="text-yellow-700 text-sm mt-1">SEPA QUE INICIAR ESTA CONVERSACION TIENE UN COSTO. ASEGURESE DE ESTAR EN EL CHAT CORRECTO ANTES DE CONFIRMAR.</p>
+                <p className="font-bold text-yellow-800 dark:text-amber-300 text-sm">ATENCIÓN</p>
+                <p className="text-yellow-700 dark:text-amber-400/90 text-sm mt-1">SEPA QUE INICIAR ESTA CONVERSACION TIENE UN COSTO. ASEGURESE DE ESTAR EN EL CHAT CORRECTO ANTES DE CONFIRMAR.</p>
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto pr-2 flex flex-col gap-3">
               {loadingTemplates ? (
                   <div className="flex flex-col items-center justify-center h-full gap-3">
-                      <div className="w-8 h-8 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
-                      <p className="text-sm font-medium text-gray-500">Cargando plantillas de Meta...</p>
+                      <div className="w-8 h-8 border-4 border-gray-200 dark:border-slate-700 border-t-black dark:border-t-[#c6f432] rounded-full animate-spin"></div>
+                      <p className="text-sm font-medium text-gray-500 dark:text-slate-400">Cargando plantillas de Meta...</p>
                   </div>
               ) : templateError ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center p-6 bg-red-50 rounded-2xl border border-red-100">
-                      <p className="text-red-500 text-sm font-bold">{templateError}</p>
-                      <p className="text-gray-500 text-xs mt-2 max-w-md">Asegúrate de agregar WAPP_BUSINESS_ACCOUNT_ID en el .env del backend y reiniciarlo.</p>
+                  <div className="flex flex-col items-center justify-center h-full text-center p-6 bg-red-50 dark:bg-red-950/30 rounded-2xl border border-red-100 dark:border-red-500/20">
+                      <p className="text-red-500 dark:text-red-400 text-sm font-bold">{templateError}</p>
+                      <p className="text-gray-500 dark:text-slate-400 text-xs mt-2 max-w-md">Asegúrate de agregar WAPP_BUSINESS_ACCOUNT_ID en el .env del backend y reiniciarlo.</p>
                   </div>
               ) : templates.length === 0 ? (
-                  <div className="flex items-center justify-center h-full text-gray-400 text-sm font-medium">
+                  <div className="flex items-center justify-center h-full text-gray-400 dark:text-slate-500 text-sm font-medium">
                       No se encontraron plantillas aprobadas en Meta.
                   </div>
               ) : (
@@ -324,13 +558,19 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
                       <button 
                           key={t.id} 
                           onClick={() => setSelectedTemplate(t)}
-                          className={`text-left p-5 rounded-2xl border bg-white transition-all focus:outline-none ${selectedTemplate?.id === t.id ? 'border-gray-900 shadow-md ring-2 ring-gray-900 scale-[1.02]' : 'border-gray-200 hover:border-gray-400 hover:shadow-sm'}`}
+                          className={`text-left p-5 rounded-2xl border transition-all focus:outline-none ${
+                            selectedTemplate?.id === t.id 
+                              ? 'border-gray-900 dark:border-[#c6f432] bg-white dark:bg-[#131f38] shadow-md ring-2 ring-gray-900 dark:ring-[#c6f432]/40 scale-[1.01]' 
+                              : 'bg-white dark:bg-[#0e1628] border-gray-200 dark:border-white/10 hover:border-gray-400 dark:hover:border-white/30 hover:shadow-sm'
+                          }`}
                       >
                           <div className="flex justify-between items-start mb-2">
-                            <p className="font-bold text-gray-900">{t.name}</p>
-                            <span className="text-green-700 bg-green-100 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{t.language}</span>
+                            <p className="font-bold text-gray-900 dark:text-white">{t.name}</p>
+                            <span className="text-green-700 dark:text-emerald-400 bg-green-100 dark:bg-emerald-500/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border border-green-200 dark:border-emerald-500/30">
+                              {t.language}
+                            </span>
                           </div>
-                          <p className="text-gray-600 text-sm mt-2 bg-[#f8f9fa] p-3 rounded-xl font-mono leading-relaxed h-[80px] overflow-hidden text-ellipsis">
+                          <p className="text-gray-600 dark:text-slate-300 text-sm mt-2 bg-[#f8f9fa] dark:bg-[#090e1c] p-3 rounded-xl font-mono leading-relaxed h-[80px] overflow-hidden text-ellipsis border border-transparent dark:border-white/10">
                               {t.components?.find(c => c.type === 'BODY')?.text || 'Sin contenido principal'}
                           </p>
                       </button>
@@ -340,10 +580,10 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
             </div>
           </div>
 
-          <div className="p-6 border-t border-gray-100 bg-white flex justify-end gap-3 shrink-0">
+          <div className="p-6 border-t border-gray-100 dark:border-white/10 bg-white dark:bg-[#0d1322] flex justify-end gap-3 shrink-0">
             <button 
               onClick={() => setShowTemplateModal(false)}
-              className="px-6 py-3 rounded-xl text-gray-600 font-semibold hover:bg-gray-100 transition-colors"
+              className="px-6 py-3 rounded-xl text-gray-600 dark:text-slate-300 font-semibold hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
             >
               Cancelar
             </button>
@@ -382,7 +622,7 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
                 }
               }}
               disabled={loadingTemplates || !!templateError || templates.length === 0 || !selectedTemplate}
-              className="px-8 py-3 rounded-xl bg-gray-900 text-white font-bold hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+              className="px-8 py-3 rounded-xl bg-gray-900 dark:bg-[#c6f432] text-white dark:text-black font-extrabold hover:bg-black dark:hover:bg-[#b5e02c] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
             >
               Enviar Plantilla Seleccionada
             </button>

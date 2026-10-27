@@ -5,14 +5,14 @@ import FloatingCopilot from './FloatingCopilot';
 
 export default function ThemeWrapper({ children }) {
     const { activeTheme, themeData, isDark } = useTheme();
-    const isLightBg = activeTheme === 'yellow';
+    const isLightBg = isDark === false;
 
     return (
         <div 
-            className={`h-screen w-full flex p-2 md:p-3 font-sans overflow-hidden transition-colors duration-300 ease-in-out relative ${isDark ? 'dark bg-[#060911]' : 'bg-[#DBDF1F]'}`}
+            className={`h-screen w-full flex p-2 md:p-3 font-sans overflow-hidden transition-colors duration-300 ease-in-out relative ${isDark ? 'dark bg-[#060911]' : 'bg-[#F1F5F9]'}`}
             style={{ 
-                backgroundColor: themeData?.hex || (isDark ? '#060911' : '#DBDF1F'),
-                color: isLightBg ? '#1a1c1e' : '#f8fafc' 
+                backgroundColor: themeData?.hex || (isDark ? '#060911' : '#F1F5F9'),
+                color: isLightBg ? '#0f172a' : '#f8fafc' 
             }}
         >
             {/* The CSS classes ensure child components easily inherit text and dark styles */}
