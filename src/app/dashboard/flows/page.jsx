@@ -8,6 +8,7 @@ import Header from '@/components/dashboard/Header';
 import Link from 'next/link';
 import { Workflow, Plus, Trash2, Zap, Play, ArrowRight, Sparkles, MessageSquare } from 'lucide-react';
 import { API_URL } from '@/config/api';
+import { toast } from 'sonner';
 
 export default function FlowsPage() {
   const { user, isLoaded } = useUser();
@@ -82,11 +83,12 @@ export default function FlowsPage() {
       const data = await res.json();
       if (data.success) {
         setIsModalOpen(false);
+        toast.success("Flujo creado con éxito");
         fetchFlows(codigoEmpresa);
       }
     } catch (err) {
       console.error(err);
-      alert('Error creando flujo');
+      toast.error('Error creando flujo');
     } finally {
       setIsCreating(false);
     }

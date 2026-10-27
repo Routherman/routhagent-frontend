@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { Save, BookOpen, Upload, FileText, Loader2 } from 'lucide-react';
 import { API_URL } from '@/config/api';
+import { toast } from 'sonner';
 
 export default function Library() {
   const { user } = useUser();
@@ -90,11 +91,12 @@ export default function Library() {
                 ? `${conocimientoIa}\n\n---\n\n${data.summary}`
                 : data.summary;
             setConocimientoIa(newKnowledge);
+            toast.success("Documento analizado e incorporado al conocimiento de la IA");
         } else {
-            alert('Error analizando documento: ' + data.error);
+            toast.error('Error analizando documento: ' + data.error);
         }
     } catch(err) {
-        alert('Error subiendo documento');
+        toast.error('Error subiendo documento');
     } finally {
         setUploading(false);
         if (fileInputRef.current) fileInputRef.current.value = '';

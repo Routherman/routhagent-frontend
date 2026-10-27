@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_URL } from '@/config/api';
+import { toast } from 'sonner';
 
 export default function InfoContact({ contact, codigoEmpresa }) {
   const [roles, setRoles] = useState([]);
@@ -28,10 +29,10 @@ export default function InfoContact({ contact, codigoEmpresa }) {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ rol_asignado: rolName, usuario_asignado_id: userId })
           });
-          alert('Asignación actualizada correctamente');
+          toast.success('Asignación actualizada correctamente');
       } catch (err) {
           console.error(err);
-          alert('Error al actualizar asignación');
+          toast.error('Error al actualizar asignación');
       } finally {
           setLoading(false);
       }

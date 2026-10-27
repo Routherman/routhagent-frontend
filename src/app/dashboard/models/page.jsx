@@ -162,22 +162,27 @@ export default function AiModelsPage() {
 
     const startTime = performance.now();
     try {
-      // Simular llamada de prueba de inferencia al router
-      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/tickets/summarize`, {
+      // Simular llamada de inferencia real al motor de flujos y Router de IA
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/ai/simulate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-        body: JSON.stringify({ phone: 'TEST_ROUTER', customText: testPrompt })
+        body: JSON.stringify({ message: testPrompt })
       });
       const data = await res.json();
       const elapsed = Math.round(performance.now() - startTime);
 
-      setTestResponse({
-        text: data.summary || 'Respuesta generada con éxito por el Router de IA.',
-        provider: 'Groq Cloud (LLaMA 3.3 70B)',
-        latency: `${elapsed} ms`,
-        tokens: Math.round(testPrompt.length / 4 + 40)
-      });
-      toast.success(`Inferencia completada en ${elapsed}ms`);
+      if (data.success) {
+        setTestResponse({
+          text: data.text || 'Respuesta generada con éxito por el Router de IA.',
+          provider: data.provider || 'Groq Cloud (LLaMA 3.3 70B)',
+          latency: data.latency || `${elapsed} ms`,
+          tokens: data.tokens || Math.round(testPrompt.length / 4 + 40),
+          type: data.type || 'flow'
+        });
+        toast.success(`Inferencia completada en ${data.latency || `${elapsed}ms`}`);
+      } else {
+        toast.error(data.error || 'Error al procesar inferencia');
+      }
       fetchMetrics();
     } catch (err) {
       toast.error('Error al probar inferencia');

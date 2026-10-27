@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { API_URL } from '@/config/api';
+import { toast } from 'sonner';
 
 const steps = [
   { id: 1, name: "Contactos" },
@@ -92,11 +93,11 @@ export default function MassivePanel({ contacts = [], onCancel, codigoEmpresa, o
       const data = await res.json();
       if (data.success && data.importedIds) {
         setSelectedContacts(prev => [...new Set([...prev, ...data.importedIds])]);
-        alert(`${data.importedIds.length} números importados y seleccionados con éxito.`);
+        toast.success(`🎉 ${data.importedIds.length} números importados y seleccionados con éxito.`);
         setManualNumbers("");
       }
     } catch (err) {
-      alert('Error importando números');
+      toast.error('Error importando números');
     } finally {
       setImporting(false);
     }
@@ -146,12 +147,13 @@ export default function MassivePanel({ contacts = [], onCancel, codigoEmpresa, o
 
         // Marcar todos los importados como seleccionados
         setSelectedContacts(prev => [...new Set([...prev, ...newFormatted.map(c => c.id)])]);
+        toast.success(`✅ ${newFormatted.length} contactos procesados correctamente desde Excel.`);
       } else {
-        alert(data.error || 'Error al procesar el archivo Excel.');
+        toast.error(data.error || 'Error al procesar el archivo Excel.');
       }
     } catch (err) {
       console.error('Error subiendo archivo:', err);
-      alert('Error de conexión al subir el archivo Excel.');
+      toast.error('Error de conexión al subir el archivo Excel.');
     } finally {
       setUploadingExcel(false);
       e.target.value = "";
@@ -160,15 +162,15 @@ export default function MassivePanel({ contacts = [], onCancel, codigoEmpresa, o
 
   const goToNextStep = () => {
     if (currentStep === 1 && selectedContacts.length === 0) {
-      alert('Debes seleccionar o cargar al menos un contacto antes de continuar.');
+      toast.warning('Debes seleccionar o cargar al menos un contacto antes de continuar.');
       return;
     }
     if (currentStep === 2 && !selectedTemplate) {
-      alert('Debes seleccionar una plantilla.');
+      toast.warning('Debes seleccionar una plantilla.');
       return;
     }
     if (currentStep === 3 && !campaignName.trim()) {
-      alert('Debes asignarle un nombre a la campaña.');
+      toast.warning('Debes asignarle un nombre a la campaña.');
       return;
     }
     if (currentStep < 4) setCurrentStep(c => c + 1);
@@ -194,15 +196,17 @@ export default function MassivePanel({ contacts = [], onCancel, codigoEmpresa, o
       });
       const data = await res.json();
       if (data.success) {
-        alert('🚀 ¡Campaña iniciada con éxito! Los mensajes se están enviando dosificados en segundo plano.');
+        toast.success('🚀 ¡Campaña iniciada con éxito! Los mensajes se están enviando dosificados en segundo plano.', {
+          duration: 5000
+        });
         if (onCampaignStarted) onCampaignStarted();
         onCancel();
       } else {
-        alert(data.error || 'Error al iniciar campaña');
+        toast.error(data.error || 'Error al iniciar campaña');
       }
     } catch (err) {
       console.error(err);
-      alert('Error de conexión con el servidor.');
+      toast.error('Error de conexión con el servidor.');
     } finally {
       setSending(false);
     }

@@ -387,7 +387,7 @@ export default function FloatingCopilot() {
             <div class="sublogo">EXPEDIENTE CATASTRAL Y FICHA DE CLIENTE 360°</div>
             <div class="meta">
               Entidad Inscripta en Registro Oficial <strong>BCRA Nº 40.015</strong> • Sede Central: Av. del Libertador 264, Vicente López, Bs. As.<br>
-              Ámbito Operativo: <strong>colaboratium@gmail.com</strong> • Teléfono Central: +54 9 11 3682-2400
+              Ámbito Operativo: <strong>colaboratium@gmail.com</strong> • Teléfono Central: <strong>+54 9 11 7372-2708</strong>
             </div>
           </div>
           <div style="text-align: right;">
@@ -826,7 +826,8 @@ export default function FloatingCopilot() {
                                     router.push('/dashboard/flows');
                                     toast.info("Abriendo diseñador de flujos");
                                   } else if (opt.actionCode === 'EXPORT_CONTACT_PDF') {
-                                    handleSendMessage("exportame la ficha de cliente a pdf");
+                                    const contactRef = msg.action?.payload?.contact?.email || msg.action?.payload?.contact?.nombre || '';
+                                    handleSendMessage(contactRef ? `exportame la ficha de cliente a pdf de ${contactRef}` : "exportame la ficha de cliente a pdf");
                                   } else if (opt.actionCode === 'OPEN_WHATSAPP_CHAT') {
                                     router.push('/dashboard/messages');
                                     toast.info("Navegando a Mensajes WhatsApp");
