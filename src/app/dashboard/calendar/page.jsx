@@ -628,21 +628,21 @@ export default function CalendarPage() {
           {/* Modal / Slide-over de Ficha Completa del Inscripto */}
           {selectedSubscriberId && (
             <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-gray-100 max-h-[92vh] overflow-y-auto flex flex-col animate-in fade-in zoom-in-95 duration-200">
+              <div className="bg-white dark:bg-[#0c1424] rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-gray-100 dark:border-white/10 max-h-[92vh] overflow-y-auto flex flex-col animate-in fade-in zoom-in-95 duration-200">
                 {/* Header del Modal */}
-                <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+                <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-white/10">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center font-black text-lg shadow-md">
                       {subscriberProfile?.contacto?.nombre?.[0]?.toUpperCase() || "A"}
                     </div>
                     <div>
-                      <h3 className="text-base font-black text-gray-900 flex items-center gap-2">
+                      <h3 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
                         <span>{subscriberProfile?.contacto?.nombre || "Cargando..."}</span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300">
                           {subscriberProfile?.contacto?.grupo || "ASESORES"}
                         </span>
                       </h3>
-                      <p className="text-xs text-gray-500 font-mono">
+                      <p className="text-xs text-gray-500 dark:text-slate-400 font-mono">
                         {subscriberProfile?.contacto?.telefono} • {subscriberProfile?.contacto?.email || "Sin email"}
                       </p>
                     </div>
@@ -653,7 +653,7 @@ export default function CalendarPage() {
                       setSelectedSubscriberId(null);
                       setSubscriberProfile(null);
                     }}
-                    className="p-2 text-gray-400 hover:text-black rounded-xl hover:bg-gray-100 transition"
+                    className="p-2 text-gray-400 hover:text-black dark:hover:text-white rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -661,19 +661,19 @@ export default function CalendarPage() {
 
                 {loadingProfile ? (
                   <div className="py-16 flex flex-col items-center justify-center gap-3">
-                    <div className="w-8 h-8 border-4 border-gray-200 border-t-indigo-600 rounded-full animate-spin" />
-                    <p className="text-xs font-bold text-gray-500">Cargando base de datos e historial de respuestas...</p>
+                    <div className="w-8 h-8 border-4 border-gray-200 dark:border-white/10 border-t-indigo-600 rounded-full animate-spin" />
+                    <p className="text-xs font-bold text-gray-500 dark:text-slate-400">Cargando base de datos e historial de respuestas...</p>
                   </div>
                 ) : subscriberProfile ? (
                   <div className="mt-4 flex-1 flex flex-col">
                     {/* Selector de Pestañas */}
-                    <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-2xl mb-4">
+                    <div className="flex items-center gap-2 p-1 bg-gray-100 dark:bg-slate-900 rounded-2xl mb-4">
                       <button
                         onClick={() => setActiveTab("db")}
                         className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                           activeTab === "db"
-                            ? "bg-white text-gray-900 shadow-sm"
-                            : "text-gray-500 hover:text-gray-900"
+                            ? "bg-white dark:bg-slate-800 text-gray-900 dark:text-white shadow-sm"
+                            : "text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
                         }`}
                       >
                         <FileText className="w-3.5 h-3.5" />
@@ -684,11 +684,11 @@ export default function CalendarPage() {
                         onClick={() => setActiveTab("ai")}
                         className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                           activeTab === "ai"
-                            ? "bg-white text-indigo-600 shadow-sm"
-                            : "text-gray-500 hover:text-gray-900"
+                            ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                            : "text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
                         }`}
                       >
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                         <span>Resumen Respuestas (IA)</span>
                       </button>
 
@@ -696,11 +696,11 @@ export default function CalendarPage() {
                         onClick={() => setActiveTab("chat")}
                         className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                           activeTab === "chat"
-                            ? "bg-white text-blue-600 shadow-sm"
-                            : "text-gray-500 hover:text-gray-900"
+                            ? "bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm"
+                            : "text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
                         }`}
                       >
-                        <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
+                        <MessageSquare className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                         <span>Conversación ({subscriberProfile.mensajes?.length || 0})</span>
                       </button>
                     </div>
@@ -709,64 +709,64 @@ export default function CalendarPage() {
                     {activeTab === "db" && (
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-3">
-                          <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Teléfono / WhatsApp</span>
-                            <span className="text-xs font-mono font-extrabold text-gray-900">
+                          <div className="p-3 bg-gray-50 dark:bg-[#0e1628] rounded-2xl border border-gray-100 dark:border-white/10">
+                            <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider block">Teléfono / WhatsApp</span>
+                            <span className="text-xs font-mono font-extrabold text-gray-900 dark:text-white">
                               {subscriberProfile.contacto.telefono}
                             </span>
                           </div>
 
-                          <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Correo Electrónico</span>
-                            <span className="text-xs font-extrabold text-gray-900 truncate block">
+                          <div className="p-3 bg-gray-50 dark:bg-[#0e1628] rounded-2xl border border-gray-100 dark:border-white/10">
+                            <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider block">Correo Electrónico</span>
+                            <span className="text-xs font-extrabold text-gray-900 dark:text-white truncate block">
                               {subscriberProfile.contacto.email || "No registrado"}
                             </span>
                           </div>
 
-                          <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">DNI / Identificación</span>
-                            <span className="text-xs font-extrabold text-gray-900">
+                          <div className="p-3 bg-gray-50 dark:bg-[#0e1628] rounded-2xl border border-gray-100 dark:border-white/10">
+                            <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider block">DNI / Identificación</span>
+                            <span className="text-xs font-extrabold text-gray-900 dark:text-white">
                               {subscriberProfile.contacto.dni || "Pendiente de presentación"}
                             </span>
                           </div>
 
-                          <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Localidad / Dirección</span>
-                            <span className="text-xs font-extrabold text-gray-900 truncate block">
+                          <div className="p-3 bg-gray-50 dark:bg-[#0e1628] rounded-2xl border border-gray-100 dark:border-white/10">
+                            <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider block">Localidad / Dirección</span>
+                            <span className="text-xs font-extrabold text-gray-900 dark:text-white truncate block">
                               {subscriberProfile.contacto.direccion || "Sin especificar"}
                             </span>
                           </div>
 
-                          <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">CBU / Alias</span>
-                            <span className="text-xs font-mono font-extrabold text-gray-900">
+                          <div className="p-3 bg-gray-50 dark:bg-[#0e1628] rounded-2xl border border-gray-100 dark:border-white/10">
+                            <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider block">CBU / Alias</span>
+                            <span className="text-xs font-mono font-extrabold text-gray-900 dark:text-white">
                               {subscriberProfile.contacto.cbu || subscriberProfile.contacto.alias || "Sin registrar"}
                             </span>
                           </div>
 
-                          <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Entidad Bancaria</span>
-                            <span className="text-xs font-extrabold text-gray-900">
+                          <div className="p-3 bg-gray-50 dark:bg-[#0e1628] rounded-2xl border border-gray-100 dark:border-white/10">
+                            <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider block">Entidad Bancaria</span>
+                            <span className="text-xs font-extrabold text-gray-900 dark:text-white">
                               {subscriberProfile.contacto.banco || "BIND / Coinag"}
                             </span>
                           </div>
                         </div>
 
                         {/* Ticket Asociado */}
-                        <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100">
+                        <div className="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-500/30">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-black text-indigo-950 flex items-center gap-1.5">
-                              <BadgeAlert className="w-4 h-4 text-indigo-600" />
+                            <span className="text-xs font-black text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
+                              <BadgeAlert className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                               <span>Ticket Helpdesk #{subscriberProfile.ticket?.id || "N/A"}</span>
                             </span>
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-900">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30">
                               {subscriberProfile.ticket?.status || "pending_auth"}
                             </span>
                           </div>
-                          <p className="text-xs text-indigo-900 font-medium">
+                          <p className="text-xs text-indigo-900 dark:text-indigo-200 font-medium">
                             {subscriberProfile.ticket?.summary || subscriberProfile.contacto?.metadata_extra?.inscripcion || "Inscripción a capacitación"}
                           </p>
-                          <div className="mt-2 text-[10px] text-indigo-600 font-semibold flex items-center justify-between">
+                          <div className="mt-2 text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold flex items-center justify-between">
                             <span>Asignado a: {subscriberProfile.ticket?.assigned_to_name || "Equipo Admisiones"}</span>
                             <span>Fecha: {new Date(subscriberProfile.contacto.creado_en).toLocaleString("es-AR")}</span>
                           </div>
@@ -777,33 +777,33 @@ export default function CalendarPage() {
                     {/* Contenido Pestaña 2: Resumen IA */}
                     {activeTab === "ai" && (
                       <div className="space-y-4">
-                        <div className="p-4 rounded-2xl bg-gradient-to-tr from-purple-50 via-indigo-50 to-blue-50 border border-indigo-100/80 shadow-sm">
-                          <div className="flex items-center gap-2 mb-2 text-indigo-900 font-black text-xs uppercase tracking-wider">
-                            <Sparkles className="w-4 h-4 text-indigo-600" />
+                        <div className="p-4 rounded-2xl bg-[#0f172a] dark:bg-[#0c1424] border border-indigo-500/40 shadow-sm text-slate-200">
+                          <div className="flex items-center gap-2 mb-2 text-indigo-400 font-black text-xs uppercase tracking-wider">
+                            <Sparkles className="w-4 h-4 text-indigo-400" />
                             <span>Síntesis Inteligente del Candidato</span>
                           </div>
-                          <p className="text-xs text-gray-800 leading-relaxed font-medium whitespace-pre-wrap">
+                          <p className="text-xs text-slate-200 leading-relaxed font-medium whitespace-pre-wrap">
                             {subscriberProfile.resumen_ia}
                           </p>
                         </div>
 
-                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-2">
-                          <h4 className="text-xs font-extrabold text-gray-900">Puntos Clave Detectados:</h4>
-                          <ul className="text-xs text-gray-600 space-y-1.5">
+                        <div className="p-4 bg-[#0f172a] dark:bg-[#0c1424] rounded-2xl border border-slate-800 space-y-2 text-slate-300">
+                          <h4 className="text-xs font-extrabold text-white">Puntos Clave Detectados:</h4>
+                          <ul className="text-xs text-slate-300 space-y-1.5">
                             <li className="flex items-center gap-2">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                               <span>Interés confirmado en el programa de <b>Asesores Comerciales</b>.</span>
                             </li>
                             <li className="flex items-center gap-2">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                               <span>Canal de ingreso: <b>WhatsApp Cloud Oficial</b>.</span>
                             </li>
                             <li className="flex items-center gap-2">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                               <span>Correo verificado y notificado vía SMTP de Colaboratium.</span>
                             </li>
                             <li className="flex items-center gap-2">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                               <span>Ticket en espera de contacto por el directivo/admisiones.</span>
                             </li>
                           </ul>
@@ -815,7 +815,7 @@ export default function CalendarPage() {
                     {activeTab === "chat" && (
                       <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
                         {(!subscriberProfile.mensajes || subscriberProfile.mensajes.length === 0) ? (
-                          <div className="text-center py-10 bg-gray-50 rounded-2xl text-xs text-gray-400">
+                          <div className="text-center py-10 bg-gray-50 dark:bg-[#0e1628] rounded-2xl text-xs text-gray-400 dark:text-slate-500">
                             No hay mensajes registrados en base de datos para este contacto
                           </div>
                         ) : (
@@ -829,8 +829,8 @@ export default function CalendarPage() {
                                 <div
                                   className={`max-w-[80%] p-3 rounded-2xl text-xs leading-relaxed ${
                                     isIncoming
-                                      ? "bg-gray-100 text-gray-900 font-medium"
-                                      : "bg-black text-white font-normal"
+                                      ? "bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-white font-medium"
+                                      : "bg-indigo-600 text-white font-normal"
                                   }`}
                                 >
                                   <p className="whitespace-pre-wrap">{m.contenido}</p>

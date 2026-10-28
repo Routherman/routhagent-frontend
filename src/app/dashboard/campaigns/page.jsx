@@ -677,7 +677,12 @@ export default function CampaignsPage() {
       .replace(/\{\{enlacebaja\}\}/gi, 'mailto:colaboratium@gmail.com?subject=Baja%20de%20Convocatorias')
       .replace(/\{\{fecha\}\}/gi, fechaSlot)
       .replace(/\{\{hora\}\}/gi, horaSlot)
-      .replace(/\{\{duracion\}\}/gi, '1 hora y media (90 minutos)');
+      .replace(/\{\{duracion\}\}/gi, '1 hora y media (90 minutos)')
+      .replace(/\{\{1\}\}/g, fechaSlot)
+      .replace(/\{\{2\}\}/g, horaSlot)
+      .replace(/\{\{3\}\}/g, '1 hora y media (90 minutos)')
+      .replace(/\{\{4\}\}/g, enlaceRegistro)
+      .replace(/\{\{5\}\}/g, 'mailto:colaboratium@gmail.com?subject=Baja%20de%20Convocatorias');
 
     if (!raw.includes('{{detalles_encuentro}}') && !rendered.includes(dynamicSlotsHtml)) {
       rendered = rendered.replace(
@@ -1138,10 +1143,10 @@ export default function CampaignsPage() {
               </div>
 
               {/* Tabla de Campañas WhatsApp */}
-              <div className="flex-1 overflow-auto border border-gray-100 rounded-2xl">
+              <div className="flex-1 overflow-auto border border-gray-100 dark:border-white/10 rounded-2xl">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-gray-50/80 border-b border-gray-200 text-[11px] uppercase tracking-wider text-gray-500 font-extrabold">
+                    <tr className="bg-gray-50/80 dark:bg-slate-900/60 border-b border-gray-200 dark:border-white/10 text-[11px] uppercase tracking-wider text-gray-500 dark:text-slate-400 font-extrabold">
                       <th className="py-3 px-4">Campaña</th>
                       <th className="py-3 px-4">Estado</th>
                       <th className="py-3 px-4 text-center">Progreso</th>
@@ -1150,10 +1155,10 @@ export default function CampaignsPage() {
                       <th className="py-3 px-4 text-right">Fecha</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 text-xs font-semibold">
+                  <tbody className="divide-y divide-gray-100 dark:divide-white/10 text-xs font-semibold">
                     {metaCampaigns.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="py-12 text-center text-gray-400 font-medium">
+                        <td colSpan={6} className="py-12 text-center text-gray-400 dark:text-slate-500 font-medium">
                           No hay campañas de WhatsApp registradas. Haz clic en "Nueva Campaña WhatsApp" para comenzar.
                         </td>
                       </tr>
@@ -1165,10 +1170,10 @@ export default function CampaignsPage() {
                         const isProgress = camp.estado === 'en_progreso';
 
                         return (
-                          <tr key={camp.id} className="hover:bg-gray-50/70 transition">
+                          <tr key={camp.id} className="hover:bg-gray-50/70 dark:hover:bg-white/5 transition">
                             <td className="py-3.5 px-4">
-                              <div className="font-extrabold text-gray-950">{camp.nombre}</div>
-                              <div className="text-[11px] text-gray-400 font-mono">ID: #{camp.id} • WhatsApp Meta</div>
+                              <div className="font-extrabold text-gray-950 dark:text-white">{camp.nombre}</div>
+                              <div className="text-[11px] text-gray-400 dark:text-slate-500 font-mono">ID: #{camp.id} • WhatsApp Meta</div>
                             </td>
                             <td className="py-3.5 px-4">
                               <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold ${
@@ -1180,18 +1185,18 @@ export default function CampaignsPage() {
                             </td>
                             <td className="py-3.5 px-4 text-center">
                               <div className="flex flex-col items-center gap-1 max-w-[140px] mx-auto">
-                                <div className="flex justify-between w-full text-[11px] text-gray-600 font-bold">
+                                <div className="flex justify-between w-full text-[11px] text-gray-600 dark:text-slate-300 font-bold">
                                   <span>{enviados}/{camp.total_contactos}</span>
                                   <span>{percent}%</span>
                                 </div>
-                                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div className="w-full h-2 bg-gray-200 dark:bg-slate-800 rounded-full overflow-hidden">
                                   <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${percent}%` }} />
                                 </div>
                               </div>
                             </td>
-                            <td className="py-3.5 px-4 text-center font-bold text-gray-800">{camp.entregados || 0}</td>
-                            <td className="py-3.5 px-4 text-center font-bold text-emerald-600">{camp.respondidos || 0}</td>
-                            <td className="py-3.5 px-4 text-right text-gray-500 font-mono text-[11px]">
+                            <td className="py-3.5 px-4 text-center font-bold text-gray-800 dark:text-slate-200">{camp.entregados || 0}</td>
+                            <td className="py-3.5 px-4 text-center font-bold text-emerald-600 dark:text-emerald-400">{camp.respondidos || 0}</td>
+                            <td className="py-3.5 px-4 text-right text-gray-500 dark:text-slate-400 font-mono text-[11px]">
                               {new Date(camp.creado_en).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}
                             </td>
                           </tr>
@@ -1212,48 +1217,48 @@ export default function CampaignsPage() {
               
               {/* Tarjetas de Métricas Email */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-                <div className="bg-[#f8fafc] border border-slate-200 rounded-2xl p-4">
-                  <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Campañas Email</p>
-                  <p className="text-2xl font-black text-slate-900 mt-1">{emailCampaigns.length}</p>
+                <div className="bg-white dark:bg-[#0c1424] border border-slate-200 dark:border-white/10 rounded-2xl p-4 shadow-sm">
+                  <p className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Campañas Email</p>
+                  <p className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1">{emailCampaigns.length}</p>
                 </div>
-                <div className="bg-[#f8fafc] border border-slate-200 rounded-2xl p-4">
-                  <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Correos Despachados</p>
-                  <p className="text-2xl font-black text-slate-900 mt-1">{emailEnviados}</p>
+                <div className="bg-white dark:bg-[#0c1424] border border-slate-200 dark:border-white/10 rounded-2xl p-4 shadow-sm">
+                  <p className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Correos Despachados</p>
+                  <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{emailEnviados}</p>
                 </div>
-                <div className="bg-[#f8fafc] border border-slate-200 rounded-2xl p-4">
-                  <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Remitente Autorizado</p>
-                  <p className="text-xs font-black text-blue-700 mt-2 truncate font-mono">colaboratium@gmail.com</p>
+                <div className="bg-white dark:bg-[#0c1424] border border-slate-200 dark:border-white/10 rounded-2xl p-4 shadow-sm">
+                  <p className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Remitente Autorizado</p>
+                  <p className="text-xs font-black text-blue-700 dark:text-blue-400 mt-2 truncate font-mono">colaboratium@gmail.com</p>
                 </div>
-                <div className="bg-[#f8fafc] border border-slate-200 rounded-2xl p-4">
-                  <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Servicio de Correo</p>
+                <div className="bg-white dark:bg-[#0c1424] border border-slate-200 dark:border-white/10 rounded-2xl p-4 shadow-sm">
+                  <p className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Servicio de Correo</p>
                   <div className="flex items-center gap-1.5 mt-1.5">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                    <span className="text-xs font-black text-gray-800">Gmail Oficial Activo</span>
+                    <span className="text-xs font-black text-gray-800 dark:text-gray-200">Gmail Oficial Activo</span>
                   </div>
                 </div>
               </div>
 
               {/* Barra de Acciones */}
-              <div className="flex justify-between items-center bg-blue-50/70 border border-blue-200/80 p-4 rounded-2xl">
+              <div className="flex justify-between items-center bg-blue-50/90 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-500/20 p-4 rounded-2xl">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shadow-xs">
                     <Mail className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-blue-950">Despacho de Correos Masivos desde Gmail</h3>
-                    <p className="text-xs font-semibold text-blue-700">Envíos con plantillas personalizadas, variables dinámicas y archivos adjuntos</p>
+                    <h3 className="text-sm font-black text-blue-950 dark:text-blue-100">Despacho de Correos Masivos desde Gmail</h3>
+                    <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">Envíos con plantillas personalizadas, variables dinámicas y archivos adjuntos</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <button
                     onClick={() => handleTabChange('templates')}
-                    className="px-3.5 py-2 rounded-xl bg-white border border-blue-300 text-xs font-extrabold text-blue-900 hover:bg-blue-50 transition"
+                    className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-500/30 text-xs font-extrabold text-blue-900 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-slate-800 transition"
                   >
                     Ver Plantillas Email ({plantillas.filter(p => p.tipo === 'email').length})
                   </button>
                   <button
                     onClick={() => {
-                      const officialTemplate = plantillas.find(p => p.id === 7 || p.nombre?.includes('Reunión Informativa')) || plantillas.find(p => p.tipo === 'email');
+                      const officialTemplate = plantillas.find(p => p.tipo === 'email' && (p.id === 7 || p.nombre?.includes('Reunión Informativa'))) || plantillas.find(p => p.tipo === 'email');
                       const presPdf = medios.find(m => m.nombre?.includes('Presentacion_Colaboratium') || m.url?.includes('Presentacion_Colaboratium'));
                       const initialTargets = crmContacts
                         .filter(c => c.email && c.email.includes('@'))
@@ -1372,10 +1377,10 @@ export default function CampaignsPage() {
               })}
 
               {/* Tabla de Campañas Email */}
-              <div className="flex-1 overflow-auto border border-gray-100 rounded-2xl">
+              <div className="flex-1 overflow-auto border border-gray-100 dark:border-white/10 rounded-2xl">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-gray-50/80 border-b border-gray-200 text-[11px] uppercase tracking-wider text-gray-500 font-extrabold">
+                    <tr className="bg-gray-50/80 dark:bg-slate-900/60 border-b border-gray-200 dark:border-white/10 text-[11px] uppercase tracking-wider text-gray-500 dark:text-slate-400 font-extrabold">
                       <th className="py-3 px-4">Campaña</th>
                       <th className="py-3 px-4">Asunto del Correo</th>
                       <th className="py-3 px-4">Estado</th>
@@ -1385,31 +1390,31 @@ export default function CampaignsPage() {
                       <th className="py-3 px-4 text-right">Fecha</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 text-xs font-semibold">
+                  <tbody className="divide-y divide-gray-100 dark:divide-white/10 text-xs font-semibold">
                     {emailCampaigns.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="py-12 text-center text-gray-400 font-medium">
+                        <td colSpan={7} className="py-12 text-center text-gray-400 dark:text-slate-500 font-medium">
                           No hay campañas de correo enviadas aún. Haz clic en "Nueva Campaña de Email" para comenzar.
                         </td>
                       </tr>
                     ) : (
                       emailCampaigns.map((camp) => (
-                        <tr key={camp.id} className="hover:bg-gray-50/70 transition">
+                        <tr key={camp.id} className="hover:bg-gray-50/70 dark:hover:bg-white/5 transition">
                           <td className="py-3.5 px-4">
-                            <div className="font-extrabold text-gray-950">{camp.nombre}</div>
+                            <div className="font-extrabold text-gray-950 dark:text-white">{camp.nombre}</div>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-[11px] text-gray-400 font-mono">ID: #{camp.id} • Canal Gmail</span>
+                              <span className="text-[11px] text-gray-400 dark:text-slate-500 font-mono">ID: #{camp.id} • Canal Gmail</span>
                               {camp.spam_score && (
-                                <span className="text-[10px] font-black px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                <span className="text-[10px] font-black px-1.5 py-0.2 rounded-md bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30">
                                   🛡️ {camp.spam_score}/100 Anti-Spam
                                 </span>
                               )}
                             </div>
                           </td>
-                          <td className="py-3.5 px-4 font-bold text-gray-800 max-w-[280px]">
+                          <td className="py-3.5 px-4 font-bold text-gray-800 dark:text-slate-200 max-w-[280px]">
                             <p className="truncate">{camp.asunto_email || 'Sin asunto registrado'}</p>
                             {camp.ultimo_log && (
-                              <p className="text-[10px] text-indigo-600 font-mono truncate mt-0.5" title={camp.ultimo_log}>
+                              <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-mono truncate mt-0.5" title={camp.ultimo_log}>
                                 ⚡ {camp.ultimo_log}
                               </p>
                             )}
@@ -1417,7 +1422,7 @@ export default function CampaignsPage() {
                           <td className="py-3.5 px-4">
                             {camp.estado === 'en_progreso' ? (
                               <div className="flex flex-col gap-1 items-start">
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30 animate-pulse">
                                   <span className="w-2 h-2 rounded-full bg-amber-600"></span>
                                   <span>En Progreso ({camp.enviados || 0}/{camp.total_contactos})</span>
                                 </span>
@@ -1432,29 +1437,29 @@ export default function CampaignsPage() {
                                 </button>
                               </div>
                             ) : (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30">
                                 ✓ Completada ({camp.enviados || camp.total_contactos})
                               </span>
                             )}
                           </td>
-                          <td className="py-3.5 px-4 text-center font-bold text-gray-700">
+                          <td className="py-3.5 px-4 text-center font-bold text-gray-700 dark:text-slate-200">
                             <div>{camp.total_contactos}</div>
                             {camp.rango_destinatarios && (
-                              <span className="inline-block mt-0.5 text-[10px] font-mono text-blue-700 font-black bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                              <span className="inline-block mt-0.5 text-[10px] font-mono text-blue-700 dark:text-blue-400 font-black bg-blue-50 dark:bg-blue-950/40 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-500/30">
                                 #{camp.rango_destinatarios}
                               </span>
                             )}
                           </td>
-                          <td className="py-3.5 px-4 text-center font-bold text-emerald-600">{camp.enviados}</td>
+                          <td className="py-3.5 px-4 text-center font-bold text-emerald-600 dark:text-emerald-400">{camp.enviados}</td>
                           <td className="py-3.5 px-4 text-center font-bold">
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30">
                               🎯 {camp.conversiones || 0} inscriptos
-                              <span className="text-[10px] text-gray-400 font-normal">
+                              <span className="text-[10px] text-gray-400 dark:text-slate-500 font-normal">
                                 ({Math.round(((camp.conversiones || 0) / (camp.total_contactos || 1)) * 100)}%)
                               </span>
                             </span>
                           </td>
-                          <td className="py-3.5 px-4 text-right text-gray-500 font-mono text-[11px]">
+                          <td className="py-3.5 px-4 text-right text-gray-500 dark:text-slate-400 font-mono text-[11px]">
                             {new Date(camp.creado_en).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}
                           </td>
                         </tr>
@@ -1473,14 +1478,14 @@ export default function CampaignsPage() {
             <div className="flex-1 flex flex-col overflow-hidden space-y-4 animate-in fade-in duration-200">
               
               {/* Barra de Filtros por Rubro & Subida */}
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-200">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-gray-50 dark:bg-[#0c1424] p-4 rounded-2xl border border-gray-200 dark:border-white/10">
                 
                 {/* Rubros Tabs */}
                 <div className="flex flex-wrap items-center gap-1.5">
                   <button
                     onClick={() => setMediaRubroFilter('todos')}
                     className={`px-3 py-1.5 rounded-xl text-xs font-black transition ${
-                      mediaRubroFilter === 'todos' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-100'
+                      mediaRubroFilter === 'todos' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-300 border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-slate-800'
                     }`}
                   >
                     Todos ({medios.length})
@@ -1488,7 +1493,7 @@ export default function CampaignsPage() {
                   <button
                     onClick={() => setMediaRubroFilter('audio')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition ${
-                      mediaRubroFilter === 'audio' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white text-emerald-800 border border-emerald-200 hover:bg-emerald-50'
+                      mediaRubroFilter === 'audio' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white dark:bg-slate-900 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 hover:bg-emerald-50 dark:hover:bg-slate-800'
                     }`}
                   >
                     <Music className="w-3.5 h-3.5" />
@@ -1497,7 +1502,7 @@ export default function CampaignsPage() {
                   <button
                     onClick={() => setMediaRubroFilter('imagen')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition ${
-                      mediaRubroFilter === 'imagen' ? 'bg-sky-600 text-white shadow-xs' : 'bg-white text-sky-800 border border-sky-200 hover:bg-sky-50'
+                      mediaRubroFilter === 'imagen' ? 'bg-sky-600 text-white shadow-xs' : 'bg-white dark:bg-slate-900 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-500/30 hover:bg-sky-50 dark:hover:bg-slate-800'
                     }`}
                   >
                     <ImageIcon className="w-3.5 h-3.5" />
@@ -1506,7 +1511,7 @@ export default function CampaignsPage() {
                   <button
                     onClick={() => setMediaRubroFilter('pdf')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition ${
-                      mediaRubroFilter === 'pdf' ? 'bg-rose-600 text-white shadow-xs' : 'bg-white text-rose-800 border border-rose-200 hover:bg-rose-50'
+                      mediaRubroFilter === 'pdf' ? 'bg-rose-600 text-white shadow-xs' : 'bg-white dark:bg-slate-900 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30 hover:bg-rose-50 dark:hover:bg-slate-800'
                     }`}
                   >
                     <FileText className="w-3.5 h-3.5" />
@@ -1515,7 +1520,7 @@ export default function CampaignsPage() {
                   <button
                     onClick={() => setMediaRubroFilter('presentacion')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition ${
-                      mediaRubroFilter === 'presentacion' ? 'bg-purple-600 text-white shadow-xs' : 'bg-white text-purple-800 border border-purple-200 hover:bg-purple-50'
+                      mediaRubroFilter === 'presentacion' ? 'bg-purple-600 text-white shadow-xs' : 'bg-white dark:bg-slate-900 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 hover:bg-purple-50 dark:hover:bg-slate-800'
                     }`}
                   >
                     <Presentation className="w-3.5 h-3.5" />
@@ -1526,13 +1531,13 @@ export default function CampaignsPage() {
                 {/* Subir Archivo Botón */}
                 <div className="flex items-center gap-2 w-full md:w-auto">
                   <div className="relative flex-1 md:w-48">
-                    <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-gray-400" />
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-gray-400 dark:text-slate-500" />
                     <input
                       type="text"
                       placeholder="Buscar medios..."
                       value={mediaSearch}
                       onChange={e => setMediaSearch(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 text-xs font-bold text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      className="w-full pl-8 pr-3 py-1.5 text-xs font-bold text-gray-900 dark:text-white bg-white dark:bg-slate-900 border border-gray-300 dark:border-white/10 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     />
                   </div>
 
@@ -1547,10 +1552,10 @@ export default function CampaignsPage() {
               {/* Grid de Medios por Rubro */}
               <div className="flex-1 overflow-y-auto pr-1">
                 {filteredMedios.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-                    <FolderOpen className="w-12 h-12 mb-2 text-gray-300" />
-                    <p className="font-bold text-gray-600">No se encontraron archivos en este rubro.</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Usa el botón "Subir Archivo" para agregar recursos multimedia.</p>
+                  <div className="flex flex-col items-center justify-center h-64 text-gray-400 dark:text-slate-500">
+                    <FolderOpen className="w-12 h-12 mb-2 text-gray-300 dark:text-slate-600" />
+                    <p className="font-bold text-gray-600 dark:text-slate-400">No se encontraron archivos en este rubro.</p>
+                    <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Usa el botón "Subir Archivo" para agregar recursos multimedia.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -1562,48 +1567,48 @@ export default function CampaignsPage() {
                       const fullUrl = getMediaUrl(medio.archivo_url);
 
                       return (
-                        <div key={medio.id} className="group flex flex-col bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-md hover:border-indigo-300 transition-all">
+                        <div key={medio.id} className="group flex flex-col bg-white dark:bg-[#0c1424] border border-gray-200 dark:border-white/10 rounded-2xl overflow-hidden hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-500/50 transition-all">
                           
                           {/* Header / Previsualización Visual */}
                           <div 
                             onClick={() => setPreviewMedia(medio)}
-                            className="h-32 bg-gray-50 flex items-center justify-center relative p-3 border-b border-gray-100 overflow-hidden cursor-pointer hover:bg-gray-100/80 transition"
+                            className="h-32 bg-gray-50 dark:bg-[#090e1c] flex items-center justify-center relative p-3 border-b border-gray-100 dark:border-white/10 overflow-hidden cursor-pointer hover:bg-gray-100/80 dark:hover:bg-slate-800/80 transition"
                             title="Haz clic para previsualizar o reproducir"
                           >
                             {isImage ? (
                               <img src={fullUrl} alt={medio.nombre} className="h-full w-full object-contain" />
                             ) : isAudio ? (
-                              <div className="flex flex-col items-center justify-center gap-1.5 text-emerald-600 w-full px-2">
-                                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shadow-xs">
+                              <div className="flex flex-col items-center justify-center gap-1.5 text-emerald-600 dark:text-emerald-400 w-full px-2">
+                                <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center shadow-xs">
                                   <Music className="w-5 h-5" />
                                 </div>
-                                <span className="text-[10px] font-black uppercase text-emerald-800">Nota de Voz WhatsApp</span>
-                                <span className="text-[10px] text-gray-500 font-bold">▶ Clic para reproducir</span>
+                                <span className="text-[10px] font-black uppercase text-emerald-800 dark:text-emerald-300">Nota de Voz WhatsApp</span>
+                                <span className="text-[10px] text-gray-500 dark:text-slate-400 font-bold">▶ Clic para reproducir</span>
                               </div>
                             ) : isPdf ? (
-                              <div className="flex flex-col items-center justify-center gap-1 text-rose-600">
-                                <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center shadow-xs">
+                              <div className="flex flex-col items-center justify-center gap-1 text-rose-600 dark:text-rose-400">
+                                <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-500/20 flex items-center justify-center shadow-xs">
                                   <FileText className="w-5 h-5" />
                                 </div>
-                                <span className="text-[10px] font-black uppercase text-rose-800">Documento PDF Oficial</span>
-                                <span className="text-[10px] text-gray-500 font-bold">👁 Clic para abrir PDF</span>
+                                <span className="text-[10px] font-black uppercase text-rose-800 dark:text-rose-300">Documento PDF Oficial</span>
+                                <span className="text-[10px] text-gray-500 dark:text-slate-400 font-bold">👁 Clic para abrir PDF</span>
                               </div>
                             ) : (
-                              <div className="flex flex-col items-center justify-center gap-1 text-purple-600">
-                                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shadow-xs">
+                              <div className="flex flex-col items-center justify-center gap-1 text-purple-600 dark:text-purple-400">
+                                <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-500/20 flex items-center justify-center shadow-xs">
                                   <Presentation className="w-5 h-5" />
                                 </div>
-                                <span className="text-[10px] font-black uppercase text-purple-800">Presentación / Video</span>
-                                <span className="text-[10px] text-gray-500 font-bold">👁 Clic para ver</span>
+                                <span className="text-[10px] font-black uppercase text-purple-800 dark:text-purple-300">Presentación / Video</span>
+                                <span className="text-[10px] text-gray-500 dark:text-slate-400 font-bold">👁 Clic para ver</span>
                               </div>
                             )}
 
                             {/* Badge de Rubro */}
                             <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                              isAudio ? 'bg-emerald-100 text-emerald-800' :
-                              isImage ? 'bg-sky-100 text-sky-800' :
-                              isPdf ? 'bg-rose-100 text-rose-800' :
-                              'bg-purple-100 text-purple-800'
+                              isAudio ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300' :
+                              isImage ? 'bg-sky-100 dark:bg-sky-500/20 text-sky-800 dark:text-sky-300' :
+                              isPdf ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300' :
+                              'bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300'
                             }`}>
                               {medio.rubro}
                             </span>
@@ -1612,10 +1617,10 @@ export default function CampaignsPage() {
                           {/* Info del Archivo */}
                           <div className="p-3.5 flex-1 flex flex-col justify-between">
                             <div>
-                              <p className="font-extrabold text-xs text-gray-950 truncate" title={medio.nombre}>
+                              <p className="font-extrabold text-xs text-gray-950 dark:text-white truncate" title={medio.nombre}>
                                 {medio.nombre}
                               </p>
-                              <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-500 font-medium">
+                              <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-500 dark:text-slate-400 font-medium">
                                 <span>{(medio.tamano_bytes / 1024).toFixed(0)} KB</span>
                                 <span>•</span>
                                 <span>{new Date(medio.creado_en).toLocaleDateString('es-AR')}</span>
@@ -1623,11 +1628,11 @@ export default function CampaignsPage() {
                             </div>
 
                             {/* Botones de Acción */}
-                            <div className="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-gray-100">
+                            <div className="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-gray-100 dark:border-white/10">
                               <button
                                 type="button"
                                 onClick={() => setPreviewMedia(medio)}
-                                className="flex-1 py-1.5 px-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-extrabold text-center flex items-center justify-center gap-1 transition border border-indigo-200/60"
+                                className="flex-1 py-1.5 px-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-[11px] font-extrabold text-center flex items-center justify-center gap-1 transition border border-indigo-200/60 dark:border-indigo-500/30"
                                 title="Ver o reproducir archivo"
                               >
                                 <Eye className="w-3.5 h-3.5" />
@@ -1636,7 +1641,7 @@ export default function CampaignsPage() {
                               <button
                                 onClick={() => handleCopyLink(medio.archivo_url)}
                                 title="Copiar enlace directo"
-                                className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 transition"
+                                className="p-1.5 rounded-lg bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white transition"
                               >
                                 <Copy className="w-3.5 h-3.5" />
                               </button>
@@ -1646,14 +1651,14 @@ export default function CampaignsPage() {
                                 target="_blank"
                                 rel="noreferrer"
                                 title="Descargar"
-                                className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 transition"
+                                className="p-1.5 rounded-lg bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white transition"
                               >
                                 <Download className="w-3.5 h-3.5" />
                               </a>
                               <button
                                 onClick={() => handleDeleteMedia(medio.id, medio.nombre)}
                                 title="Eliminar"
-                                className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition"
+                                className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 transition"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -1797,41 +1802,41 @@ export default function CampaignsPage() {
       {/* ========================================================= */}
       {showMetaModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-xl w-full shadow-2xl border border-gray-200 text-gray-950 flex flex-col max-h-[90vh] overflow-hidden">
-            <div className="flex justify-between items-center pb-3 border-b border-gray-200">
+          <div className="bg-white dark:bg-[#0c1424] rounded-3xl p-6 max-w-xl w-full shadow-2xl border border-gray-200 dark:border-white/10 text-gray-950 dark:text-white flex flex-col max-h-[90vh] overflow-hidden">
+            <div className="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold">
                   <MessageSquare className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-black text-base text-gray-950">Lanzar Campaña Masiva WhatsApp (Meta)</h3>
-                  <p className="text-[11px] font-semibold text-gray-500">Envío programado a través de WhatsApp Cloud API</p>
+                  <h3 className="font-black text-base text-gray-950 dark:text-white">Lanzar Campaña Masiva WhatsApp (Meta)</h3>
+                  <p className="text-[11px] font-semibold text-gray-500 dark:text-slate-400">Envío programado a través de WhatsApp Cloud API</p>
                 </div>
               </div>
-              <button onClick={() => setShowMetaModal(false)} className="text-gray-400 hover:text-gray-700">
+              <button onClick={() => setShowMetaModal(false)} className="text-gray-400 hover:text-gray-700 dark:hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleLaunchMetaCampaign} className="space-y-4 py-4 overflow-y-auto flex-1">
               <div>
-                <label className="block text-xs font-black uppercase text-gray-700 mb-1">Nombre de Campaña</label>
+                <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">Nombre de Campaña</label>
                 <input
                   type="text"
                   required
                   value={metaForm.nombre}
                   onChange={e => setMetaForm({ ...metaForm, nombre: e.target.value })}
-                  className="w-full px-3 py-2 text-xs font-bold bg-white text-gray-950 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 text-gray-950 dark:text-white border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-black uppercase text-gray-700 mb-1">Público Destino</label>
+                  <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">Público Destino</label>
                   <select
                     value={metaForm.targetGroup}
                     onChange={e => setMetaForm({ ...metaForm, targetGroup: e.target.value })}
-                    className="w-full px-3 py-2 text-xs font-bold bg-white text-gray-950 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 text-gray-950 dark:text-white border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   >
                     <option value="TODOS">Todos los Contactos ({crmContacts.length})</option>
                     <option value="ASESORES">Asesores Comerciales ({crmContacts.filter(c => c.grupo === 'ASESORES').length})</option>
@@ -1842,11 +1847,11 @@ export default function CampaignsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-black uppercase text-gray-700 mb-1">Velocidad de Envío</label>
+                  <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">Velocidad de Envío</label>
                   <select
                     value={metaForm.messagesPerMinute}
                     onChange={e => setMetaForm({ ...metaForm, messagesPerMinute: Number(e.target.value) })}
-                    className="w-full px-3 py-2 text-xs font-bold bg-white text-gray-950 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 text-gray-950 dark:text-white border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   >
                     <option value={10}>10 mensajes / minuto (Seguro)</option>
                     <option value={15}>15 mensajes / minuto (Recomendado)</option>
@@ -1856,7 +1861,7 @@ export default function CampaignsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-black uppercase text-gray-700 mb-1">Seleccionar Plantilla WhatsApp</label>
+                <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">Seleccionar Plantilla WhatsApp</label>
                 <select
                   value={metaForm.plantillaId}
                   onChange={e => {
@@ -1868,7 +1873,7 @@ export default function CampaignsPage() {
                       selectedMedia: sel ? sel.archivos_adjuntos || [] : []
                     });
                   }}
-                  className="w-full px-3 py-2 text-xs font-bold bg-white text-gray-950 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 text-gray-950 dark:text-white border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 >
                   <option value="">-- Personalizado / Sin plantilla --</option>
                   {plantillas.filter(p => p.tipo === 'whatsapp').map(p => (
@@ -1878,19 +1883,19 @@ export default function CampaignsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-black uppercase text-gray-700 mb-1">Mensaje del Chat</label>
+                <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">Mensaje del Chat</label>
                 <textarea
                   rows={4}
                   value={metaForm.customMessage}
                   onChange={e => setMetaForm({ ...metaForm, customMessage: e.target.value })}
                   placeholder="Hola {{nombre}}, te escribimos de Colaboratium..."
-                  className="w-full px-3 py-2 text-xs font-bold bg-white text-gray-950 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 text-gray-950 dark:text-white border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-black uppercase text-gray-700 mb-1">Adjuntos desde Biblioteca de Medios</label>
-                <div className="max-h-28 overflow-y-auto border border-gray-200 rounded-xl p-2 space-y-1">
+                <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">Adjuntos desde Biblioteca de Medios</label>
+                <div className="max-h-28 overflow-y-auto border border-gray-200 dark:border-white/10 rounded-xl p-2 space-y-1 bg-gray-50/50 dark:bg-slate-900/50">
                   {medios.map(m => {
                     const isSelected = metaForm.selectedMedia.some(att => att.nombre === m.nombre);
                     return (
@@ -1904,22 +1909,22 @@ export default function CampaignsPage() {
                           }
                         }}
                         className={`flex items-center justify-between p-1.5 rounded-lg text-xs font-bold cursor-pointer transition ${
-                          isSelected ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'hover:bg-gray-100 text-gray-800'
+                          isSelected ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30' : 'hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-800 dark:text-slate-200'
                         }`}
                       >
                         <span className="truncate">{m.nombre} ({m.rubro})</span>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-emerald-700" />}
+                        {isSelected && <Check className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />}
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-gray-200">
+              <div className="flex justify-end gap-2 pt-3 border-t border-gray-200 dark:border-white/10">
                 <button
                   type="button"
                   onClick={() => setShowMetaModal(false)}
-                  className="px-4 py-2 rounded-xl border border-gray-300 text-xs font-bold text-gray-700 hover:bg-gray-100"
+                  className="px-4 py-2 rounded-xl border border-gray-300 dark:border-white/10 text-xs font-bold text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800"
                 >
                   Cancelar
                 </button>
@@ -1941,20 +1946,20 @@ export default function CampaignsPage() {
       {/* ========================================================= */}
       {showEmailModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-            <div className="bg-white rounded-3xl p-6 max-w-3xl w-full shadow-2xl border border-gray-200 text-gray-950 flex flex-col max-h-[92vh] overflow-hidden">
-              <div className="flex justify-between items-center pb-3 border-b border-gray-200">
+            <div className="bg-white dark:bg-[#0c1424] rounded-3xl p-6 max-w-3xl w-full shadow-2xl border border-gray-200 dark:border-white/10 text-gray-950 dark:text-white flex flex-col max-h-[92vh] overflow-hidden">
+              <div className="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-white/10">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shadow-xs">
                     <Mail className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="font-black text-base text-gray-950">Lanzar Campaña Masiva por Email (Gmail)</h3>
-                    <p className="text-[11px] font-semibold text-gray-500">
-                      Remitente: <span className="font-mono text-blue-700 font-bold">colaboratium@gmail.com</span> • BCRA Nº 40.015
+                    <h3 className="font-black text-base text-gray-950 dark:text-white">Lanzar Campaña Masiva por Email (Gmail)</h3>
+                    <p className="text-[11px] font-semibold text-gray-500 dark:text-slate-400">
+                      Remitente: <span className="font-mono text-blue-700 dark:text-blue-400 font-bold">colaboratium@gmail.com</span> • BCRA Nº 40.015
                     </p>
                   </div>
                 </div>
-                <button onClick={() => setShowEmailModal(false)} className="text-gray-400 hover:text-gray-700">
+                <button onClick={() => setShowEmailModal(false)} className="text-gray-400 hover:text-gray-700 dark:hover:text-white">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -2033,33 +2038,33 @@ export default function CampaignsPage() {
               <form onSubmit={handleLaunchEmailCampaign} className="space-y-4 py-3 overflow-y-auto flex-1 pr-1">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-black uppercase text-gray-700 mb-1">Nombre de Campaña</label>
+                    <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">Nombre de Campaña</label>
                     <input
                       type="text"
                       required
                       value={emailForm.nombre}
                       onChange={e => setEmailForm({ ...emailForm, nombre: e.target.value })}
                       placeholder="Ej: Búsqueda de Asesores Comerciales Colaboratium"
-                      className="w-full px-3 py-2 text-xs font-bold bg-white text-gray-950 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 text-gray-950 dark:text-white border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-black uppercase text-gray-700 mb-1">Asunto del Correo</label>
+                    <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">Asunto del Correo</label>
                     <input
                       type="text"
                       required
                       value={emailForm.asunto}
                       onChange={e => setEmailForm({ ...emailForm, asunto: e.target.value })}
                       placeholder="Ej: Búsqueda de Asesores Comerciales Colaboratium"
-                      className="w-full px-3 py-2 text-xs font-bold bg-white text-gray-950 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 text-gray-950 dark:text-white border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-black uppercase text-gray-700 mb-1">Público Destino / Rubro</label>
+                    <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">Público Destino / Rubro</label>
                     <select
                       value={emailForm.targetGroup}
                       onChange={e => {
@@ -2073,7 +2078,7 @@ export default function CampaignsPage() {
                           selectedContactIds: grpContacts.map(c => c.id) 
                         });
                       }}
-                      className="w-full px-3 py-2 text-xs font-bold bg-white text-gray-950 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 text-gray-950 dark:text-white border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     >
                       <option value="PROSPECTO ASESORES">
                         PROSPECTO ASESORES ({contactsWithEmail.filter(c => (c.grupo || '').toUpperCase() === 'PROSPECTO ASESORES').length} con email del Excel)
@@ -2090,7 +2095,7 @@ export default function CampaignsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-black uppercase text-gray-700 mb-1">Plantilla de Email</label>
+                    <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">Plantilla de Email</label>
                     <select
                       value={emailForm.plantillaId}
                       onChange={e => {
@@ -2103,7 +2108,7 @@ export default function CampaignsPage() {
                           selectedMedia: sel ? sel.archivos_adjuntos || [] : []
                         });
                       }}
-                      className="w-full px-3 py-2 text-xs font-bold bg-white text-gray-950 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 text-gray-950 dark:text-white border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     >
                       <option value="">-- Redacción manual / Sin plantilla --</option>
                       {plantillas.filter(p => p.tipo === 'email').map(p => (
@@ -2114,37 +2119,37 @@ export default function CampaignsPage() {
                 </div>
 
                 {/* Selector Individual de Destinatarios y Control de Lotes */}
-                <div className="p-3.5 bg-gray-50 border border-gray-200 rounded-2xl space-y-3">
+                <div className="p-3.5 bg-gray-50 dark:bg-[#090e1c] border border-gray-200 dark:border-white/10 rounded-2xl space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-blue-600" />
-                      <span className="text-xs font-black text-gray-900 uppercase tracking-wider">
-                        Destinatarios Seleccionados: <span className="text-blue-700 font-extrabold">{selectedCount}</span> de {availableInGroup.length}
+                      <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider">
+                        Destinatarios Seleccionados: <span className="text-blue-700 dark:text-blue-400 font-extrabold">{selectedCount}</span> de {availableInGroup.length}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-xs">
                       <button
                         type="button"
                         onClick={handleSelectAllInGroup}
-                        className="text-blue-600 hover:text-blue-800 font-extrabold"
+                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-extrabold"
                       >
                         Marcar todos ({availableInGroup.length})
                       </button>
-                      <span className="text-gray-300">|</span>
+                      <span className="text-gray-300 dark:text-slate-600">|</span>
                       <button
                         type="button"
                         onClick={handleClearSelection}
-                        className="text-gray-500 hover:text-gray-800 font-extrabold"
+                        className="text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-white font-extrabold"
                       >
                         Desmarcar todos
                       </button>
                       {emailContactSearch && (
                         <>
-                          <span className="text-gray-300">|</span>
+                          <span className="text-gray-300 dark:text-slate-600">|</span>
                           <button
                             type="button"
                             onClick={handleSelectAllFiltered}
-                            className="text-indigo-600 hover:text-indigo-800 font-extrabold"
+                            className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-extrabold"
                           >
                             Marcar mostrados ({filteredForSelection.length})
                           </button>
@@ -2154,27 +2159,27 @@ export default function CampaignsPage() {
                   </div>
 
                   {/* Barra Limitadora de Cantidades y Lotes (Solicitud Usuario: 1-50, 51-100, etc.) */}
-                  <div className="p-3 bg-white border border-blue-200 rounded-xl shadow-xs">
+                  <div className="p-3 bg-white dark:bg-[#0c1424] border border-blue-200 dark:border-white/10 rounded-xl shadow-xs">
                     <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-1.5 text-xs font-black text-blue-950 uppercase tracking-wider">
-                        <Sliders className="w-3.5 h-3.5 text-blue-600" />
+                      <div className="flex items-center gap-1.5 text-xs font-black text-blue-950 dark:text-blue-200 uppercase tracking-wider">
+                        <Sliders className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                         <span>Limitar Rango de Envío por Lotes:</span>
                       </div>
-                      <span className="text-[11px] font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                      <span className="text-[11px] font-mono font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-500/30">
                         Seleccionados: #{batchRangeStart} al #{batchRangeEnd} ({selectedCount} contactos)
                       </span>
                     </div>
 
                     {/* Presets Rápidos */}
                     <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
-                      <span className="text-[10px] font-black uppercase text-gray-400 mr-1">Lotes Rápidos:</span>
+                      <span className="text-[10px] font-black uppercase text-gray-400 dark:text-slate-500 mr-1">Lotes Rápidos:</span>
                       <button
                         type="button"
                         onClick={() => handleApplyBatchRange(1, Math.min(50, availableInGroup.length))}
                         className={`px-2.5 py-1 text-xs font-black rounded-lg border transition ${
                           batchRangeStart === 1 && batchRangeEnd === 50
                             ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                            : 'bg-gray-50 hover:bg-blue-50 text-gray-700 border-gray-200'
+                            : 'bg-gray-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 border-gray-200 dark:border-white/10'
                         }`}
                       >
                         1 a 50
@@ -2185,7 +2190,7 @@ export default function CampaignsPage() {
                         className={`px-2.5 py-1 text-xs font-black rounded-lg border transition ${
                           batchRangeStart === 51 && batchRangeEnd === 100
                             ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                            : 'bg-gray-50 hover:bg-blue-50 text-gray-700 border-gray-200'
+                            : 'bg-gray-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 border-gray-200 dark:border-white/10'
                         }`}
                       >
                         51 a 100
@@ -2196,7 +2201,7 @@ export default function CampaignsPage() {
                         className={`px-2.5 py-1 text-xs font-black rounded-lg border transition ${
                           batchRangeStart === 101 && batchRangeEnd === 150
                             ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                            : 'bg-gray-50 hover:bg-blue-50 text-gray-700 border-gray-200'
+                            : 'bg-gray-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300 border-gray-200 dark:border-white/10'
                         }`}
                       >
                         101 a 150
@@ -2208,14 +2213,14 @@ export default function CampaignsPage() {
                           const nextEnd = Math.min(nextStart + 49, availableInGroup.length);
                           handleApplyBatchRange(nextStart, nextEnd);
                         }}
-                        className="px-2.5 py-1 text-xs font-black rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 flex items-center gap-1 transition"
+                        className="px-2.5 py-1 text-xs font-black rounded-lg border border-indigo-200 dark:border-indigo-500/30 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 flex items-center gap-1 transition"
                       >
                         <span>Siguiente Lote (50) ⏩</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => handleApplyBatchRange(1, availableInGroup.length)}
-                        className="px-2 py-1 text-xs font-black rounded-lg border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 transition"
+                        className="px-2 py-1 text-xs font-black rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition"
                       >
                         Todos ({availableInGroup.length})
                       </button>
@@ -2224,7 +2229,7 @@ export default function CampaignsPage() {
                     {/* Inputs Desde - Hasta y Barra Deslizante */}
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
                       <div className="sm:col-span-3 flex items-center gap-1 text-xs">
-                        <span className="text-gray-500 font-bold shrink-0">Desde #:</span>
+                        <span className="text-gray-500 dark:text-slate-400 font-bold shrink-0">Desde #:</span>
                         <input
                           type="number"
                           min="1"
@@ -2234,12 +2239,12 @@ export default function CampaignsPage() {
                             const val = parseInt(e.target.value, 10) || 1;
                             setBatchRangeStart(val);
                           }}
-                          className="w-full px-2 py-1 text-xs font-extrabold border border-gray-300 rounded-lg text-center"
+                          className="w-full px-2 py-1 text-xs font-extrabold border border-gray-300 dark:border-white/10 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-lg text-center"
                         />
                       </div>
 
                       <div className="sm:col-span-3 flex items-center gap-1 text-xs">
-                        <span className="text-gray-500 font-bold shrink-0">Hasta #:</span>
+                        <span className="text-gray-500 dark:text-slate-400 font-bold shrink-0">Hasta #:</span>
                         <input
                           type="number"
                           min="1"
@@ -2249,7 +2254,7 @@ export default function CampaignsPage() {
                             const val = parseInt(e.target.value, 10) || 1;
                             setBatchRangeEnd(val);
                           }}
-                          className="w-full px-2 py-1 text-xs font-extrabold border border-gray-300 rounded-lg text-center"
+                          className="w-full px-2 py-1 text-xs font-extrabold border border-gray-300 dark:border-white/10 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-lg text-center"
                         />
                       </div>
 
@@ -2264,7 +2269,7 @@ export default function CampaignsPage() {
                             setBatchRangeEnd(val);
                             handleApplyBatchRange(batchRangeStart, val);
                           }}
-                          className="w-full accent-blue-600 cursor-pointer h-2 bg-gray-200 rounded-lg"
+                          className="w-full accent-blue-600 cursor-pointer h-2 bg-gray-200 dark:bg-slate-800 rounded-lg"
                         />
                       </div>
 
@@ -2281,9 +2286,9 @@ export default function CampaignsPage() {
 
                     {/* Memoria de Último Lote Guardado */}
                     {savedBatchEnd > 0 && (
-                      <div className="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
+                      <div className="mt-2 pt-2 border-t border-gray-100 dark:border-white/10 flex items-center justify-between text-[11px] text-gray-500 dark:text-slate-400">
                         <span className="flex items-center gap-1">
-                          💾 Último lote despachado finalizó en el contacto <strong className="text-gray-800">#{savedBatchEnd}</strong>.
+                          💾 Último lote despachado finalizó en el contacto <strong className="text-gray-800 dark:text-slate-200">#{savedBatchEnd}</strong>.
                         </span>
                         <button
                           type="button"
@@ -2292,7 +2297,7 @@ export default function CampaignsPage() {
                             const nextE = Math.min(nextS + 49, availableInGroup.length);
                             handleApplyBatchRange(nextS, nextE);
                           }}
-                          className="text-blue-600 hover:text-blue-800 font-black underline"
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-black underline"
                         >
                           Continuar desde el #{savedBatchEnd + 1}
                         </button>
@@ -2301,19 +2306,19 @@ export default function CampaignsPage() {
                   </div>
 
                   <div className="relative mb-2">
-                    <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-gray-400" />
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-gray-400 dark:text-slate-500" />
                     <input
                       type="text"
                       placeholder="Buscar destinatario específico por nombre o email..."
                       value={emailContactSearch}
                       onChange={e => setEmailContactSearch(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 text-xs font-bold bg-white text-gray-900 border border-gray-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full pl-8 pr-3 py-1.5 text-xs font-bold bg-white dark:bg-slate-800 text-gray-900 dark:text-white border border-gray-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                   </div>
 
-                  <div className="max-h-56 overflow-y-auto divide-y divide-gray-100 border border-gray-200 bg-white rounded-xl">
+                  <div className="max-h-56 overflow-y-auto divide-y divide-gray-100 dark:divide-white/10 border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0c1424] rounded-xl">
                     {filteredForSelection.length === 0 ? (
-                      <div className="p-4 text-center text-xs text-gray-500 font-medium">
+                      <div className="p-4 text-center text-xs text-gray-500 dark:text-slate-400 font-medium">
                         No se encontraron contactos con email que coincidan con la búsqueda.
                       </div>
                     ) : (
@@ -2323,21 +2328,21 @@ export default function CampaignsPage() {
                           <div 
                             key={c.id} 
                             onClick={() => toggleContact(c.id)}
-                            className={`flex items-center justify-between p-2.5 hover:bg-blue-50/60 cursor-pointer transition text-xs ${isChecked ? 'bg-blue-50/40' : ''}`}
+                            className={`flex items-center justify-between p-2.5 hover:bg-blue-50/60 dark:hover:bg-blue-950/40 cursor-pointer transition text-xs ${isChecked ? 'bg-blue-50/40 dark:bg-blue-950/30' : ''}`}
                           >
                             <div className="flex items-center gap-2.5 truncate pr-2">
                               <input
                                 type="checkbox"
                                 checked={isChecked}
                                 onChange={() => {}}
-                                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
+                                className="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-slate-700 focus:ring-blue-500 cursor-pointer"
                               />
                               <div className="truncate">
-                                <span className="font-extrabold text-gray-900">{c.nombre || 'Candidato'}</span>
-                                <span className="text-gray-500 font-mono text-[11px] ml-1.5">({c.email})</span>
+                                <span className="font-extrabold text-gray-900 dark:text-white">{c.nombre || 'Candidato'}</span>
+                                <span className="text-gray-500 dark:text-slate-400 font-mono text-[11px] ml-1.5">({c.email})</span>
                               </div>
                             </div>
-                            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 shrink-0">
+                            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 shrink-0">
                               {c.grupo || 'PROSPECTO'}
                             </span>
                           </div>
@@ -2347,13 +2352,13 @@ export default function CampaignsPage() {
                   </div>
 
                   {/* Pre-flight Merge Stats (robindarlington/mail-merge) */}
-                  <div className="mt-2.5 pt-2 border-t border-gray-200 flex flex-wrap items-center justify-between gap-1 text-[11px] text-gray-600 font-semibold">
-                    <span className="flex items-center gap-1 text-emerald-700 font-bold">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <div className="mt-2.5 pt-2 border-t border-gray-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-1 text-[11px] text-gray-600 dark:text-slate-400 font-semibold">
+                    <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-bold">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                       <span>{selectedCount} destinatarios listos con email válido</span>
                     </span>
                     {mergeValidation?.detectedVariables && mergeValidation.detectedVariables.length > 0 && (
-                      <span className="text-gray-500 font-mono text-[10px]">
+                      <span className="text-gray-500 dark:text-slate-400 font-mono text-[10px]">
                         Variables: {mergeValidation.detectedVariables.map(v => `{{${v}}}`).join(', ')}
                       </span>
                     )}
@@ -2361,38 +2366,38 @@ export default function CampaignsPage() {
                 </div>
 
                 {/* Switch de Ritmo Humano Anti-Spam */}
-                <label className="flex items-start gap-3 p-3 bg-emerald-50/80 border border-emerald-200 rounded-2xl cursor-pointer">
+                <label className="flex items-start gap-3 p-3 bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-500/30 rounded-2xl cursor-pointer">
                   <input
                     type="checkbox"
                     checked={emailForm.humanPacing}
                     onChange={e => setEmailForm({ ...emailForm, humanPacing: e.target.checked })}
-                    className="w-4 h-4 mt-0.5 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500"
+                    className="w-4 h-4 mt-0.5 text-emerald-600 rounded border-gray-300 dark:border-slate-700 focus:ring-emerald-500"
                   />
                   <div>
-                    <span className="text-xs font-black text-emerald-950 flex items-center gap-1.5">
+                    <span className="text-xs font-black text-emerald-950 dark:text-emerald-300 flex items-center gap-1.5">
                       🛡️ Modo Seguro Anti-Baneo Gmail (Recomendado)
                     </span>
-                    <p className="text-[11px] text-emerald-700 mt-0.5 font-medium leading-relaxed">
+                    <p className="text-[11px] text-emerald-700 dark:text-emerald-300/80 mt-0.5 font-medium leading-relaxed">
                       Envía simulando el comportamiento de un humano real (2 a 3 emails por minuto con pausas aleatorias de 20 a 30 segundos) para evitar bloqueos y mantener la reputación del correo oficial colaboratium@gmail.com.
                     </p>
                   </div>
                 </label>
 
                 {/* Selector Interactivo de Opciones de Calendario para el Email */}
-                <div className="p-3.5 bg-sky-50/70 border border-sky-200 rounded-2xl">
+                <div className="p-3.5 bg-sky-50/70 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-500/30 rounded-2xl">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-sky-700" />
-                      <span className="text-xs font-black uppercase text-sky-950 tracking-wider">
+                      <Calendar className="w-4 h-4 text-sky-700 dark:text-sky-400" />
+                      <span className="text-xs font-black uppercase text-sky-950 dark:text-sky-200 tracking-wider">
                         Turnos de Google Meet a Ofrecer en la Invitación:
                       </span>
                     </div>
-                    <span className="text-[11px] font-bold text-sky-800">
+                    <span className="text-[11px] font-bold text-sky-800 dark:text-sky-300">
                       {selectedSlotIds.length} turno(s) seleccionado(s)
                     </span>
                   </div>
 
-                  <p className="text-[11px] text-sky-700 mb-2.5 font-medium">
+                  <p className="text-[11px] text-sky-700 dark:text-sky-300/80 mb-2.5 font-medium">
                     Marca las opciones de fechas que deseas incluir en el correo para que el candidato elija y el sistema lo agende automáticamente:
                   </p>
 
@@ -2415,12 +2420,12 @@ export default function CampaignsPage() {
                           }}
                           className={`p-2.5 rounded-xl border cursor-pointer transition flex flex-col justify-between text-xs ${
                             isSelected
-                              ? 'bg-white border-sky-500 shadow-xs ring-1 ring-sky-500'
-                              : 'bg-white/60 border-gray-200 opacity-60 hover:opacity-100 hover:border-sky-300'
+                              ? 'bg-white dark:bg-slate-900 border-sky-500 shadow-xs ring-1 ring-sky-500 text-gray-900 dark:text-white'
+                              : 'bg-white/60 dark:bg-slate-900/60 border-gray-200 dark:border-white/10 opacity-60 hover:opacity-100 hover:border-sky-300 dark:hover:border-sky-500/50'
                           }`}
                         >
                           <div className="flex items-start justify-between gap-1 mb-1">
-                            <span className="font-extrabold text-sky-900 text-[11px] uppercase tracking-wider">
+                            <span className="font-extrabold text-sky-900 dark:text-sky-300 text-[11px] uppercase tracking-wider">
                               Opción {idx + 1}
                             </span>
                             <input
@@ -2430,17 +2435,17 @@ export default function CampaignsPage() {
                               className="w-3.5 h-3.5 text-sky-600 rounded border-gray-300"
                             />
                           </div>
-                          <div className="font-black text-gray-900 text-xs mb-0.5">
+                          <div className="font-black text-gray-900 dark:text-white text-xs mb-0.5">
                             {slot.fechaStr}
                           </div>
-                          <div className="text-[11px] text-gray-600 font-mono">
+                          <div className="text-[11px] text-gray-600 dark:text-slate-400 font-mono">
                             {slot.horarioStr}
                           </div>
-                          <div className="mt-1.5 pt-1.5 border-t border-gray-100 flex items-center justify-between text-[10px] font-bold text-gray-500">
-                            <span className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-700">
+                          <div className="mt-1.5 pt-1.5 border-t border-gray-100 dark:border-white/10 flex items-center justify-between text-[10px] font-bold text-gray-500 dark:text-slate-400">
+                            <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-slate-800 rounded text-gray-700 dark:text-slate-300">
                               {slot.modalidad || 'VIRTUAL'}
                             </span>
-                            <span className="text-emerald-700">
+                            <span className="text-emerald-700 dark:text-emerald-400">
                               {25 - (slot.inscriptosCount || 0)} cupos libres
                             </span>
                           </div>
@@ -2452,19 +2457,19 @@ export default function CampaignsPage() {
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-black uppercase text-gray-700">Cuerpo del Email (HTML / Texto)</label>
-                    <div className="flex items-center gap-1 bg-gray-100 p-0.5 rounded-lg border border-gray-200">
+                    <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300">Cuerpo del Email (HTML / Texto)</label>
+                    <div className="flex items-center gap-1 bg-gray-100 dark:bg-slate-800 p-0.5 rounded-lg border border-gray-200 dark:border-white/10">
                       <button
                         type="button"
                         onClick={() => setShowEmailPreview(true)}
-                        className={`px-2.5 py-0.5 text-[11px] font-extrabold rounded-md transition ${showEmailPreview ? 'bg-white shadow-xs text-blue-700' : 'text-gray-500 hover:text-gray-900'}`}
+                        className={`px-2.5 py-0.5 text-[11px] font-extrabold rounded-md transition ${showEmailPreview ? 'bg-white dark:bg-slate-900 shadow-xs text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'}`}
                       >
                         👁️ Vista Previa
                       </button>
                       <button
                         type="button"
                         onClick={() => setShowEmailPreview(false)}
-                        className={`px-2.5 py-0.5 text-[11px] font-extrabold rounded-md transition ${!showEmailPreview ? 'bg-white shadow-xs text-blue-700' : 'text-gray-500 hover:text-gray-900'}`}
+                        className={`px-2.5 py-0.5 text-[11px] font-extrabold rounded-md transition ${!showEmailPreview ? 'bg-white dark:bg-slate-900 shadow-xs text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white'}`}
                       >
                         ✏️ Editor HTML
                       </button>
@@ -2472,10 +2477,10 @@ export default function CampaignsPage() {
                   </div>
 
                   {showEmailPreview ? (
-                    <div className="p-3 bg-gray-50 border border-gray-300 rounded-xl max-h-80 overflow-y-auto">
-                      <div className="text-[10px] uppercase font-black text-gray-400 mb-2 flex items-center justify-between">
+                    <div className="p-3 bg-gray-50 dark:bg-[#090e1c] border border-gray-300 dark:border-white/10 rounded-xl max-h-80 overflow-y-auto">
+                      <div className="text-[10px] uppercase font-black text-gray-400 dark:text-slate-500 mb-2 flex items-center justify-between">
                         <span>Vista previa del correo en vivo (con turnos de Google Meet y botones mailto):</span>
-                        <span className="text-emerald-700 font-bold">✓ Respuesta 1-Clic por Email y WhatsApp</span>
+                        <span className="text-emerald-700 dark:text-emerald-400 font-bold">✓ Respuesta 1-Clic por Email y WhatsApp</span>
                       </div>
                       <div
                         className="bg-white rounded-lg p-2 border border-gray-200 shadow-inner overflow-x-auto text-xs"
@@ -2490,14 +2495,14 @@ export default function CampaignsPage() {
                       required
                       value={emailForm.htmlContent}
                       onChange={e => setEmailForm({ ...emailForm, htmlContent: e.target.value })}
-                      className="w-full px-3 py-2 text-xs font-bold font-mono bg-white text-gray-950 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      className="w-full px-3 py-2 text-xs font-bold font-mono bg-white dark:bg-slate-900 text-gray-950 dark:text-white border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     />
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-black uppercase text-gray-700 mb-1">Adjuntos desde Biblioteca de Medios</label>
-                  <div className="max-h-24 overflow-y-auto border border-gray-200 rounded-xl p-2 space-y-1">
+                  <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">Adjuntos desde Biblioteca de Medios</label>
+                  <div className="max-h-24 overflow-y-auto border border-gray-200 dark:border-white/10 rounded-xl p-2 space-y-1 bg-gray-50/50 dark:bg-slate-900/50">
                     {medios.map(m => {
                       const isSelected = emailForm.selectedMedia.some(att => att.nombre === m.nombre);
                       return (
@@ -2511,22 +2516,22 @@ export default function CampaignsPage() {
                             }
                           }}
                           className={`flex items-center justify-between p-1.5 rounded-lg text-xs font-bold cursor-pointer transition ${
-                            isSelected ? 'bg-blue-100 text-blue-900 border border-blue-300' : 'hover:bg-gray-100 text-gray-800'
+                            isSelected ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-900 dark:text-blue-300 border border-blue-300 dark:border-blue-500/30' : 'hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-800 dark:text-slate-200'
                           }`}
                         >
                           <span className="truncate">{m.nombre} ({m.rubro})</span>
-                          {isSelected && <Check className="w-3.5 h-3.5 text-blue-700" />}
+                          {isSelected && <Check className="w-3.5 h-3.5 text-blue-700 dark:text-blue-400" />}
                         </div>
                       );
                     })}
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-2 pt-3 border-t border-gray-200">
+                <div className="flex justify-end gap-2 pt-3 border-t border-gray-200 dark:border-white/10">
                   <button
                     type="button"
                     onClick={() => setShowEmailModal(false)}
-                    className="px-4 py-2 rounded-xl border border-gray-300 text-xs font-bold text-gray-700 hover:bg-gray-100"
+                    className="px-4 py-2 rounded-xl border border-gray-300 dark:border-white/10 text-xs font-bold text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800"
                   >
                     Cancelar
                   </button>
@@ -2548,12 +2553,12 @@ export default function CampaignsPage() {
       {/* ========================================================= */}
       {showTemplateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-xl w-full shadow-2xl border border-gray-200 text-gray-950 flex flex-col max-h-[90vh] overflow-hidden">
-            <div className="flex justify-between items-center pb-3 border-b border-gray-200">
-              <h3 className="font-black text-base text-gray-950">
+          <div className="bg-white dark:bg-[#0c1424] rounded-3xl p-6 max-w-xl w-full shadow-2xl border border-gray-200 dark:border-white/10 text-gray-950 dark:text-white flex flex-col max-h-[90vh] overflow-hidden">
+            <div className="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-white/10">
+              <h3 className="font-black text-base text-gray-950 dark:text-white">
                 {editingTemplate ? `Editar Plantilla: ${editingTemplate.nombre}` : 'Crear Nueva Plantilla'}
               </h3>
-              <button onClick={() => setShowTemplateModal(false)} className="text-gray-400 hover:text-gray-700">
+              <button onClick={() => setShowTemplateModal(false)} className="text-gray-400 hover:text-gray-700 dark:hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -2561,11 +2566,11 @@ export default function CampaignsPage() {
             <form onSubmit={handleSaveTemplate} className="space-y-4 py-4 overflow-y-auto flex-1">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-black uppercase text-gray-700 mb-1">Tipo de Canal</label>
+                  <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">Tipo de Canal</label>
                   <select
                     value={templateForm.tipo}
                     onChange={e => setTemplateForm({ ...templateForm, tipo: e.target.value })}
-                    className="w-full px-3 py-2 text-xs font-bold bg-white text-gray-950 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 text-gray-950 dark:text-white border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   >
                     <option value="whatsapp">📱 WhatsApp Meta</option>
                     <option value="email">✉️ Email Gmail</option>
@@ -2573,11 +2578,11 @@ export default function CampaignsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-black uppercase text-gray-700 mb-1">Categoría</label>
+                  <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">Categoría</label>
                   <select
                     value={templateForm.categoria}
                     onChange={e => setTemplateForm({ ...templateForm, categoria: e.target.value })}
-                    className="w-full px-3 py-2 text-xs font-bold bg-white text-gray-950 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 text-gray-950 dark:text-white border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   >
                     <option value="asesores">Asesores</option>
                     <option value="lideres">Líderes</option>
@@ -2589,35 +2594,35 @@ export default function CampaignsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-black uppercase text-gray-700 mb-1">Nombre de la Plantilla</label>
+                <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">Nombre de la Plantilla</label>
                 <input
                   type="text"
                   required
                   value={templateForm.nombre}
                   onChange={e => setTemplateForm({ ...templateForm, nombre: e.target.value })}
                   placeholder="Ej: Convocatoria Líderes Comerciales"
-                  className="w-full px-3 py-2 text-xs font-bold bg-white text-gray-950 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 text-gray-950 dark:text-white border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
               </div>
 
               {templateForm.tipo === 'email' && (
                 <div>
-                  <label className="block text-xs font-black uppercase text-gray-700 mb-1">Asunto del Correo</label>
+                  <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">Asunto del Correo</label>
                   <input
                     type="text"
                     required
                     value={templateForm.asunto}
                     onChange={e => setTemplateForm({ ...templateForm, asunto: e.target.value })}
                     placeholder="Ej: Invitación Oficial Colaboratium"
-                    className="w-full px-3 py-2 text-xs font-bold bg-white text-gray-950 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 text-gray-950 dark:text-white border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   />
                 </div>
               )}
 
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <label className="block text-xs font-black uppercase text-gray-700">Contenido del Mensaje</label>
-                  <span className="text-[10px] text-gray-500 font-bold">Variables: {'{{nombre}}, {{rol}}, {{telefono}}'}</span>
+                  <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300">Contenido del Mensaje</label>
+                  <span className="text-[10px] text-gray-500 dark:text-slate-400 font-bold">Variables: {'{{nombre}}, {{rol}}, {{telefono}}'}</span>
                 </div>
                 <textarea
                   rows={5}
@@ -2625,13 +2630,13 @@ export default function CampaignsPage() {
                   value={templateForm.contenido}
                   onChange={e => setTemplateForm({ ...templateForm, contenido: e.target.value })}
                   placeholder="Hola {{nombre}}, te damos la bienvenida..."
-                  className="w-full px-3 py-2 text-xs font-bold bg-white text-gray-950 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 text-gray-950 dark:text-white border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-black uppercase text-gray-700 mb-1">Archivos Adjuntos de la Biblioteca de Medios</label>
-                <div className="max-h-24 overflow-y-auto border border-gray-200 rounded-xl p-2 space-y-1">
+                <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">Archivos Adjuntos de la Biblioteca de Medios</label>
+                <div className="max-h-24 overflow-y-auto border border-gray-200 dark:border-white/10 rounded-xl p-2 space-y-1 bg-gray-50/50 dark:bg-slate-900/50">
                   {medios.map(m => {
                     const isSelected = templateForm.archivos_adjuntos.some(att => att.nombre === m.nombre);
                     return (
@@ -2645,22 +2650,22 @@ export default function CampaignsPage() {
                           }
                         }}
                         className={`flex items-center justify-between p-1.5 rounded-lg text-xs font-bold cursor-pointer transition ${
-                          isSelected ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'hover:bg-gray-100 text-gray-800'
+                          isSelected ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30' : 'hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-800 dark:text-slate-200'
                         }`}
                       >
                         <span className="truncate">{m.nombre} ({m.rubro})</span>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-amber-700" />}
+                        {isSelected && <Check className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />}
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-gray-200">
+              <div className="flex justify-end gap-2 pt-3 border-t border-gray-200 dark:border-white/10">
                 <button
                   type="button"
                   onClick={() => setShowTemplateModal(false)}
-                  className="px-4 py-2 rounded-xl border border-gray-300 text-xs font-bold text-gray-700 hover:bg-gray-100"
+                  className="px-4 py-2 rounded-xl border border-gray-300 dark:border-white/10 text-xs font-bold text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800"
                 >
                   Cancelar
                 </button>
@@ -2681,20 +2686,20 @@ export default function CampaignsPage() {
       {/* ========================================================= */}
       {previewMedia && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-            <div className="bg-white rounded-3xl max-w-4xl w-full shadow-2xl border border-gray-200 overflow-hidden flex flex-col max-h-[92vh]">
+            <div className="bg-white dark:bg-[#0c1424] rounded-3xl max-w-4xl w-full shadow-2xl border border-gray-200 dark:border-white/10 overflow-hidden flex flex-col max-h-[92vh]">
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/80">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/10 bg-gray-50/80 dark:bg-[#090e1c]">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center font-bold">
+                  <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-500/30 flex items-center justify-center font-bold">
                     {isPreviewPdf ? <FileText className="w-5 h-5 text-rose-600" /> :
                      isPreviewAudio ? <Music className="w-5 h-5 text-emerald-600" /> :
                      isPreviewImage ? <ImageIcon className="w-5 h-5 text-sky-600" /> :
                      <Presentation className="w-5 h-5 text-purple-600" />}
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-gray-950 truncate max-w-md">{previewMedia.nombre}</h3>
-                    <div className="flex items-center gap-2 text-[11px] text-gray-500 font-medium">
-                      <span className="uppercase font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200/50">
+                    <h3 className="text-sm font-black text-gray-950 dark:text-white truncate max-w-md">{previewMedia.nombre}</h3>
+                    <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-slate-400 font-medium">
+                      <span className="uppercase font-bold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-md border border-indigo-200/50 dark:border-indigo-500/30">
                         {previewMedia.rubro}
                       </span>
                       <span>•</span>
@@ -2708,7 +2713,7 @@ export default function CampaignsPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleCopyLink(previewMedia.archivo_url)}
-                    className="px-3 py-1.5 rounded-xl bg-white hover:bg-gray-100 border border-gray-200 text-gray-700 text-xs font-bold transition flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-slate-300 text-xs font-bold transition flex items-center gap-1.5"
                     title="Copiar URL directa"
                   >
                     <Copy className="w-3.5 h-3.5" />
@@ -2727,7 +2732,7 @@ export default function CampaignsPage() {
                   </a>
                   <button
                     onClick={() => setPreviewMedia(null)}
-                    className="p-1.5 rounded-xl text-gray-400 hover:text-gray-900 hover:bg-gray-100 transition"
+                    className="p-1.5 rounded-xl text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800 transition"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -2735,21 +2740,21 @@ export default function CampaignsPage() {
               </div>
 
               {/* Visor Multimedia según tipo de archivo */}
-              <div className="p-6 overflow-y-auto flex-1 flex flex-col items-center justify-center bg-gray-950/5 min-h-[460px]">
+              <div className="p-6 overflow-y-auto flex-1 flex flex-col items-center justify-center bg-gray-950/5 dark:bg-slate-950/40 min-h-[460px]">
                 {isPreviewPdf ? (
                   <iframe
                     src={previewFullUrl}
-                    className="w-full h-[620px] rounded-2xl border border-gray-200 shadow-inner bg-white"
+                    className="w-full h-[620px] rounded-2xl border border-gray-200 dark:border-white/10 shadow-inner bg-white"
                     title={previewMedia.nombre}
                   />
                 ) : isPreviewAudio ? (
-                  <div className="flex flex-col items-center justify-center p-8 bg-white border border-gray-200 rounded-3xl shadow-sm max-w-md w-full text-center space-y-4">
-                    <div className="w-20 h-20 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center border-2 border-emerald-100 shadow-inner">
+                  <div className="flex flex-col items-center justify-center p-8 bg-white dark:bg-[#090e1c] border border-gray-200 dark:border-white/10 rounded-3xl shadow-sm max-w-md w-full text-center space-y-4">
+                    <div className="w-20 h-20 rounded-full bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border-2 border-emerald-100 dark:border-emerald-500/30 shadow-inner">
                       <Music className="w-10 h-10" />
                     </div>
                     <div>
-                      <h4 className="font-black text-gray-900 text-base">{previewMedia.nombre}</h4>
-                      <p className="text-xs text-gray-500 mt-1">Audio Oficial / Nota de Voz de WhatsApp</p>
+                      <h4 className="font-black text-gray-900 dark:text-white text-base">{previewMedia.nombre}</h4>
+                      <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Audio Oficial / Nota de Voz de WhatsApp</p>
                     </div>
                     <audio controls autoPlay className="w-full mt-2">
                       <source src={previewFullUrl} type={previewMedia.mimetype || 'audio/ogg'} />
@@ -2761,17 +2766,17 @@ export default function CampaignsPage() {
                     <img
                       src={previewFullUrl}
                       alt={previewMedia.nombre}
-                      className="max-h-[620px] max-w-full object-contain rounded-2xl shadow-lg border border-gray-200 bg-white"
+                      className="max-h-[620px] max-w-full object-contain rounded-2xl shadow-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#090e1c]"
                     />
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center p-8 bg-white border border-gray-200 rounded-3xl shadow-sm max-w-md w-full text-center space-y-4">
-                    <div className="w-20 h-20 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center border-2 border-purple-100 shadow-inner">
+                  <div className="flex flex-col items-center justify-center p-8 bg-white dark:bg-[#090e1c] border border-gray-200 dark:border-white/10 rounded-3xl shadow-sm max-w-md w-full text-center space-y-4">
+                    <div className="w-20 h-20 rounded-full bg-purple-50 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center border-2 border-purple-100 dark:border-purple-500/30 shadow-inner">
                       <Presentation className="w-10 h-10" />
                     </div>
                     <div>
-                      <h4 className="font-black text-gray-900 text-base">{previewMedia.nombre}</h4>
-                      <p className="text-xs text-gray-500 mt-1">Presentación ejecutiva o documento oficial</p>
+                      <h4 className="font-black text-gray-900 dark:text-white text-base">{previewMedia.nombre}</h4>
+                      <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Presentación ejecutiva o documento oficial</p>
                     </div>
                     <a
                       href={previewFullUrl}

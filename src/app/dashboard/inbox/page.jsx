@@ -735,26 +735,26 @@ export default function InboxPage() {
           {/* SLIDE-OVER DRAWER DE FICHA Y CONVERSACIÓN (TAL COMO SE VE EN EL CALENDAR) */}
           {showContactDrawer && contactProfile && (
             <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-end transition-opacity">
-              <div className="bg-white text-gray-900 w-full max-w-xl h-full shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
+              <div className="bg-white dark:bg-[#0c1424] text-gray-900 dark:text-white w-full max-w-xl h-full shadow-2xl border-l border-gray-200 dark:border-white/10 flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
                 {/* Header del Drawer */}
-                <div className="p-6 border-b border-gray-100 flex items-start justify-between bg-gray-50/50">
+                <div className="p-6 border-b border-gray-100 dark:border-white/10 flex items-start justify-between bg-gray-50/50 dark:bg-[#0e1628]">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white flex items-center justify-center font-black text-xl shadow-md">
                       {(contactProfile.contacto.nombre || "J")[0].toUpperCase()}
                     </div>
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-black text-base text-gray-900">
+                        <h3 className="font-black text-base text-gray-900 dark:text-white">
                           {contactProfile.contacto.nombre}
                         </h3>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30">
                           {contactProfile.contacto.grupo || "ASESORES"}
                         </span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 border border-transparent dark:border-slate-700">
                           Rol: {contactProfile.contacto.rol_asignado || "General"}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-500 font-mono mt-0.5">
+                      <p className="text-xs text-gray-500 dark:text-slate-400 font-mono mt-0.5">
                         {contactProfile.contacto.telefono} • {contactProfile.contacto.email || "Sin email"}
                       </p>
                     </div>
@@ -762,20 +762,20 @@ export default function InboxPage() {
 
                   <button
                     onClick={() => setShowContactDrawer(false)}
-                    className="p-2 rounded-xl text-gray-400 hover:text-black hover:bg-gray-100 transition"
+                    className="p-2 rounded-xl text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
                 {/* Tabs de Navegación del Drawer */}
-                <div className="px-6 border-b border-gray-100 flex gap-4 bg-white">
+                <div className="px-6 border-b border-gray-100 dark:border-white/10 flex gap-4 bg-white dark:bg-[#0c1424]">
                   <button
                     onClick={() => setActiveDrawerTab("db")}
                     className={`py-3.5 text-xs font-extrabold flex items-center gap-2 border-b-2 transition ${
                       activeDrawerTab === "db"
-                        ? "border-black text-black"
-                        : "border-transparent text-gray-400 hover:text-gray-600"
+                        ? "border-black dark:border-white text-black dark:text-white"
+                        : "border-transparent text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200"
                     }`}
                   >
                     <FileBadge className="w-4 h-4" />
@@ -786,8 +786,8 @@ export default function InboxPage() {
                     onClick={() => setActiveDrawerTab("ai")}
                     className={`py-3.5 text-xs font-extrabold flex items-center gap-2 border-b-2 transition ${
                       activeDrawerTab === "ai"
-                        ? "border-indigo-600 text-indigo-600"
-                        : "border-transparent text-gray-400 hover:text-gray-600"
+                        ? "border-indigo-600 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400"
+                        : "border-transparent text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200"
                     }`}
                   >
                     <Sparkles className="w-4 h-4" />
@@ -798,8 +798,8 @@ export default function InboxPage() {
                     onClick={() => setActiveDrawerTab("chat")}
                     className={`py-3.5 text-xs font-extrabold flex items-center gap-2 border-b-2 transition ${
                       activeDrawerTab === "chat"
-                        ? "border-emerald-600 text-emerald-600"
-                        : "border-transparent text-gray-400 hover:text-gray-600"
+                        ? "border-emerald-600 dark:border-emerald-400 text-emerald-600 dark:text-emerald-400"
+                        : "border-transparent text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200"
                     }`}
                   >
                     <MessageSquare className="w-4 h-4" />
@@ -808,23 +808,23 @@ export default function InboxPage() {
                 </div>
 
                 {/* Contenido de Tabs */}
-                <div className="flex-1 p-6 overflow-y-auto space-y-4">
+                <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-white dark:bg-[#070b14]">
                   {/* Pestaña 1: Ficha BD */}
                   {activeDrawerTab === "db" && (
                     <div className="space-y-4">
                       {/* Ticket de admisiones */}
                       {contactProfile.ticket && (
-                        <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80">
+                        <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-500/30">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="font-extrabold text-xs text-amber-900 flex items-center gap-1.5">
-                              <Tag className="w-3.5 h-3.5 text-amber-600" />
+                            <span className="font-extrabold text-xs text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
+                              <Tag className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                               Ticket #{contactProfile.ticket.id}
                             </span>
-                            <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-amber-200 text-amber-900">
+                            <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-amber-200 dark:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-transparent dark:border-amber-500/30">
                               {contactProfile.ticket.status}
                             </span>
                           </div>
-                          <p className="text-xs text-amber-950 font-medium">
+                          <p className="text-xs text-amber-950 dark:text-amber-100 font-medium">
                             {contactProfile.ticket.summary}
                           </p>
                         </div>
@@ -832,34 +832,34 @@ export default function InboxPage() {
 
                       {/* Grilla de Datos CRM */}
                       <div className="grid grid-cols-2 gap-3 text-xs">
-                        <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                          <span className="text-[10px] font-bold text-gray-400 uppercase block">DNI / Identificación</span>
-                          <span className="font-bold text-gray-800 mt-0.5 block">{contactProfile.contacto.dni || "Sin registrar"}</span>
+                        <div className="p-3 bg-gray-50 dark:bg-[#0e1628] rounded-2xl border border-gray-100 dark:border-white/10">
+                          <span className="text-[10px] font-bold text-gray-400 dark:text-slate-400 uppercase block">DNI / Identificación</span>
+                          <span className="font-bold text-gray-800 dark:text-white mt-0.5 block">{contactProfile.contacto.dni || "Sin registrar"}</span>
                         </div>
 
-                        <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                          <span className="text-[10px] font-bold text-gray-400 uppercase block">Grupo / Rol</span>
-                          <span className="font-bold text-gray-800 mt-0.5 block">{contactProfile.contacto.grupo || "ASESORES"}</span>
+                        <div className="p-3 bg-gray-50 dark:bg-[#0e1628] rounded-2xl border border-gray-100 dark:border-white/10">
+                          <span className="text-[10px] font-bold text-gray-400 dark:text-slate-400 uppercase block">Grupo / Rol</span>
+                          <span className="font-bold text-gray-800 dark:text-white mt-0.5 block">{contactProfile.contacto.grupo || "ASESORES"}</span>
                         </div>
 
-                        <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                          <span className="text-[10px] font-bold text-gray-400 uppercase block">Banco Asociado</span>
-                          <span className="font-bold text-gray-800 mt-0.5 block">{contactProfile.contacto.banco || "Sin registrar"}</span>
+                        <div className="p-3 bg-gray-50 dark:bg-[#0e1628] rounded-2xl border border-gray-100 dark:border-white/10">
+                          <span className="text-[10px] font-bold text-gray-400 dark:text-slate-400 uppercase block">Banco Asociado</span>
+                          <span className="font-bold text-gray-800 dark:text-white mt-0.5 block">{contactProfile.contacto.banco || "Sin registrar"}</span>
                         </div>
 
-                        <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                          <span className="text-[10px] font-bold text-gray-400 uppercase block">CBU / CVU</span>
-                          <span className="font-mono font-bold text-gray-800 mt-0.5 block truncate">{contactProfile.contacto.cbu || "Sin registrar"}</span>
+                        <div className="p-3 bg-gray-50 dark:bg-[#0e1628] rounded-2xl border border-gray-100 dark:border-white/10">
+                          <span className="text-[10px] font-bold text-gray-400 dark:text-slate-400 uppercase block">CBU / CVU</span>
+                          <span className="font-mono font-bold text-gray-800 dark:text-white mt-0.5 block truncate">{contactProfile.contacto.cbu || "Sin registrar"}</span>
                         </div>
 
-                        <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100 col-span-2">
-                          <span className="text-[10px] font-bold text-gray-400 uppercase block">Domicilio Comercial</span>
-                          <span className="font-medium text-gray-800 mt-0.5 block">{contactProfile.contacto.direccion || "Sin registrar"}</span>
+                        <div className="p-3 bg-gray-50 dark:bg-[#0e1628] rounded-2xl border border-gray-100 dark:border-white/10 col-span-2">
+                          <span className="text-[10px] font-bold text-gray-400 dark:text-slate-400 uppercase block">Domicilio Comercial</span>
+                          <span className="font-medium text-gray-800 dark:text-slate-200 mt-0.5 block">{contactProfile.contacto.direccion || "Sin registrar"}</span>
                         </div>
 
-                        <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100 col-span-2">
-                          <span className="text-[10px] font-bold text-gray-400 uppercase block">Inscripción / Turno Agendado</span>
-                          <span className="font-bold text-indigo-700 mt-0.5 block">
+                        <div className="p-3 bg-gray-50 dark:bg-[#0e1628] rounded-2xl border border-gray-100 dark:border-white/10 col-span-2">
+                          <span className="text-[10px] font-bold text-gray-400 dark:text-slate-400 uppercase block">Inscripción / Turno Agendado</span>
+                          <span className="font-bold text-indigo-700 dark:text-indigo-400 mt-0.5 block">
                             {contactProfile.contacto.metadata_extra?.inscripcion || "Sin turno asignado"}
                           </span>
                         </div>
@@ -870,34 +870,34 @@ export default function InboxPage() {
                   {/* Pestaña 2: Resumen IA */}
                   {activeDrawerTab === "ai" && (
                     <div className="space-y-4">
-                      <div className="p-4 rounded-2xl bg-gradient-to-tr from-purple-50 via-indigo-50 to-blue-50 border border-indigo-100 shadow-sm">
-                        <div className="flex items-center gap-2 mb-2 text-indigo-900 font-black text-xs uppercase tracking-wider">
-                          <Sparkles className="w-4 h-4 text-indigo-600" />
+                      <div className="p-5 rounded-2xl bg-[#0f172a] dark:bg-[#0c1424] border border-indigo-500/40 shadow-md">
+                        <div className="flex items-center gap-2 mb-2.5 text-indigo-400 font-black text-xs uppercase tracking-wider">
+                          <Sparkles className="w-4 h-4 text-indigo-400" />
                           <span>Síntesis Inteligente del Candidato</span>
                         </div>
-                        <p className="text-xs text-gray-800 leading-relaxed font-medium whitespace-pre-wrap">
+                        <p className="text-xs text-slate-200 leading-relaxed font-medium whitespace-pre-wrap">
                           {contactProfile.resumen_ia}
                         </p>
                       </div>
 
-                      <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-2">
-                        <h4 className="text-xs font-extrabold text-gray-900">Puntos Clave Detectados:</h4>
-                        <ul className="text-xs text-gray-600 space-y-1.5">
+                      <div className="p-5 bg-[#0f172a] dark:bg-[#0c1424] rounded-2xl border border-slate-800 space-y-2.5">
+                        <h4 className="text-xs font-extrabold text-white">Puntos Clave Detectados:</h4>
+                        <ul className="text-xs text-slate-300 space-y-2">
                           <li className="flex items-center gap-2">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                            <span>Interés confirmado en el programa de <b>Asesores Comerciales</b>.</span>
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <span>Interés confirmado en el programa de <b className="text-white">Asesores Comerciales</b>.</span>
                           </li>
                           <li className="flex items-center gap-2">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                            <span>Canales de comunicación: <b>WhatsApp Oficial</b> y <b>Gmail</b>.</span>
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <span>Canales de comunicación: <b className="text-white">WhatsApp Oficial</b> y <b className="text-white">Gmail</b>.</span>
                           </li>
                           <li className="flex items-center gap-2">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                             <span>Correo verificado y notificado vía SMTP de Colaboratium.</span>
                           </li>
                           <li className="flex items-center gap-2">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                            <span>Ticket registrado en estado: <b>{contactProfile.ticket?.status || "Activo"}</b>.</span>
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <span>Ticket registrado en estado: <b className="text-white">{contactProfile.ticket?.status || "Activo"}</b>.</span>
                           </li>
                         </ul>
                       </div>
