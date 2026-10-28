@@ -30,7 +30,9 @@ import {
   ShieldCheck,
   Tag,
   Share2,
-  Check
+  Check,
+  Archive,
+  ArchiveRestore
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -70,6 +72,7 @@ export default function TicketsPage() {
   const [summarizingId, setSummarizingId] = useState(null);
   const [sendingEmailId, setSendingEmailId] = useState(null);
   const [authorizingId, setAuthorizingId] = useState(null);
+  const [archivingId, setArchivingId] = useState(null);
   
   // Form states
   const [newTicket, setNewTicket] = useState({
@@ -110,10 +113,9 @@ export default function TicketsPage() {
     if (!codigoEmpresa) return;
     try {
       setLoading(true);
-      const statusParam = filter === 'all' ? '' : filter;
-      const roleParam = (currentUserData?.rol_nombre ? `&role=${encodeURIComponent(currentUserData.rol_nombre)}&user_id=${currentUserData.id}` : '') + (user?.id ? `&clerkId=${user.id}` : '');
+      const roleParam = (currentUserData?.rol_nombre ? `role=${encodeURIComponent(currentUserData.rol_nombre)}&user_id=${currentUserData.id}` : '') + (user?.id ? `&clerkId=${user.id}` : '');
       const [tRes, uRes] = await Promise.all([
-        fetch(`${API_URL}/empresas/${codigoEmpresa}/tickets?status=${encodeURIComponent(statusParam)}${roleParam}`, {
+        fetch(`${API_URL}/empresas/${codigoEmpresa}/tickets?${roleParam}`, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         }),
         fetch(`${API_URL}/empresas/${codigoEmpresa}/users`, {
@@ -140,7 +142,7 @@ export default function TicketsPage() {
 
   useEffect(() => {
     fetchTickets();
-  }, [codigoEmpresa, filter, currentUserData?.rol_nombre]);
+  }, [codigoEmpresa, currentUserData?.rol_nombre]);
 
   // Crear nuevo ticket
   const handleCreateTicket = async (e) => {
@@ -247,6 +249,42 @@ export default function TicketsPage() {
       toast.error('Error de conexión al autorizar');
     } finally {
       setAuthorizingId(null);
+    }
+  };
+
+  // Archivar o Desarchivar Ticket (para que no afecte pendientes ni alertas)
+  const handleToggleArchiveTicket = async (ticket) => {
+    const isCurrentlyArchived = ticket.status === 'archived';
+    const actionEndpoint = isCurrentlyArchived ? 'unarchive' : 'archive';
+    const actionLabel = isCurrentlyArchived ? 'desarchivando' : 'archivando';
+
+    try {
+      setArchivingId(ticket.id);
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/tickets/${ticket.id}/${actionEndpoint}`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
+        body: JSON.stringify({
+          usuario_id: currentUserData?.id || user?.id,
+          usuario_nombre: currentUserData?.first_name ? `${currentUserData.first_name} ${currentUserData.last_name || ''}` : 'Operador',
+          usuario_email: currentUserData?.email || user?.emailAddresses?.[0]?.emailAddress,
+          rol: currentUserData?.rol_nombre || 'Admin'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        const nextStatus = isCurrentlyArchived ? 'open' : 'archived';
+        toast.success(isCurrentlyArchived ? `Ticket #${ticket.id} restaurado a activos` : `Ticket #${ticket.id} archivado (fuera de pendientes)`);
+        setTickets(prev => prev.map(t => t.id === ticket.id ? { ...t, status: nextStatus } : t));
+      } else {
+        toast.error(data.error || `No se pudo ${isCurrentlyArchived ? 'desarchivar' : 'archivar'}`);
+      }
+    } catch (err) {
+      toast.error(`Error al ${actionLabel} ticket`);
+    } finally {
+      setArchivingId(null);
     }
   };
 
@@ -417,6 +455,8 @@ export default function TicketsPage() {
         return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-sky-100 text-sky-800 border border-sky-300"><Truck className="w-3.5 h-3.5" /> En Gestión</span>;
       case 'closed':
         return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300"><CheckCircle2 className="w-3.5 h-3.5" /> Cerrado</span>;
+      case 'archived':
+        return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300"><Archive className="w-3.5 h-3.5 text-slate-500" /> Archivado</span>;
       default:
         return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700">{status}</span>;
     }
@@ -461,10 +501,30 @@ export default function TicketsPage() {
   });
 
   const filteredTickets = visibleTickets.filter(t => {
+    // 1. Filtro del Copiloto
     if (copilotFilterIds !== null && !copilotFilterIds.includes(t.id)) {
       return false;
     }
+
+    // 2. Filtro de pestañas (Estado / Archivado)
+    if (filter === 'archived') {
+      if (t.status !== 'archived') return false;
+    } else {
+      // Si no estamos en la pestaña Archivados, ocultar siempre los archivados
+      if (t.status === 'archived') return false;
+
+      if (filter === 'pending_auth' && t.status !== 'pending_auth') return false;
+      if (filter === 'open' && t.status !== 'open') return false;
+      if (filter === 'en logistica') {
+        const isDelegated = (t.status === 'en logistica' || t.status === 'delegated' || !!t.assigned_to_name) && t.status !== 'closed';
+        if (!isDelegated) return false;
+      }
+      if (filter === 'closed' && t.status !== 'closed') return false;
+    }
+
+    // 3. Término de búsqueda
     const term = searchTerm.toLowerCase();
+    if (!term) return true;
     const phoneMatch = (t.phone || t.customer_number || '').includes(term);
     const nameMatch = (t.customer_name || '').toLowerCase().includes(term);
     const summaryMatch = (t.summary || '').toLowerCase().includes(term);
@@ -472,13 +532,14 @@ export default function TicketsPage() {
     return phoneMatch || nameMatch || summaryMatch || assignedMatch;
   });
 
-  // Conteo para las pestañas
+  // Conteo para las pestañas (los archivados no suman en 'all' ni en 'delegated')
   const counts = {
-    all: visibleTickets.length,
+    all: visibleTickets.filter(t => t.status !== 'archived').length,
     pending_auth: visibleTickets.filter(t => t.status === 'pending_auth').length,
     open: visibleTickets.filter(t => t.status === 'open').length,
-    delegated: visibleTickets.filter(t => t.status === 'en logistica' || t.status === 'delegated' || !!t.assigned_to_name).length,
-    closed: visibleTickets.filter(t => t.status === 'closed').length
+    delegated: visibleTickets.filter(t => (t.status === 'en logistica' || t.status === 'delegated' || !!t.assigned_to_name) && t.status !== 'archived' && t.status !== 'closed').length,
+    closed: visibleTickets.filter(t => t.status === 'closed').length,
+    archived: visibleTickets.filter(t => t.status === 'archived').length
   };
 
   return (
@@ -549,7 +610,8 @@ export default function TicketsPage() {
                 { id: 'pending_auth', label: 'Pendientes Aut.', count: counts.pending_auth },
                 { id: 'open', label: 'Abiertos', count: counts.open },
                 { id: 'en logistica', label: 'En Gestión', count: counts.delegated },
-                { id: 'closed', label: 'Cerrados', count: counts.closed }
+                { id: 'closed', label: 'Cerrados', count: counts.closed },
+                { id: 'archived', label: 'Archivados', count: counts.archived, isArchive: true }
               ].map(f => (
                 <button
                   key={f.id}
@@ -559,13 +621,18 @@ export default function TicketsPage() {
                   }}
                   className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
                     filter === f.id
-                      ? 'bg-white text-gray-950 shadow-sm border border-gray-200'
+                      ? f.isArchive
+                        ? 'bg-slate-800 text-white shadow-sm'
+                        : 'bg-white text-gray-950 shadow-sm border border-gray-200'
                       : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
                   }`}
                 >
+                  {f.isArchive && <Archive className="w-3.5 h-3.5" />}
                   <span>{f.label}</span>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
-                    filter === f.id ? 'bg-black text-white' : 'bg-gray-200 text-gray-700'
+                    filter === f.id
+                      ? f.isArchive ? 'bg-slate-700 text-slate-100' : 'bg-black text-white'
+                      : 'bg-gray-200 text-gray-700'
                   }`}>
                     {f.count}
                   </span>
@@ -593,8 +660,12 @@ export default function TicketsPage() {
           ) : filteredTickets.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-gray-200 rounded-3xl">
               <Ticket className="w-12 h-12 text-gray-300 mb-3" />
-              <p className="text-gray-700 font-bold text-sm">No hay tickets en este estado</p>
-              <p className="text-gray-400 text-xs mt-1">Crea un nuevo ticket o cambia el filtro de búsqueda</p>
+              <p className="text-gray-700 font-bold text-sm">
+                {filter === 'archived' ? 'No hay tickets archivados' : 'No hay tickets en este estado'}
+              </p>
+              <p className="text-gray-400 text-xs mt-1">
+                {filter === 'archived' ? 'Los tickets archivados quedan aislados y no alteran la bandeja de pendientes ni métricas operativas.' : 'Crea un nuevo ticket o cambia el filtro de búsqueda'}
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3.5">
@@ -674,7 +745,7 @@ export default function TicketsPage() {
                         </button>
                       )}
 
-                      {/* Botón Delegar / Asignar */}
+                      {/* Botón Delegar / Asignar / Archivar */}
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleOpenDelegate(ticket)}
@@ -692,6 +763,29 @@ export default function TicketsPage() {
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                           <span>Modificar</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleToggleArchiveTicket(ticket)}
+                          disabled={archivingId === ticket.id}
+                          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition ${
+                            ticket.status === 'archived'
+                              ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-300'
+                          }`}
+                          title={ticket.status === 'archived' ? 'Desarchivar ticket y volverlo a estado Abierto' : 'Archivar ticket (no afecta métricas de pendientes)'}
+                        >
+                          {ticket.status === 'archived' ? (
+                            <>
+                              <ArchiveRestore className={`w-3.5 h-3.5 text-amber-600 ${archivingId === ticket.id ? 'animate-spin' : ''}`} />
+                              <span>{archivingId === ticket.id ? 'Restaurando...' : 'Desarchivar'}</span>
+                            </>
+                          ) : (
+                            <>
+                              <Archive className={`w-3.5 h-3.5 text-slate-600 ${archivingId === ticket.id ? 'animate-spin' : ''}`} />
+                              <span>{archivingId === ticket.id ? 'Archivando...' : 'Archivar'}</span>
+                            </>
+                          )}
                         </button>
                       </div>
 
@@ -880,6 +974,7 @@ export default function TicketsPage() {
                         <option value="open">Abierto</option>
                         <option value="en logistica">En Gestión</option>
                         <option value="closed">Cerrado</option>
+                        <option value="archived">📦 Archivado (No afecta pendientes)</option>
                       </select>
                     </div>
                   </div>
