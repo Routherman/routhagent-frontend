@@ -1,5 +1,8 @@
-const defaultBackend = 'https://carditic-laci-unmerrily.ngrok-free.dev';
-const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || defaultBackend).trim().replace(/\/+$/, '');
+const defaultBackend = 'https://descending-mailto-children-sunrise.trycloudflare.com';
+let BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || defaultBackend).trim().replace(/\/+$/, '');
+if (BACKEND_URL.includes('ngrok')) {
+  BACKEND_URL = defaultBackend;
+}
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
