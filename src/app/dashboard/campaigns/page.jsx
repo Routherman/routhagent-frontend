@@ -40,6 +40,8 @@ import {
   ShieldCheck,
   AlertTriangle,
   Zap,
+  Calendar,
+  Sliders,
   X
 } from 'lucide-react';
 
@@ -75,6 +77,19 @@ export default function CampaignsPage() {
 
   // Búsqueda de contactos en modal de Email
   const [emailContactSearch, setEmailContactSearch] = useState('');
+
+  // Lotes y límites de contactos para Email
+  const [batchRangeStart, setBatchRangeStart] = useState(1);
+  const [batchRangeEnd, setBatchRangeEnd] = useState(50);
+  const [savedBatchEnd, setSavedBatchEnd] = useState(0);
+
+  // Turnos del calendario activos y seleccionados para el email
+  const [calendarSlots, setCalendarSlots] = useState([]);
+  const [selectedSlotIds, setSelectedSlotIds] = useState([1, 2]);
+
+  // Monitor de respuestas Inbox Gmail
+  const [monitorStatus, setMonitorStatus] = useState({ active: true, stats: { total_procesados: 0, total_confirmaciones: 0 }, recent: [] });
+  const [checkingReplies, setCheckingReplies] = useState(false);
 
   // Metodología combinada: Email-Skills (Entregabilidad), Mail-Merge (Test 1-clic y validación) y Minigun (Resiliencia)
   const [deliverability, setDeliverability] = useState({
@@ -142,6 +157,19 @@ export default function CampaignsPage() {
     }
   }, [isLoaded, user]);
 
+  // Cargar último lote guardado
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('routh_last_email_batch_end');
+      if (saved) {
+        const num = parseInt(saved, 10);
+        if (!isNaN(num) && num > 0) {
+          setSavedBatchEnd(num);
+        }
+      }
+    }
+  }, []);
+
   // 2. Cargar datos consolidados
   const fetchAllData = async (isInitial = false) => {
     if (!codigoEmpresa) return;
@@ -149,12 +177,14 @@ export default function CampaignsPage() {
       if (isInitial) setLoading(true);
       const headers = { 'ngrok-skip-browser-warning': 'true' };
 
-      const [resCamp, resPlan, resMed, resCont, resMetaTpls] = await Promise.all([
+      const [resCamp, resPlan, resMed, resCont, resMetaTpls, resSlots, resMon] = await Promise.all([
         fetch(`${API_URL}/empresas/${codigoEmpresa}/campanas`, { headers }),
         fetch(`${API_URL}/empresas/${codigoEmpresa}/plantillas`, { headers }),
         fetch(`${API_URL}/empresas/${codigoEmpresa}/medios`, { headers }),
         fetch(`${API_URL}/empresas/${codigoEmpresa}/crm/contacts`, { headers }),
-        fetch(`${API_URL}/empresas/${codigoEmpresa}/templates`, { headers }).catch(() => ({ ok: false }))
+        fetch(`${API_URL}/empresas/${codigoEmpresa}/templates`, { headers }).catch(() => ({ ok: false })),
+        fetch(`${API_URL}/empresas/${codigoEmpresa}/calendar/slots`, { headers }).catch(() => ({ ok: false })),
+        fetch(`${API_URL}/empresas/${codigoEmpresa}/inbox/monitor-status`, { headers }).catch(() => ({ ok: false }))
       ]);
 
       if (resCamp.ok) setCampaigns(await resCamp.json());
@@ -169,6 +199,21 @@ export default function CampaignsPage() {
         const metaTplData = await resMetaTpls.json();
         if (Array.isArray(metaTplData)) {
           setMetaApprovedTemplates(metaTplData.filter(t => t.status === 'APPROVED'));
+        }
+      }
+      if (resSlots && resSlots.ok) {
+        const slotsData = await resSlots.json();
+        if (slotsData.success && Array.isArray(slotsData.slots)) {
+          setCalendarSlots(slotsData.slots);
+          if (slotsData.slots.length > 0) {
+            setSelectedSlotIds(prev => prev.length > 0 ? prev : slotsData.slots.slice(0, 2).map(s => s.id));
+          }
+        }
+      }
+      if (resMon && resMon.ok) {
+        const monData = await resMon.json();
+        if (monData.success) {
+          setMonitorStatus(monData);
         }
       }
     } catch (e) {
@@ -227,12 +272,23 @@ export default function CampaignsPage() {
         .filter(c => c.email && c.email.includes('@'))
         .filter(c => quickSelectedGroup === 'TODOS' || (c.grupo || '').toUpperCase() === quickSelectedGroup.toUpperCase());
 
+      const saved = typeof window !== 'undefined' ? parseInt(localStorage.getItem('routh_last_email_batch_end') || '0', 10) : 0;
+      let defaultStart = 1;
+      let defaultEnd = Math.min(50, initialTargets.length);
+      if (saved > 0 && saved < initialTargets.length) {
+        defaultStart = saved + 1;
+        defaultEnd = Math.min(saved + 50, initialTargets.length);
+      }
+      setBatchRangeStart(defaultStart);
+      setBatchRangeEnd(defaultEnd);
+      const batchSlice = initialTargets.slice(defaultStart - 1, defaultEnd);
+
       setEmailForm({
         nombre: `Envío Email - ${chosenTpl?.nombre || 'General'} (${new Date().toLocaleDateString('es-AR')})`,
         asunto: chosenTpl?.asunto || 'Comunicación Oficial • Colaboratium',
         plantillaId: chosenTpl?.id || '',
         targetGroup: quickSelectedGroup,
-        selectedContactIds: initialTargets.map(c => c.id),
+        selectedContactIds: batchSlice.map(c => c.id),
         htmlContent: chosenTpl?.contenido || '',
         selectedMedia: chosenTpl?.archivos_adjuntos || [],
         humanPacing: true
@@ -473,13 +529,19 @@ export default function CampaignsPage() {
           contactIds: finalContactIds,
           plantillaId: emailForm.plantillaId || null,
           attachments: emailForm.selectedMedia,
-          humanPacing: emailForm.humanPacing
+          humanPacing: emailForm.humanPacing,
+          range: `${batchRangeStart}-${batchRangeEnd}`,
+          selectedSlotIds
         })
       });
 
       const data = await res.json();
       if (data.success) {
-        toast.success(`Campaña iniciada para ${data.totalContactos} destinatarios (${emailForm.humanPacing ? 'Ritmo humano anti-bloqueo 2-3/min' : 'Envío directo'})`);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('routh_last_email_batch_end', String(batchRangeEnd));
+          setSavedBatchEnd(batchRangeEnd);
+        }
+        toast.success(`Campaña iniciada para ${data.totalContactos} destinatarios (Lote #${batchRangeStart} al #${batchRangeEnd})`);
         setShowEmailModal(false);
         fetchAllData();
       } else {
@@ -510,6 +572,122 @@ export default function CampaignsPage() {
   });
 
   const selectedCount = emailForm.selectedContactIds.length;
+
+  // Aplicar rango por lote (ej. 1 a 50, 51 a 100)
+  const handleApplyBatchRange = (start, end) => {
+    const total = availableInGroup.length;
+    if (total === 0) return;
+    const s = Math.max(1, Math.min(start, total));
+    const e = Math.max(s, Math.min(end, total));
+    setBatchRangeStart(s);
+    setBatchRangeEnd(e);
+    const sliced = availableInGroup.slice(s - 1, e);
+    setEmailForm(prev => ({
+      ...prev,
+      selectedContactIds: sliced.map(c => c.id)
+    }));
+    toast.success(`Lote aplicado: ${sliced.length} destinatarios listos (#${s} al #${e})`);
+  };
+
+  // Sincronizar respuestas entrantes de Gmail e inscripciones a Meet
+  const handleCheckReplies = async () => {
+    setCheckingReplies(true);
+    toast.info("Consultando buzón de Gmail en busca de confirmaciones...");
+    try {
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/inbox/check-replies`, {
+        method: 'POST',
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Buzón actualizado: ${data.processedCount || 0} respuestas analizadas (${data.confirmationsCount || 0} confirmadas en agenda y Helpdesk).`);
+        fetchAllData();
+      } else {
+        toast.error(data.error || "No se pudo sincronizar");
+      }
+    } catch (e) {
+      toast.error("Error al sincronizar respuestas de Gmail");
+    } finally {
+      setCheckingReplies(false);
+    }
+  };
+
+  // Generador de Vista Previa Dinámica con Slots del Calendario Reales y Botones de Mailto
+  const getRenderedPreviewHtml = () => {
+    let raw = emailForm.htmlContent || '';
+    const sampleNombre = 'Damián (Prueba)';
+    const sampleEmail = 'damduff@gmail.com';
+    const sampleTel = '+54 9 11 7372-2708';
+
+    const activeSlots = (calendarSlots && calendarSlots.length > 0)
+      ? calendarSlots.filter(s => selectedSlotIds.includes(s.id) || selectedSlotIds.includes(String(s.id)) || selectedSlotIds.includes(Number(s.id)))
+      : [];
+    const slotsToUse = activeSlots.length > 0 ? activeSlots : (calendarSlots.length > 0 ? calendarSlots.slice(0, 2) : [
+      { id: 1, fechaStr: 'Martes, 3 de noviembre', horarioStr: '01:00 p. m. a 02:30 p. m. hs', modalidad: 'VIRTUAL' },
+      { id: 2, fechaStr: 'Martes, 3 de noviembre', horarioStr: '04:15 p. m. a 05:45 p. m. hs', modalidad: 'VIRTUAL' }
+    ]);
+
+    const defaultSlot = slotsToUse[0] || { fechaStr: 'Martes, 3 de noviembre', horarioStr: '01:00 p. m. a 02:30 p. m. hs' };
+    const fechaSlot = defaultSlot.fechaStr;
+    const horaSlot = defaultSlot.horarioStr ? defaultSlot.horarioStr.split(' a ')[0] : '13:00 hs';
+
+    const mailtoSub = encodeURIComponent(`Confirmar Asistencia Webinar Asesores - ${sampleNombre}`);
+    const mailtoBod = encodeURIComponent(
+      `Hola Colaboratium,\n\nConfirmo mi asistencia y deseo RESERVAR MI LUGAR en la reunión de asesores comerciales.\n\nMis datos:\n- Nombre: ${sampleNombre}\n- Email: ${sampleEmail}\n- Teléfono: ${sampleTel}\n\nOpción de turno elegida: Opción 1 (${fechaSlot} ${horaSlot}) o la que consideren más conveniente.\n\nSaludos cordiales!`
+    );
+    const enlaceRegistro = `mailto:colaboratium@gmail.com?subject=${mailtoSub}&body=${mailtoBod}`;
+
+    const slotsListItems = slotsToUse.map((s, idx) => {
+      const optNum = idx + 1;
+      const sub = encodeURIComponent(`Confirmación Asistencia Webinar Asesores (Opción ${optNum}) - ${sampleNombre}`);
+      const bod = encodeURIComponent(
+        `Hola Colaboratium,\n\nConfirmo mi asistencia para la Opción ${optNum} (${s.fechaStr} de ${s.horarioStr}).\n\nMis datos:\n- Nombre: ${sampleNombre}\n- Email: ${sampleEmail}\n- Teléfono: ${sampleTel}\n\nQuedo a la espera del enlace de Google Meet.\n¡Muchas gracias!`
+      );
+      const mailtoBtn = `mailto:colaboratium@gmail.com?subject=${sub}&body=${bod}`;
+      return `
+      <li style="margin-bottom: 10px; background: #ffffff; padding: 12px 14px; border-radius: 8px; border: 1px solid #e2e8f0; list-style-type: none;">
+        <div style="font-size: 13px; color: #1e293b; margin-bottom: 6px;">
+          <strong style="color: #0284c7;">Opción ${optNum}:</strong> <strong>${s.fechaStr}</strong> • <strong>${s.horarioStr}</strong> (Argentina) • Modalidad: <strong>${s.modalidad || 'VIRTUAL'}</strong>
+        </div>
+        <div style="margin-top: 6px;">
+          <a href="${mailtoBtn}" target="_blank" style="display: inline-block; background-color: #0284c7; color: #ffffff; text-decoration: none; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 11px; letter-spacing: 0.3px;">
+            ✉️ Confirmar Opción ${optNum} (${s.horarioStr ? s.horarioStr.split(' a ')[0] : 'Horario'})
+          </a>
+        </div>
+      </li>`;
+    }).join('\n');
+
+    const dynamicSlotsHtml = `
+    <div style="background-color: #f8fafc; border-left: 4px solid #0284c7; padding: 16px; border-radius: 8px; margin: 22px 0;">
+      <h4 style="margin: 0 0 12px 0; color: #0369a1; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">
+        📅 DETALLES DEL ENCUENTRO Y TURNOS DISPONIBLES:
+      </h4>
+      <ul style="margin: 0; padding-left: 0;">
+        ${slotsListItems}
+      </ul>
+    </div>`;
+
+    let rendered = raw
+      .replace(/\{\{nombre\}\}/gi, sampleNombre)
+      .replace(/\{\{email\}\}/gi, sampleEmail)
+      .replace(/\{\{rol\}\}/gi, 'PROSPECTO ASESORES')
+      .replace(/\{\{telefono\}\}/gi, sampleTel)
+      .replace(/\{\{detalles_encuentro\}\}/gi, dynamicSlotsHtml)
+      .replace(/\{\{enlaceregistro\}\}/gi, enlaceRegistro)
+      .replace(/\{\{enlacebaja\}\}/gi, 'mailto:colaboratium@gmail.com?subject=Baja%20de%20Convocatorias')
+      .replace(/\{\{fecha\}\}/gi, fechaSlot)
+      .replace(/\{\{hora\}\}/gi, horaSlot)
+      .replace(/\{\{duracion\}\}/gi, '1 hora y media (90 minutos)');
+
+    if (!raw.includes('{{detalles_encuentro}}') && !rendered.includes(dynamicSlotsHtml)) {
+      rendered = rendered.replace(
+        /<div style="background-color: #f8fafc; border-left: 4px solid #0284c7;[\s\S]*?<\/div>\s*<\/div>/i,
+        dynamicSlotsHtml
+      );
+    }
+
+    return rendered;
+  };
 
   const handleSelectDamPilot = () => {
     const dam = crmContacts.find(c => c.email && c.email.toLowerCase().includes('damduff'));
@@ -578,7 +756,7 @@ export default function CampaignsPage() {
           })
           .catch(() => {});
       }
-    }, 300);
+    }, 400);
     return () => clearTimeout(timer);
   }, [emailForm.asunto, emailForm.htmlContent, showEmailModal, codigoEmpresa]);
 
@@ -624,7 +802,8 @@ export default function CampaignsPage() {
           testEmail: targetTestEmail,
           subject: emailForm.asunto,
           content: emailForm.htmlContent,
-          attachments: emailForm.selectedMedia
+          attachments: emailForm.selectedMedia,
+          selectedSlotIds
         })
       });
       const data = await res.json();
@@ -1079,12 +1258,22 @@ export default function CampaignsPage() {
                       const initialTargets = crmContacts
                         .filter(c => c.email && c.email.includes('@'))
                         .filter(c => (c.grupo || '').toUpperCase() === 'PROSPECTO ASESORES');
+                      const saved = typeof window !== 'undefined' ? parseInt(localStorage.getItem('routh_last_email_batch_end') || '0', 10) : 0;
+                      let defaultStart = 1;
+                      let defaultEnd = Math.min(50, initialTargets.length);
+                      if (saved > 0 && saved < initialTargets.length) {
+                        defaultStart = saved + 1;
+                        defaultEnd = Math.min(saved + 50, initialTargets.length);
+                      }
+                      setBatchRangeStart(defaultStart);
+                      setBatchRangeEnd(defaultEnd);
+                      const batchSlice = initialTargets.slice(defaultStart - 1, defaultEnd);
                       setEmailForm({
                         nombre: `Reunión Informativa Asesores Colaboratium - ${new Date().toLocaleDateString('es-AR')}`,
                         asunto: officialTemplate?.asunto || 'Invitación: Reunión Informativa para Futuros Asesores Comerciales • Colaboratium',
                         plantillaId: officialTemplate?.id || '',
                         targetGroup: 'PROSPECTO ASESORES',
-                        selectedContactIds: initialTargets.map(c => c.id),
+                        selectedContactIds: batchSlice.map(c => c.id),
                         htmlContent: officialTemplate?.contenido || '',
                         selectedMedia: presPdf ? [{ nombre: presPdf.nombre, path: presPdf.url }] : [],
                         humanPacing: true
@@ -1096,6 +1285,52 @@ export default function CampaignsPage() {
                   >
                     <Plus className="w-4 h-4" />
                     <span>Nueva Campaña de Email</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Monitor de Respuestas Gmail e Inbox Helpdesk */}
+              <div className="p-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl shadow-sm border border-indigo-800/60 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 animate-in fade-in">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 font-bold">
+                    <Mail className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <h4 className="text-xs font-black uppercase tracking-wider text-slate-100">
+                        Monitor de Respuestas Gmail (colaboratium@gmail.com)
+                      </h4>
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full font-bold">
+                        🟢 Activo
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 font-medium mt-0.5">
+                      Monitorea automáticamente las respuestas entrantes: inscribe al contacto al Meet y crea el ticket en Helpdesk.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+                  <div className="flex items-center gap-2 font-mono text-xs">
+                    <div className="px-3 py-1 bg-white/10 rounded-xl text-center">
+                      <span className="block text-[9px] text-slate-400 uppercase font-black">Procesados</span>
+                      <span className="font-extrabold text-white text-sm">{monitorStatus.stats?.total_procesados || 0}</span>
+                    </div>
+                    <div className="px-3 py-1 bg-emerald-500/20 border border-emerald-400/40 rounded-xl text-center">
+                      <span className="block text-[9px] text-emerald-300 uppercase font-black">Inscriptos Meet</span>
+                      <span className="font-extrabold text-emerald-300 text-sm">🎯 {monitorStatus.stats?.total_confirmaciones || 0}</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleCheckReplies}
+                    disabled={checkingReplies}
+                    className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-extrabold shadow-sm transition flex items-center gap-1.5 disabled:opacity-50 shrink-0"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${checkingReplies ? 'animate-spin' : ''}`} />
+                    <span>{checkingReplies ? 'Sincronizando...' : 'Sincronizar Respuestas Ahora'}</span>
                   </button>
                 </div>
               </div>
@@ -1146,13 +1381,14 @@ export default function CampaignsPage() {
                       <th className="py-3 px-4">Estado</th>
                       <th className="py-3 px-4 text-center">Destinatarios</th>
                       <th className="py-3 px-4 text-center">Enviados</th>
+                      <th className="py-3 px-4 text-center">Conversiones</th>
                       <th className="py-3 px-4 text-right">Fecha</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 text-xs font-semibold">
                     {emailCampaigns.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="py-12 text-center text-gray-400 font-medium">
+                        <td colSpan={7} className="py-12 text-center text-gray-400 font-medium">
                           No hay campañas de correo enviadas aún. Haz clic en "Nueva Campaña de Email" para comenzar.
                         </td>
                       </tr>
@@ -1201,8 +1437,23 @@ export default function CampaignsPage() {
                               </span>
                             )}
                           </td>
-                          <td className="py-3.5 px-4 text-center font-bold text-gray-700">{camp.total_contactos}</td>
+                          <td className="py-3.5 px-4 text-center font-bold text-gray-700">
+                            <div>{camp.total_contactos}</div>
+                            {camp.rango_destinatarios && (
+                              <span className="inline-block mt-0.5 text-[10px] font-mono text-blue-700 font-black bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                                #{camp.rango_destinatarios}
+                              </span>
+                            )}
+                          </td>
                           <td className="py-3.5 px-4 text-center font-bold text-emerald-600">{camp.enviados}</td>
+                          <td className="py-3.5 px-4 text-center font-bold">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200">
+                              🎯 {camp.conversiones || 0} inscriptos
+                              <span className="text-[10px] text-gray-400 font-normal">
+                                ({Math.round(((camp.conversiones || 0) / (camp.total_contactos || 1)) * 100)}%)
+                              </span>
+                            </span>
+                          </td>
                           <td className="py-3.5 px-4 text-right text-gray-500 font-mono text-[11px]">
                             {new Date(camp.creado_en).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}
                           </td>
@@ -1862,9 +2113,9 @@ export default function CampaignsPage() {
                   </div>
                 </div>
 
-                {/* Selector Individual de Destinatarios */}
-                <div className="p-3.5 bg-gray-50 border border-gray-200 rounded-2xl">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                {/* Selector Individual de Destinatarios y Control de Lotes */}
+                <div className="p-3.5 bg-gray-50 border border-gray-200 rounded-2xl space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-blue-600" />
                       <span className="text-xs font-black text-gray-900 uppercase tracking-wider">
@@ -1900,6 +2151,153 @@ export default function CampaignsPage() {
                         </>
                       )}
                     </div>
+                  </div>
+
+                  {/* Barra Limitadora de Cantidades y Lotes (Solicitud Usuario: 1-50, 51-100, etc.) */}
+                  <div className="p-3 bg-white border border-blue-200 rounded-xl shadow-xs">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5 text-xs font-black text-blue-950 uppercase tracking-wider">
+                        <Sliders className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Limitar Rango de Envío por Lotes:</span>
+                      </div>
+                      <span className="text-[11px] font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                        Seleccionados: #{batchRangeStart} al #{batchRangeEnd} ({selectedCount} contactos)
+                      </span>
+                    </div>
+
+                    {/* Presets Rápidos */}
+                    <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
+                      <span className="text-[10px] font-black uppercase text-gray-400 mr-1">Lotes Rápidos:</span>
+                      <button
+                        type="button"
+                        onClick={() => handleApplyBatchRange(1, Math.min(50, availableInGroup.length))}
+                        className={`px-2.5 py-1 text-xs font-black rounded-lg border transition ${
+                          batchRangeStart === 1 && batchRangeEnd === 50
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                            : 'bg-gray-50 hover:bg-blue-50 text-gray-700 border-gray-200'
+                        }`}
+                      >
+                        1 a 50
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleApplyBatchRange(51, Math.min(100, availableInGroup.length))}
+                        className={`px-2.5 py-1 text-xs font-black rounded-lg border transition ${
+                          batchRangeStart === 51 && batchRangeEnd === 100
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                            : 'bg-gray-50 hover:bg-blue-50 text-gray-700 border-gray-200'
+                        }`}
+                      >
+                        51 a 100
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleApplyBatchRange(101, Math.min(150, availableInGroup.length))}
+                        className={`px-2.5 py-1 text-xs font-black rounded-lg border transition ${
+                          batchRangeStart === 101 && batchRangeEnd === 150
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                            : 'bg-gray-50 hover:bg-blue-50 text-gray-700 border-gray-200'
+                        }`}
+                      >
+                        101 a 150
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextStart = (savedBatchEnd > 0 ? savedBatchEnd : batchRangeEnd) + 1;
+                          const nextEnd = Math.min(nextStart + 49, availableInGroup.length);
+                          handleApplyBatchRange(nextStart, nextEnd);
+                        }}
+                        className="px-2.5 py-1 text-xs font-black rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 flex items-center gap-1 transition"
+                      >
+                        <span>Siguiente Lote (50) ⏩</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleApplyBatchRange(1, availableInGroup.length)}
+                        className="px-2 py-1 text-xs font-black rounded-lg border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 transition"
+                      >
+                        Todos ({availableInGroup.length})
+                      </button>
+                    </div>
+
+                    {/* Inputs Desde - Hasta y Barra Deslizante */}
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                      <div className="sm:col-span-3 flex items-center gap-1 text-xs">
+                        <span className="text-gray-500 font-bold shrink-0">Desde #:</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max={availableInGroup.length || 1}
+                          value={batchRangeStart}
+                          onChange={e => {
+                            const val = parseInt(e.target.value, 10) || 1;
+                            setBatchRangeStart(val);
+                          }}
+                          className="w-full px-2 py-1 text-xs font-extrabold border border-gray-300 rounded-lg text-center"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-3 flex items-center gap-1 text-xs">
+                        <span className="text-gray-500 font-bold shrink-0">Hasta #:</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max={availableInGroup.length || 1}
+                          value={batchRangeEnd}
+                          onChange={e => {
+                            const val = parseInt(e.target.value, 10) || 1;
+                            setBatchRangeEnd(val);
+                          }}
+                          className="w-full px-2 py-1 text-xs font-extrabold border border-gray-300 rounded-lg text-center"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-4 flex items-center gap-2">
+                        <input
+                          type="range"
+                          min="1"
+                          max={availableInGroup.length || 1}
+                          value={batchRangeEnd}
+                          onChange={e => {
+                            const val = parseInt(e.target.value, 10);
+                            setBatchRangeEnd(val);
+                            handleApplyBatchRange(batchRangeStart, val);
+                          }}
+                          className="w-full accent-blue-600 cursor-pointer h-2 bg-gray-200 rounded-lg"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <button
+                          type="button"
+                          onClick={() => handleApplyBatchRange(batchRangeStart, batchRangeEnd)}
+                          className="w-full py-1.5 px-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-black transition text-center shadow-xs"
+                        >
+                          Aplicar
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Memoria de Último Lote Guardado */}
+                    {savedBatchEnd > 0 && (
+                      <div className="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
+                        <span className="flex items-center gap-1">
+                          💾 Último lote despachado finalizó en el contacto <strong className="text-gray-800">#{savedBatchEnd}</strong>.
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextS = savedBatchEnd + 1;
+                            const nextE = Math.min(nextS + 49, availableInGroup.length);
+                            handleApplyBatchRange(nextS, nextE);
+                          }}
+                          className="text-blue-600 hover:text-blue-800 font-black underline"
+                        >
+                          Continuar desde el #{savedBatchEnd + 1}
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="relative mb-2">
@@ -1980,6 +2378,78 @@ export default function CampaignsPage() {
                   </div>
                 </label>
 
+                {/* Selector Interactivo de Opciones de Calendario para el Email */}
+                <div className="p-3.5 bg-sky-50/70 border border-sky-200 rounded-2xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-sky-700" />
+                      <span className="text-xs font-black uppercase text-sky-950 tracking-wider">
+                        Turnos de Google Meet a Ofrecer en la Invitación:
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-bold text-sky-800">
+                      {selectedSlotIds.length} turno(s) seleccionado(s)
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-sky-700 mb-2.5 font-medium">
+                    Marca las opciones de fechas que deseas incluir en el correo para que el candidato elija y el sistema lo agende automáticamente:
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                    {calendarSlots.map((slot, idx) => {
+                      const isSelected = selectedSlotIds.includes(slot.id) || selectedSlotIds.includes(String(slot.id)) || selectedSlotIds.includes(Number(slot.id));
+                      return (
+                        <div
+                          key={slot.id}
+                          onClick={() => {
+                            if (isSelected) {
+                              if (selectedSlotIds.length > 1) {
+                                setSelectedSlotIds(selectedSlotIds.filter(id => id !== slot.id && id !== String(slot.id) && id !== Number(slot.id)));
+                              } else {
+                                toast.warning("Debes mantener al menos 1 turno seleccionado");
+                              }
+                            } else {
+                              setSelectedSlotIds([...selectedSlotIds, slot.id]);
+                            }
+                          }}
+                          className={`p-2.5 rounded-xl border cursor-pointer transition flex flex-col justify-between text-xs ${
+                            isSelected
+                              ? 'bg-white border-sky-500 shadow-xs ring-1 ring-sky-500'
+                              : 'bg-white/60 border-gray-200 opacity-60 hover:opacity-100 hover:border-sky-300'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-1 mb-1">
+                            <span className="font-extrabold text-sky-900 text-[11px] uppercase tracking-wider">
+                              Opción {idx + 1}
+                            </span>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {}}
+                              className="w-3.5 h-3.5 text-sky-600 rounded border-gray-300"
+                            />
+                          </div>
+                          <div className="font-black text-gray-900 text-xs mb-0.5">
+                            {slot.fechaStr}
+                          </div>
+                          <div className="text-[11px] text-gray-600 font-mono">
+                            {slot.horarioStr}
+                          </div>
+                          <div className="mt-1.5 pt-1.5 border-t border-gray-100 flex items-center justify-between text-[10px] font-bold text-gray-500">
+                            <span className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-700">
+                              {slot.modalidad || 'VIRTUAL'}
+                            </span>
+                            <span className="text-emerald-700">
+                              {25 - (slot.inscriptosCount || 0)} cupos libres
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-xs font-black uppercase text-gray-700">Cuerpo del Email (HTML / Texto)</label>
@@ -2002,24 +2472,15 @@ export default function CampaignsPage() {
                   </div>
 
                   {showEmailPreview ? (
-                    <div className="p-3 bg-gray-50 border border-gray-300 rounded-xl max-h-64 overflow-y-auto">
+                    <div className="p-3 bg-gray-50 border border-gray-300 rounded-xl max-h-80 overflow-y-auto">
                       <div className="text-[10px] uppercase font-black text-gray-400 mb-2 flex items-center justify-between">
-                        <span>Vista previa del correo renderizado:</span>
-                        <span className="text-emerald-700 font-bold">✓ Web, Teléfono, WhatsApp, Mail, Redes y Desuscripción</span>
+                        <span>Vista previa del correo en vivo (con turnos de Google Meet y botones mailto):</span>
+                        <span className="text-emerald-700 font-bold">✓ Respuesta 1-Clic por Email y WhatsApp</span>
                       </div>
                       <div
                         className="bg-white rounded-lg p-2 border border-gray-200 shadow-inner overflow-x-auto text-xs"
                         dangerouslySetInnerHTML={{
-                          __html: (emailForm.htmlContent || '')
-                            .replace(/\{\{nombre\}\}/gi, 'Damian (Ejemplo)')
-                            .replace(/\{\{email\}\}/gi, 'damduff@gmail.com')
-                            .replace(/\{\{rol\}\}/gi, 'PROSPECTO ASESORES')
-                            .replace(/\{\{telefono\}\}/gi, '+54 9 11 7372-2708')
-                            .replace(/\{\{enlaceregistro\}\}/gi, 'https://wa.me/5491173722708?text=Hola%20Colaboratium,%20quiero%20confirmar%20mi%20asistencia%20y%20RESERVAR%20MI%20LUGAR%20EN%20LA%20REUNI%C3%93N%20de%20asesores')
-                            .replace(/\{\{enlacebaja\}\}/gi, 'mailto:colaboratium@gmail.com?subject=Baja%20de%20Convocatorias&body=Deseo%20darme%20de%20baja')
-                            .replace(/\{\{fecha\}\}/gi, 'Jueves, 29 de octubre')
-                            .replace(/\{\{hora\}\}/gi, '13:00 hs')
-                            .replace(/\{\{duracion\}\}/gi, '1 hora y media (90 minutos)')
+                          __html: getRenderedPreviewHtml()
                         }}
                       />
                     </div>
