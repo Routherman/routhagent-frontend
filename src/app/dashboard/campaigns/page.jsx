@@ -104,6 +104,93 @@ export default function CampaignsPage() {
   const [resumingCampaignId, setResumingCampaignId] = useState(null);
   const [showSpamDetails, setShowSpamDetails] = useState(false);
 
+  // Estados para Programador de Campañas (Scheduler)
+  const [rescheduleModal, setRescheduleModal] = useState(null); // { id, nombre, tipo, scheduledAt }
+  const [actionLoadingId, setActionLoadingId] = useState(null);
+
+  // Helpers para fechas y horas del Programador
+  const formatForDateTimeLocal = (date) => {
+    const pad = (n) => String(n).padStart(2, '0');
+    const y = date.getFullYear();
+    const m = pad(date.getMonth() + 1);
+    const d = pad(date.getDate());
+    const h = pad(date.getHours());
+    const min = pad(date.getMinutes());
+    return `${y}-${m}-${d}T${h}:${min}`;
+  };
+
+  const getMinDateTimeLocal = () => {
+    return formatForDateTimeLocal(new Date());
+  };
+
+  const getPresetDateTime = (type) => {
+    const now = new Date();
+    if (type === '1h') {
+      const d = new Date(now.getTime() + 60 * 60 * 1000);
+      return formatForDateTimeLocal(d);
+    }
+    if (type === '3h') {
+      const d = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+      return formatForDateTimeLocal(d);
+    }
+    if (type === 'tomorrow_9') {
+      const d = new Date(now);
+      d.setDate(d.getDate() + 1);
+      d.setHours(9, 0, 0, 0);
+      return formatForDateTimeLocal(d);
+    }
+    if (type === 'tomorrow_15') {
+      const d = new Date(now);
+      d.setDate(d.getDate() + 1);
+      d.setHours(15, 0, 0, 0);
+      return formatForDateTimeLocal(d);
+    }
+    if (type === 'monday_10') {
+      const d = new Date(now);
+      const day = d.getDay();
+      const diff = (8 - day) % 7 || 7;
+      d.setDate(d.getDate() + diff);
+      d.setHours(10, 0, 0, 0);
+      return formatForDateTimeLocal(d);
+    }
+    return '';
+  };
+
+  const formatScheduledDate = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+      const target = new Date(dateStr);
+      const now = new Date();
+      const diffMs = target.getTime() - now.getTime();
+      const diffMin = Math.round(diffMs / 60000);
+      const diffHours = Math.round(diffMs / 3600000);
+      const diffDays = Math.round(diffMs / 86400000);
+
+      let relative = '';
+      if (diffMs <= 0) {
+        relative = 'A punto de disparar';
+      } else if (diffMin < 60) {
+        relative = `en ${diffMin} min`;
+      } else if (diffHours < 24) {
+        relative = `en ${diffHours}h`;
+      } else {
+        relative = `en ${diffDays} día${diffDays > 1 ? 's' : ''}`;
+      }
+
+      const formatted = target.toLocaleString('es-AR', {
+        weekday: 'short',
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      return `${formatted} (${relative})`;
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
   // Formulario Campaña Meta
   const [metaForm, setMetaForm] = useState({
     nombre: '',
@@ -112,7 +199,9 @@ export default function CampaignsPage() {
     selectedContactIds: [],
     customMessage: '',
     selectedMedia: [],
-    messagesPerMinute: 15
+    messagesPerMinute: 15,
+    isScheduled: false,
+    scheduledAt: ''
   });
 
   // Formulario Campaña Email
@@ -124,7 +213,9 @@ export default function CampaignsPage() {
     selectedContactIds: [],
     htmlContent: '',
     selectedMedia: [],
-    humanPacing: true
+    humanPacing: true,
+    isScheduled: false,
+    scheduledAt: ''
   });
 
   // Formulario Editor de Plantilla
@@ -454,6 +545,17 @@ export default function CampaignsPage() {
       return;
     }
 
+    if (metaForm.isScheduled) {
+      if (!metaForm.scheduledAt) {
+        toast.error("Selecciona la fecha y hora para programar el inicio");
+        return;
+      }
+      if (new Date(metaForm.scheduledAt).getTime() <= Date.now()) {
+        toast.error("La fecha programada debe ser posterior al horario actual");
+        return;
+      }
+    }
+
     // Filtrar contactos según targetGroup
     let targetContacts = crmContacts;
     if (metaForm.targetGroup !== 'TODOS') {
@@ -474,13 +576,14 @@ export default function CampaignsPage() {
           plantillaId: metaForm.plantillaId || null,
           templateContent: metaForm.customMessage,
           attachments: metaForm.selectedMedia,
-          messagesPerMinute: metaForm.messagesPerMinute
+          messagesPerMinute: metaForm.messagesPerMinute,
+          scheduledAt: metaForm.isScheduled ? metaForm.scheduledAt : null
         })
       });
 
       const data = await res.json();
       if (data.success) {
-        toast.success(`Campaña de WhatsApp lanzada para ${data.totalContactos} contactos`);
+        toast.success(data.message || (metaForm.isScheduled ? "Campaña programada con éxito" : `Campaña de WhatsApp lanzada para ${data.totalContactos} contactos`));
         setShowMetaModal(false);
         fetchAllData();
       } else {
@@ -497,6 +600,17 @@ export default function CampaignsPage() {
     if (!emailForm.nombre || !emailForm.asunto || !emailForm.htmlContent) {
       toast.error("Completa el nombre, asunto y contenido del correo");
       return;
+    }
+
+    if (emailForm.isScheduled) {
+      if (!emailForm.scheduledAt) {
+        toast.error("Selecciona la fecha y hora para programar el inicio");
+        return;
+      }
+      if (new Date(emailForm.scheduledAt).getTime() <= Date.now()) {
+        toast.error("La fecha programada debe ser posterior al horario actual");
+        return;
+      }
     }
 
     let finalContactIds = [];
@@ -531,7 +645,8 @@ export default function CampaignsPage() {
           attachments: emailForm.selectedMedia,
           humanPacing: emailForm.humanPacing,
           range: `${batchRangeStart}-${batchRangeEnd}`,
-          selectedSlotIds
+          selectedSlotIds,
+          scheduledAt: emailForm.isScheduled ? emailForm.scheduledAt : null
         })
       });
 
@@ -541,7 +656,7 @@ export default function CampaignsPage() {
           localStorage.setItem('routh_last_email_batch_end', String(batchRangeEnd));
           setSavedBatchEnd(batchRangeEnd);
         }
-        toast.success(`Campaña iniciada para ${data.totalContactos} destinatarios (Lote #${batchRangeStart} al #${batchRangeEnd})`);
+        toast.success(data.message || (emailForm.isScheduled ? "Campaña programada con éxito" : `Campaña iniciada para ${data.totalContactos} destinatarios`));
         setShowEmailModal(false);
         fetchAllData();
       } else {
@@ -549,6 +664,88 @@ export default function CampaignsPage() {
       }
     } catch (err) {
       toast.error("Error de conexión al enviar correos");
+    }
+  };
+
+  // Disparar inmediatamente una campaña programada
+  const handleTriggerNow = async (campanaId) => {
+    if (!confirm('¿Deseas disparar esta campaña inmediatamente sin esperar a la fecha programada?')) return;
+    try {
+      setActionLoadingId(campanaId);
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/campanas/${campanaId}/lanzar-ahora`, {
+        method: 'POST',
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(data.message || '🚀 Campaña disparada inmediatamente');
+        fetchAllData();
+      } else {
+        toast.error(data.error || 'Error al disparar campaña');
+      }
+    } catch (e) {
+      toast.error('Error al conectar con el servidor');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  // Cancelar una campaña programada
+  const handleCancelScheduled = async (campanaId) => {
+    if (!confirm('¿Seguro que deseas cancelar esta campaña programada? No se enviarán los mensajes.')) return;
+    try {
+      setActionLoadingId(campanaId);
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/campanas/${campanaId}/cancelar`, {
+        method: 'POST',
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success('Campaña programada cancelada con éxito');
+        fetchAllData();
+      } else {
+        toast.error(data.error || 'Error cancelando campaña');
+      }
+    } catch (e) {
+      toast.error('Error al conectar con el servidor');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  // Guardar reprogramación de campaña
+  const handleSaveReschedule = async (e) => {
+    e.preventDefault();
+    if (!rescheduleModal || !rescheduleModal.scheduledAt) {
+      toast.error('Selecciona la nueva fecha y hora');
+      return;
+    }
+    if (new Date(rescheduleModal.scheduledAt).getTime() <= Date.now()) {
+      toast.error('La nueva fecha debe ser posterior al horario actual');
+      return;
+    }
+    try {
+      setActionLoadingId(rescheduleModal.id);
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/campanas/${rescheduleModal.id}/reprogramar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
+        body: JSON.stringify({ scheduledAt: rescheduleModal.scheduledAt })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(data.message || 'Campaña reprogramada con éxito');
+        setRescheduleModal(null);
+        fetchAllData();
+      } else {
+        toast.error(data.error || 'Error reprogramando campaña');
+      }
+    } catch (e) {
+      toast.error('Error al conectar con el servidor');
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
@@ -1083,7 +1280,15 @@ export default function CampaignsPage() {
               {/* Tarjetas de Métricas WhatsApp con Alto Contraste */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
                 <div className="bg-white dark:bg-[#0c1424] border border-slate-200 dark:border-white/10 rounded-2xl p-4 shadow-sm">
-                  <p className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Campañas WhatsApp</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Campañas WhatsApp</p>
+                    {metaCampaigns.filter(c => c.estado === 'programada').length > 0 && (
+                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-900 dark:text-purple-300 border border-purple-300 dark:border-purple-500/30 flex items-center gap-1 animate-pulse">
+                        <Clock className="w-2.5 h-2.5 text-purple-600 dark:text-purple-400" />
+                        <span>{metaCampaigns.filter(c => c.estado === 'programada').length} programada{metaCampaigns.filter(c => c.estado === 'programada').length > 1 ? 's' : ''}</span>
+                      </span>
+                    )}
+                  </div>
                   <p className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1">{metaCampaigns.length}</p>
                 </div>
                 <div className="bg-white dark:bg-[#0c1424] border border-slate-200 dark:border-white/10 rounded-2xl p-4 shadow-sm">
@@ -1176,12 +1381,58 @@ export default function CampaignsPage() {
                               <div className="text-[11px] text-gray-400 dark:text-slate-500 font-mono">ID: #{camp.id} • WhatsApp Meta</div>
                             </td>
                             <td className="py-3.5 px-4">
-                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold ${
-                                isProgress ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                              }`}>
-                                {isProgress && <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>}
-                                {isProgress ? 'Enviando...' : 'Completada'}
-                              </span>
+                              {camp.estado === 'programada' ? (
+                                <div className="flex flex-col gap-1 items-start">
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-100 dark:bg-purple-900/40 text-purple-900 dark:text-purple-300 border border-purple-300 dark:border-purple-500/40">
+                                    <Clock className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                                    <span>⏰ Programada</span>
+                                  </span>
+                                  <span className="text-[10px] font-mono text-purple-700 dark:text-purple-300 font-bold">
+                                    {formatScheduledDate(camp.programada_para)}
+                                  </span>
+                                  <div className="flex items-center gap-1 mt-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleTriggerNow(camp.id)}
+                                      disabled={actionLoadingId === camp.id}
+                                      className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-xs transition"
+                                      title="Disparar inmediatamente sin esperar la fecha"
+                                    >
+                                      <Zap className="w-2.5 h-2.5" />
+                                      <span>Lanzar Ya</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setRescheduleModal({ id: camp.id, nombre: camp.nombre, tipo: 'whatsapp', scheduledAt: formatForDateTimeLocal(new Date(camp.programada_para || Date.now())) })}
+                                      className="p-1 bg-purple-100 dark:bg-purple-900/40 hover:bg-purple-200 dark:hover:bg-purple-800/40 text-purple-900 dark:text-purple-200 rounded text-[10px] font-black border border-purple-300 dark:border-purple-500/30 transition"
+                                      title="Cambiar fecha u horario"
+                                    >
+                                      <Calendar className="w-2.5 h-2.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCancelScheduled(camp.id)}
+                                      disabled={actionLoadingId === camp.id}
+                                      className="p-1 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-700 dark:text-rose-300 rounded text-[10px] font-black border border-rose-200 dark:border-rose-500/30 transition"
+                                      title="Cancelar campaña"
+                                    >
+                                      <X className="w-2.5 h-2.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : camp.estado === 'cancelada' ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700">
+                                  <X className="w-3 h-3 text-rose-500" />
+                                  <span>Cancelada</span>
+                                </span>
+                              ) : (
+                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold ${
+                                  isProgress ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                }`}>
+                                  {isProgress && <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>}
+                                  {isProgress ? 'Enviando...' : 'Completada'}
+                                </span>
+                              )}
                             </td>
                             <td className="py-3.5 px-4 text-center">
                               <div className="flex flex-col items-center gap-1 max-w-[140px] mx-auto">
@@ -1218,7 +1469,15 @@ export default function CampaignsPage() {
               {/* Tarjetas de Métricas Email */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
                 <div className="bg-white dark:bg-[#0c1424] border border-slate-200 dark:border-white/10 rounded-2xl p-4 shadow-sm">
-                  <p className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Campañas Email</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Campañas Email</p>
+                    {emailCampaigns.filter(c => c.estado === 'programada').length > 0 && (
+                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-900 dark:text-purple-300 border border-purple-300 dark:border-purple-500/30 flex items-center gap-1 animate-pulse">
+                        <Clock className="w-2.5 h-2.5 text-purple-600 dark:text-purple-400" />
+                        <span>{emailCampaigns.filter(c => c.estado === 'programada').length} programada{emailCampaigns.filter(c => c.estado === 'programada').length > 1 ? 's' : ''}</span>
+                      </span>
+                    )}
+                  </div>
                   <p className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1">{emailCampaigns.length}</p>
                 </div>
                 <div className="bg-white dark:bg-[#0c1424] border border-slate-200 dark:border-white/10 rounded-2xl p-4 shadow-sm">
@@ -1420,7 +1679,51 @@ export default function CampaignsPage() {
                             )}
                           </td>
                           <td className="py-3.5 px-4">
-                            {camp.estado === 'en_progreso' ? (
+                            {camp.estado === 'programada' ? (
+                              <div className="flex flex-col gap-1 items-start">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-100 dark:bg-purple-900/40 text-purple-900 dark:text-purple-300 border border-purple-300 dark:border-purple-500/40">
+                                  <Clock className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                                  <span>⏰ Programada</span>
+                                </span>
+                                <span className="text-[10px] font-mono text-purple-700 dark:text-purple-300 font-bold">
+                                  {formatScheduledDate(camp.programada_para)}
+                                </span>
+                                <div className="flex items-center gap-1 mt-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleTriggerNow(camp.id)}
+                                    disabled={actionLoadingId === camp.id}
+                                    className="px-2 py-0.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-xs transition"
+                                    title="Disparar inmediatamente sin esperar la fecha"
+                                  >
+                                    <Zap className="w-2.5 h-2.5" />
+                                    <span>Lanzar Ya</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setRescheduleModal({ id: camp.id, nombre: camp.nombre, tipo: 'email', scheduledAt: formatForDateTimeLocal(new Date(camp.programada_para || Date.now())) })}
+                                    className="p-1 bg-purple-100 dark:bg-purple-900/40 hover:bg-purple-200 dark:hover:bg-purple-800/40 text-purple-900 dark:text-purple-200 rounded text-[10px] font-black border border-purple-300 dark:border-purple-500/30 transition"
+                                    title="Cambiar fecha u horario"
+                                  >
+                                    <Calendar className="w-2.5 h-2.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCancelScheduled(camp.id)}
+                                    disabled={actionLoadingId === camp.id}
+                                    className="p-1 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-700 dark:text-rose-300 rounded text-[10px] font-black border border-rose-200 dark:border-rose-500/30 transition"
+                                    title="Cancelar campaña"
+                                  >
+                                    <X className="w-2.5 h-2.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : camp.estado === 'cancelada' ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700">
+                                <X className="w-3 h-3 text-rose-500" />
+                                <span>Cancelada</span>
+                              </span>
+                            ) : camp.estado === 'en_progreso' ? (
                               <div className="flex flex-col gap-1 items-start">
                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-500/30 animate-pulse">
                                   <span className="w-2 h-2 rounded-full bg-amber-600"></span>
@@ -1920,6 +2223,118 @@ export default function CampaignsPage() {
                 </div>
               </div>
 
+              {/* SECCIÓN PROGRAMADOR DE CAMPAÑA WHATSAPP */}
+              <div className="p-3.5 bg-gradient-to-r from-purple-50/70 to-indigo-50/70 dark:from-purple-950/20 dark:to-indigo-950/20 border border-purple-200/80 dark:border-purple-500/30 rounded-2xl space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-purple-600 text-white flex items-center justify-center shadow-xs">
+                    <Clock className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-purple-950 dark:text-purple-200 uppercase tracking-wider">
+                      Momento de Lanzamiento
+                    </h4>
+                    <p className="text-[11px] text-purple-700 dark:text-purple-300 font-medium">
+                      Elige si la campaña sale ahora o queda programada para un día y horario específico
+                    </p>
+                  </div>
+                </div>
+
+                {/* Selector Inmediato vs Programado */}
+                <div className="grid grid-cols-2 gap-2 bg-white/80 dark:bg-slate-900/80 p-1 rounded-xl border border-purple-100 dark:border-purple-500/20">
+                  <button
+                    type="button"
+                    onClick={() => setMetaForm(prev => ({ ...prev, isScheduled: false }))}
+                    className={`py-1.5 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 ${
+                      !metaForm.isScheduled
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <Zap className="w-3.5 h-3.5" />
+                    <span>Lanzar de Inmediato</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMetaForm(prev => ({
+                        ...prev,
+                        isScheduled: true,
+                        scheduledAt: prev.scheduledAt || getPresetDateTime('tomorrow_9')
+                      }));
+                    }}
+                    className={`py-1.5 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 ${
+                      metaForm.isScheduled
+                        ? 'bg-purple-600 text-white shadow-xs'
+                        : 'text-gray-600 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-300'
+                    }`}
+                  >
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>⏰ Programar Inicio</span>
+                  </button>
+                </div>
+
+                {/* Si está programada, mostrar fecha/hora y accesos rápidos */}
+                {metaForm.isScheduled && (
+                  <div className="space-y-2.5 pt-1 animate-in fade-in duration-150">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <label className="text-xs font-extrabold text-purple-900 dark:text-purple-200 shrink-0">
+                        Fecha y Hora de Disparo:
+                      </label>
+                      <input
+                        type="datetime-local"
+                        required={metaForm.isScheduled}
+                        min={getMinDateTimeLocal()}
+                        value={metaForm.scheduledAt}
+                        onChange={e => setMetaForm(prev => ({ ...prev, scheduledAt: e.target.value }))}
+                        className="flex-1 px-3 py-1.5 text-xs font-extrabold bg-white dark:bg-slate-900 text-gray-950 dark:text-white border border-purple-300 dark:border-purple-500/40 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Accesos rápidos de programación */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-[10px] font-black uppercase text-purple-700 dark:text-purple-300 mr-1">
+                        Atajos:
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setMetaForm(prev => ({ ...prev, scheduledAt: getPresetDateTime('tomorrow_9') }))}
+                        className="px-2 py-0.5 text-[10px] font-black rounded-lg border border-purple-200 dark:border-purple-500/30 bg-white dark:bg-slate-900 text-purple-900 dark:text-purple-200 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition"
+                      >
+                        Mañana 09:00 hs
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMetaForm(prev => ({ ...prev, scheduledAt: getPresetDateTime('tomorrow_15') }))}
+                        className="px-2 py-0.5 text-[10px] font-black rounded-lg border border-purple-200 dark:border-purple-500/30 bg-white dark:bg-slate-900 text-purple-900 dark:text-purple-200 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition"
+                      >
+                        Mañana 15:00 hs
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMetaForm(prev => ({ ...prev, scheduledAt: getPresetDateTime('1h') }))}
+                        className="px-2 py-0.5 text-[10px] font-black rounded-lg border border-purple-200 dark:border-purple-500/30 bg-white dark:bg-slate-900 text-purple-900 dark:text-purple-200 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition"
+                      >
+                        En 1 hora
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMetaForm(prev => ({ ...prev, scheduledAt: getPresetDateTime('monday_10') }))}
+                        className="px-2 py-0.5 text-[10px] font-black rounded-lg border border-purple-200 dark:border-purple-500/30 bg-white dark:bg-slate-900 text-purple-900 dark:text-purple-200 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition"
+                      >
+                        Lunes 10:00 hs
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 p-2 bg-purple-100/60 dark:bg-purple-950/40 rounded-xl text-[11px] text-purple-900 dark:text-purple-200 font-medium">
+                      <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
+                      <span>
+                        El servidor activará el envío en el minuto programado de forma 100% desatendida.
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="flex justify-end gap-2 pt-3 border-t border-gray-200 dark:border-white/10">
                 <button
                   type="button"
@@ -1930,10 +2345,21 @@ export default function CampaignsPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md flex items-center gap-1.5"
+                  className={`px-5 py-2 rounded-xl text-white text-xs font-black shadow-md flex items-center gap-1.5 transition ${
+                    metaForm.isScheduled ? 'bg-purple-600 hover:bg-purple-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                  }`}
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Lanzar Campaña WhatsApp</span>
+                  {metaForm.isScheduled ? (
+                    <>
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>Programar Campaña WhatsApp</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Lanzar Campaña WhatsApp</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -2527,6 +2953,118 @@ export default function CampaignsPage() {
                   </div>
                 </div>
 
+                {/* SECCIÓN PROGRAMADOR DE CAMPAÑA EMAIL */}
+                <div className="p-3.5 bg-gradient-to-r from-purple-50/70 to-indigo-50/70 dark:from-purple-950/20 dark:to-indigo-950/20 border border-purple-200/80 dark:border-purple-500/30 rounded-2xl space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-purple-600 text-white flex items-center justify-center shadow-xs">
+                      <Clock className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-purple-950 dark:text-purple-200 uppercase tracking-wider">
+                        Momento de Despacho
+                      </h4>
+                      <p className="text-[11px] text-purple-700 dark:text-purple-300 font-medium">
+                        Elige si la campaña de correo sale ahora o queda programada para un día y horario específico
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Selector Inmediato vs Programado */}
+                  <div className="grid grid-cols-2 gap-2 bg-white/80 dark:bg-slate-900/80 p-1 rounded-xl border border-purple-100 dark:border-purple-500/20">
+                    <button
+                      type="button"
+                      onClick={() => setEmailForm(prev => ({ ...prev, isScheduled: false }))}
+                      className={`py-1.5 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 ${
+                        !emailForm.isScheduled
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <Zap className="w-3.5 h-3.5" />
+                      <span>Lanzar de Inmediato</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmailForm(prev => ({
+                          ...prev,
+                          isScheduled: true,
+                          scheduledAt: prev.scheduledAt || getPresetDateTime('tomorrow_9')
+                        }));
+                      }}
+                      className={`py-1.5 px-3 rounded-lg text-xs font-black transition flex items-center justify-center gap-1.5 ${
+                        emailForm.isScheduled
+                          ? 'bg-purple-600 text-white shadow-xs'
+                          : 'text-gray-600 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-300'
+                      }`}
+                    >
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>⏰ Programar Inicio</span>
+                    </button>
+                  </div>
+
+                  {/* Si está programada, mostrar fecha/hora y accesos rápidos */}
+                  {emailForm.isScheduled && (
+                    <div className="space-y-2.5 pt-1 animate-in fade-in duration-150">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <label className="text-xs font-extrabold text-purple-900 dark:text-purple-200 shrink-0">
+                          Fecha y Hora de Disparo:
+                        </label>
+                        <input
+                          type="datetime-local"
+                          required={emailForm.isScheduled}
+                          min={getMinDateTimeLocal()}
+                          value={emailForm.scheduledAt}
+                          onChange={e => setEmailForm(prev => ({ ...prev, scheduledAt: e.target.value }))}
+                          className="flex-1 px-3 py-1.5 text-xs font-extrabold bg-white dark:bg-slate-900 text-gray-950 dark:text-white border border-purple-300 dark:border-purple-500/40 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                        />
+                      </div>
+
+                      {/* Accesos rápidos de programación */}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] font-black uppercase text-purple-700 dark:text-purple-300 mr-1">
+                          Atajos:
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setEmailForm(prev => ({ ...prev, scheduledAt: getPresetDateTime('tomorrow_9') }))}
+                          className="px-2 py-0.5 text-[10px] font-black rounded-lg border border-purple-200 dark:border-purple-500/30 bg-white dark:bg-slate-900 text-purple-900 dark:text-purple-200 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition"
+                        >
+                          Mañana 09:00 hs
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEmailForm(prev => ({ ...prev, scheduledAt: getPresetDateTime('tomorrow_15') }))}
+                          className="px-2 py-0.5 text-[10px] font-black rounded-lg border border-purple-200 dark:border-purple-500/30 bg-white dark:bg-slate-900 text-purple-900 dark:text-purple-200 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition"
+                        >
+                          Mañana 15:00 hs
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEmailForm(prev => ({ ...prev, scheduledAt: getPresetDateTime('1h') }))}
+                          className="px-2 py-0.5 text-[10px] font-black rounded-lg border border-purple-200 dark:border-purple-500/30 bg-white dark:bg-slate-900 text-purple-900 dark:text-purple-200 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition"
+                        >
+                          En 1 hora
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEmailForm(prev => ({ ...prev, scheduledAt: getPresetDateTime('monday_10') }))}
+                          className="px-2 py-0.5 text-[10px] font-black rounded-lg border border-purple-200 dark:border-purple-500/30 bg-white dark:bg-slate-900 text-purple-900 dark:text-purple-200 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition"
+                        >
+                          Lunes 10:00 hs
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 p-2 bg-purple-100/60 dark:bg-purple-950/40 rounded-xl text-[11px] text-purple-900 dark:text-purple-200 font-medium">
+                        <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
+                        <span>
+                          El servidor enviará los correos a través de Gmail en la fecha y hora seleccionada de forma autónoma.
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex justify-end gap-2 pt-3 border-t border-gray-200 dark:border-white/10">
                   <button
                     type="button"
@@ -2537,10 +3075,21 @@ export default function CampaignsPage() {
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black shadow-md flex items-center gap-1.5"
+                    className={`px-5 py-2 rounded-xl text-white text-xs font-black shadow-md flex items-center gap-1.5 transition ${
+                      emailForm.isScheduled ? 'bg-purple-600 hover:bg-purple-700' : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
                   >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Lanzar Campaña por Gmail ({selectedCount} destinatarios)</span>
+                    {emailForm.isScheduled ? (
+                      <>
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>Programar Campaña ({selectedCount} destinatarios)</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Lanzar Campaña por Gmail ({selectedCount} destinatarios)</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </form>
@@ -2793,6 +3342,106 @@ export default function CampaignsPage() {
             </div>
           </div>
         )}
+
+      {/* ========================================================= */}
+      {/* MODAL: REPROGRAMAR FECHA Y HORA DE CAMPAÑA                */}
+      {/* ========================================================= */}
+      {rescheduleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#0c1424] rounded-3xl p-6 max-w-md w-full shadow-2xl border border-gray-200 dark:border-white/10 text-gray-950 dark:text-white flex flex-col">
+            <div className="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-white/10">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center">
+                  <Calendar className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-gray-950 dark:text-white">Reprogramar Lanzamiento</h3>
+                  <p className="text-[11px] font-semibold text-gray-500 dark:text-slate-400 truncate max-w-[260px]">
+                    {rescheduleModal.nombre}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setRescheduleModal(null)} 
+                className="text-gray-400 hover:text-gray-700 dark:hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveReschedule} className="space-y-4 py-4">
+              <div>
+                <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1.5">
+                  Nueva Fecha y Hora de Inicio
+                </label>
+                <input
+                  type="datetime-local"
+                  required
+                  min={getMinDateTimeLocal()}
+                  value={rescheduleModal.scheduledAt}
+                  onChange={e => setRescheduleModal({ ...rescheduleModal, scheduledAt: e.target.value })}
+                  className="w-full px-3 py-2 text-xs font-extrabold bg-white dark:bg-slate-900 text-gray-950 dark:text-white border border-purple-300 dark:border-purple-500/40 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Atajos Rápidos */}
+              <div>
+                <span className="block text-[10px] font-black uppercase tracking-wider text-purple-700 dark:text-purple-300 mb-1.5">
+                  Atajos rápidos:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setRescheduleModal({ ...rescheduleModal, scheduledAt: getPresetDateTime('tomorrow_9') })}
+                    className="px-2.5 py-1 text-[11px] font-black rounded-lg border border-purple-200 dark:border-purple-500/30 bg-purple-50 dark:bg-purple-950/40 text-purple-900 dark:text-purple-200 hover:bg-purple-100 dark:hover:bg-purple-900/60 transition"
+                  >
+                    Mañana 09:00 hs
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRescheduleModal({ ...rescheduleModal, scheduledAt: getPresetDateTime('tomorrow_15') })}
+                    className="px-2.5 py-1 text-[11px] font-black rounded-lg border border-purple-200 dark:border-purple-500/30 bg-purple-50 dark:bg-purple-950/40 text-purple-900 dark:text-purple-200 hover:bg-purple-100 dark:hover:bg-purple-900/60 transition"
+                  >
+                    Mañana 15:00 hs
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRescheduleModal({ ...rescheduleModal, scheduledAt: getPresetDateTime('1h') })}
+                    className="px-2.5 py-1 text-[11px] font-black rounded-lg border border-purple-200 dark:border-purple-500/30 bg-purple-50 dark:bg-purple-950/40 text-purple-900 dark:text-purple-200 hover:bg-purple-100 dark:hover:bg-purple-900/60 transition"
+                  >
+                    En 1 hora
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRescheduleModal({ ...rescheduleModal, scheduledAt: getPresetDateTime('monday_10') })}
+                    className="px-2.5 py-1 text-[11px] font-black rounded-lg border border-purple-200 dark:border-purple-500/30 bg-purple-50 dark:bg-purple-950/40 text-purple-900 dark:text-purple-200 hover:bg-purple-100 dark:hover:bg-purple-900/60 transition"
+                  >
+                    Lunes 10:00 hs
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-gray-200 dark:border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setRescheduleModal(null)}
+                  className="px-4 py-2 rounded-xl border border-gray-300 dark:border-white/10 text-xs font-bold text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoadingId === rescheduleModal.id}
+                  className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-black shadow-md flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>Guardar Programación</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </>
   );
