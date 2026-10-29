@@ -297,7 +297,7 @@ export default function CrmPage() {
       facebook: c.facebook || '',
       linkedin: c.linkedin || '',
       telegram: c.telegram || '',
-      metadata_extra: c.metadata_extra || ''
+      metadata_extra: typeof c.metadata_extra === 'object' ? JSON.stringify(c.metadata_extra, null, 2) : (c.metadata_extra || '')
     });
     setShowAddModal(true);
   };
@@ -1270,8 +1270,21 @@ export default function CrmPage() {
 
                   {showDetailModal.metadata_extra && (
                     <div className="p-3 bg-amber-50/60 border border-amber-200/50 rounded-2xl">
-                      <p className="font-bold text-amber-900 text-[10px] uppercase mb-1">Notas:</p>
-                      <p className="text-amber-800">{showDetailModal.metadata_extra}</p>
+                      <p className="font-bold text-amber-900 text-[10px] uppercase mb-1">Notas / Info Extra:</p>
+                      <div className="text-amber-800 text-xs">
+                        {typeof showDetailModal.metadata_extra === 'object' ? (
+                          <div className="space-y-1">
+                            {Object.entries(showDetailModal.metadata_extra).map(([k, v]) => (
+                              <div key={k} className="flex flex-wrap gap-1 text-[11px]">
+                                <span className="font-bold uppercase text-[9px] text-amber-950">{k.replace(/_/g, ' ')}:</span>
+                                <span className="break-all">{typeof v === 'object' ? JSON.stringify(v) : String(v)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="whitespace-pre-wrap">{showDetailModal.metadata_extra}</p>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
