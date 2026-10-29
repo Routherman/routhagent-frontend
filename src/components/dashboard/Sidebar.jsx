@@ -21,7 +21,11 @@ import {
   ShieldCheck,
   Mail,
   Calendar,
-  FolderOpen
+  FolderOpen,
+  ChevronDown,
+  Layers,
+  Building2,
+  ExternalLink
 } from 'lucide-react';
 import { API_URL } from '@/config/api';
 
@@ -144,29 +148,57 @@ export default function Sidebar() {
     };
   }, [isLoaded, user]);
 
-  const rawNavItems = [
+  // Sub-items que van en la sección colapsable solicitada:
+  // {equipo y roles + router multi ia + biblioteca de medios + automatizacion + flujos}
+  const rawOpsItems = [
+    { label: 'Equipo & Roles', href: '/dashboard/roles', icon: ShieldCheck, permission: 'view_roles' },
+    { label: 'Router Multi-IA', href: '/dashboard/models', icon: Cpu, permission: 'view_models' },
+    { label: 'Biblioteca de Medios', href: '/dashboard/campaigns?tab=media', icon: FolderOpen, permission: 'view_campaigns' },
+    { label: 'Automatización', href: '/dashboard/automation', icon: Zap, permission: 'view_flows' },
+    { label: 'Flujos Bot', href: '/dashboard/flows', icon: GitFork, permission: 'view_flows' },
+  ];
+
+  const rawMainItems = [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutGrid, exact: true, permission: 'view_dashboard' },
     { label: 'Mensajes', href: '/dashboard/messages', icon: MessageSquare, count: chatsAttentionCount, badge: hasHandoffs, permission: 'view_messages' },
     { label: 'Inbox Gmail', href: '/dashboard/inbox', icon: Mail, permission: 'view_inbox' },
     { label: 'Calendario & Meet', href: '/dashboard/calendar', icon: Calendar, permission: 'view_calendar' },
     { label: 'Tickets Helpdesk', href: '/dashboard/tickets', icon: Ticket, count: pendingTicketsCount, permission: 'view_tickets' },
     { label: 'Agenda CRM', href: '/dashboard/crm', icon: Users, permission: 'view_crm' },
-    { label: 'Equipo & Roles', href: '/dashboard/roles', icon: ShieldCheck, permission: 'view_roles' },
-    { label: 'Router Multi-IA', href: '/dashboard/models', icon: Cpu, permission: 'view_models' },
     { label: 'Campañas (Meta & Mail)', href: '/dashboard/campaigns', icon: BarChart3, permission: 'view_campaigns' },
-    { label: 'Biblioteca de Medios', href: '/dashboard/campaigns?tab=media', icon: FolderOpen, permission: 'view_campaigns' },
-    { label: 'Automatización', href: '/dashboard/automation', icon: Zap, permission: 'view_flows' },
-    { label: 'Flujos Bot', href: '/dashboard/flows', icon: GitFork, permission: 'view_flows' },
-    { label: 'Configuración', href: '/dashboard/user', icon: Settings, permission: 'view_settings' },
+    { label: 'Prospectos B2B', href: '/dashboard/prospectos-b2b', icon: Building2, target: '_blank', badgeText: 'B2B', permission: 'view_crm' },
   ];
+
+  const rawConfigItem = { label: 'Configuración', href: '/dashboard/user', icon: Settings, permission: 'view_settings' };
+
+  // Detectar si alguna ruta interna del grupo colapsable está activa
+  const isOpsActive = [
+    '/dashboard/roles',
+    '/dashboard/models',
+    '/dashboard/automation',
+    '/dashboard/flows'
+  ].some(route => pathname.startsWith(route)) || (pathname.startsWith('/dashboard/campaigns') && pathname.includes('tab=media'));
+
+  const [isOpsOpen, setIsOpsOpen] = useState(isOpsActive);
+
+  useEffect(() => {
+    if (isOpsActive) {
+      setIsOpsOpen(true);
+    }
+  }, [isOpsActive]);
 
   // Master, Main, Admin y creadores de empresa ven todo. Otros roles ven según privilegios explícitos.
   const isSuperAdmin = !userRole || ['master', 'main', 'admin', 'gerencia', 'director'].includes(userRole);
-  const navItems = rawNavItems.filter(item => {
+  
+  const filterPerm = (item) => {
     if (isSuperAdmin) return true;
     if (!userPrivs) return true;
     return userPrivs[item.permission] !== false;
-  });
+  };
+
+  const mainNavItems = rawMainItems.filter(filterPerm);
+  const opsNavItems = rawOpsItems.filter(filterPerm);
+  const showConfig = filterPerm(rawConfigItem);
 
   return (
     <aside 
@@ -192,16 +224,18 @@ export default function Sidebar() {
 
         {/* Navigation Items */}
         <nav className="flex flex-col gap-1.5 w-full">
-          {navItems.map((item) => {
+          {mainNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = item.exact 
               ? pathname === item.href 
-              : pathname === item.href || pathname.startsWith(item.href + '/');
+              : pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'));
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                target={item.target || undefined}
+                rel={item.target ? "noopener noreferrer" : undefined}
                 className={`relative flex items-center h-11 px-3 rounded-2xl transition-all duration-200 group/item ${
                   isActive 
                     ? `${activeBg} ${activeColor}` 
@@ -229,6 +263,12 @@ export default function Sidebar() {
                 {/* Label displayed on sidebar hover */}
                 <span className="ml-3.5 text-xs font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-[-6px] group-hover:translate-x-0 overflow-hidden flex items-center gap-2 w-full">
                   <span>{item.label}</span>
+                  {item.badgeText && (
+                    <span className="ml-auto px-1.5 py-0.5 text-[9px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-md flex items-center gap-1 shadow-sm">
+                      <span>{item.badgeText}</span>
+                      <ExternalLink className="w-2.5 h-2.5" />
+                    </span>
+                  )}
                   {item.count > 0 && (
                     <span className="ml-auto px-1.5 py-0.2 text-[10px] font-black bg-red-600 text-white rounded-full shadow-sm">
                       {item.count}
@@ -237,12 +277,103 @@ export default function Sidebar() {
                 </span>
 
                 {/* Active Arrow indicator when expanded */}
-                {isActive && !item.count && (
+                {isActive && !item.count && !item.badgeText && (
                   <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-0 group-hover:opacity-60 transition-opacity duration-200" />
                 )}
               </Link>
             );
           })}
+
+          {/* Sección Agrupada y Desplegable: Sistema & Flujos */}
+          {opsNavItems.length > 0 && (
+            <div className="flex flex-col mt-1">
+              <button
+                type="button"
+                onClick={() => setIsOpsOpen(!isOpsOpen)}
+                className={`relative flex items-center h-11 px-3 rounded-2xl transition-all duration-200 group/item w-full text-left ${
+                  isOpsActive && !isOpsOpen 
+                    ? `${activeBg} ${activeColor}` 
+                    : `${defaultColor} ${hoverColor}`
+                }`}
+                title="Sistema & Flujos"
+              >
+                {isOpsActive && (
+                  <span className="absolute left-1 top-2.5 bottom-2.5 w-1 bg-amber-400 rounded-full shadow-[0_0_8px_rgba(251,191,36,0.8)]" />
+                )}
+
+                <div className="w-5 h-5 min-w-[20px] flex items-center justify-center relative">
+                  <Layers className="w-5 h-5 transition-transform group-hover/item:scale-110 text-amber-400/90" />
+                </div>
+
+                <span className="ml-3.5 text-xs font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-[-6px] group-hover:translate-x-0 overflow-hidden flex items-center justify-between w-full">
+                  <span className="font-bold tracking-tight">Sistema & Flujos</span>
+                  {isOpsOpen ? (
+                    <ChevronDown className="w-3.5 h-3.5 text-amber-400 transition-transform duration-200" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5 opacity-60 transition-transform duration-200" />
+                  )}
+                </span>
+              </button>
+
+              {/* Submenú desplegable con indentación y estilo elegante */}
+              {isOpsOpen && (
+                <div className="flex flex-col gap-1 pl-2.5 my-1 border-l-2 border-amber-500/20 ml-5 transition-all duration-200">
+                  {opsNavItems.map((subItem) => {
+                    const SubIcon = subItem.icon;
+                    const isSubActive = subItem.href.includes('?') 
+                      ? (pathname + (typeof window !== 'undefined' ? window.location.search : '')).includes(subItem.href.split('/dashboard/')[1] || '')
+                      : pathname === subItem.href || pathname.startsWith(subItem.href + '/');
+
+                    return (
+                      <Link
+                        key={subItem.href}
+                        href={subItem.href}
+                        className={`relative flex items-center h-9 px-2.5 rounded-xl transition-all duration-200 group/sub ${
+                          isSubActive
+                            ? `${activeBg} ${activeColor}`
+                            : `${defaultColor} ${hoverColor}`
+                        }`}
+                        title={subItem.label}
+                      >
+                        <div className="w-4 h-4 min-w-[16px] flex items-center justify-center">
+                          <SubIcon className="w-4 h-4 transition-transform group-hover/sub:scale-110" />
+                        </div>
+                        <span className="ml-2.5 text-[11px] font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-[-4px] group-hover:translate-x-0 overflow-hidden">
+                          {subItem.label}
+                        </span>
+                        {isSubActive && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 ml-auto opacity-0 group-hover:opacity-100" />
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Configuración */}
+          {showConfig && (
+            <Link
+              href={rawConfigItem.href}
+              className={`relative flex items-center h-11 px-3 rounded-2xl transition-all duration-200 group/item mt-1 ${
+                pathname === rawConfigItem.href 
+                  ? `${activeBg} ${activeColor}` 
+                  : `${defaultColor} ${hoverColor}`
+              }`}
+              title={rawConfigItem.label}
+            >
+              {pathname === rawConfigItem.href && (
+                <span className="absolute left-1 top-2.5 bottom-2.5 w-1 bg-amber-400 rounded-full shadow-[0_0_8px_rgba(251,191,36,0.8)]" />
+              )}
+              <div className="w-5 h-5 min-w-[20px] flex items-center justify-center relative">
+                <Settings className="w-5 h-5 transition-transform group-hover/item:scale-110" />
+              </div>
+              <span className="ml-3.5 text-xs font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-[-6px] group-hover:translate-x-0 overflow-hidden flex items-center gap-2 w-full">
+                <span>{rawConfigItem.label}</span>
+              </span>
+            </Link>
+          )}
         </nav>
       </div>
 
