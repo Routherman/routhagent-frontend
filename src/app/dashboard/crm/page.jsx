@@ -69,6 +69,7 @@ export const RUBROS_METADATA = {
 
 export default function CrmPage() {
   const { user, isLoaded } = useUser();
+  const [currentUserData, setCurrentUserData] = useState(null);
   const [codigoEmpresa, setCodigoEmpresa] = useState(null);
   const [contacts, setContacts] = useState([]);
   const [allContacts, setAllContacts] = useState([]);
@@ -122,6 +123,7 @@ export default function CrmPage() {
       fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } })
         .then(res => res.json())
         .then(data => {
+          setCurrentUserData(data);
           if (data.codigo_empresa) {
             setCodigoEmpresa(data.codigo_empresa);
           }
