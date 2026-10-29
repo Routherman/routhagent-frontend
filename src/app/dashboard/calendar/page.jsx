@@ -32,7 +32,9 @@ import {
   FileText,
   BadgeAlert,
   ArrowRight,
-  Trash2
+  Trash2,
+  Copy,
+  Check
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -84,6 +86,15 @@ export default function CalendarPage() {
     telefono: ""
   });
   const [bookingLoading, setBookingLoading] = useState(false);
+
+  // Modal para Enviar Link de Meet a Suscriptores
+  const [showSendLinkModal, setShowSendLinkModal] = useState(false);
+  const [selectedSlotForSendLink, setSelectedSlotForSendLink] = useState(null);
+  const [sendLinkMeetUrl, setSendLinkMeetUrl] = useState("");
+  const [sendLinkCustomMsg, setSendLinkCustomMsg] = useState("");
+  const [sendLinkChannels, setSendLinkChannels] = useState({ whatsapp: true, email: true });
+  const [sendingLink, setSendingLink] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   // 1. Obtener código de empresa y permisos de usuario
   useEffect(() => {
@@ -204,6 +215,59 @@ export default function CalendarPage() {
       toast.error("Error de conexión al inscribir");
     } finally {
       setBookingLoading(false);
+    }
+  };
+
+  // 5. Enviar Link de Acceso a Suscriptores
+  const openSendLinkModal = (slot) => {
+    setSelectedSlotForSendLink(slot);
+    setSendLinkMeetUrl(slot.meetLink || "https://meet.google.com/new");
+    setSendLinkCustomMsg("Por favor conéctate 5 minutos antes con micrófono y cámara listos.");
+    setSendLinkChannels({ whatsapp: true, email: true });
+    setShowSendLinkModal(true);
+  };
+
+  const handleSendLinkToSubscribers = async () => {
+    if (!selectedSlotForSendLink) return;
+    const channels = [];
+    if (sendLinkChannels.whatsapp) channels.push("whatsapp");
+    if (sendLinkChannels.email) channels.push("email");
+
+    if (channels.length === 0) {
+      toast.error("Selecciona al menos un canal (WhatsApp o Email)");
+      return;
+    }
+
+    setSendingLink(true);
+    try {
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/calendar/slots/${selectedSlotForSendLink.id}/send-link`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true"
+        },
+        body: JSON.stringify({
+          meetLinkOverride: sendLinkMeetUrl,
+          customMessage: sendLinkCustomMsg,
+          channels,
+          userId: user?.id,
+          userName: user?.fullName || user?.firstName || userName || "Administrador",
+          userRole: userRole || "admin"
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message || `¡Enlace enviado a ${data.subscribersCount} suscriptores!`);
+        setShowSendLinkModal(false);
+        fetchSlots();
+      } else {
+        toast.error(data.error || "No se pudo enviar el enlace a los suscriptores");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error al enviar el enlace");
+    } finally {
+      setSendingLink(false);
     }
   };
 
@@ -512,9 +576,30 @@ export default function CalendarPage() {
                             <span className="truncate">{s.ubicacion}</span>
                           </p>
                           {isVirtual && s.meetLink && (
-                            <p className="font-mono text-[10px] text-blue-600 truncate">
-                              Link: {s.meetLink}
-                            </p>
+                            <div className="flex items-center justify-between gap-1 pt-1 border-t border-gray-200/50">
+                              <a
+                                href={s.meetLink}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="font-mono text-[10px] text-blue-600 hover:text-blue-800 hover:underline truncate flex items-center gap-1"
+                                title="Abrir Google Meet"
+                              >
+                                <Video className="w-3 h-3 shrink-0" />
+                                <span className="truncate">Link: {s.meetLink}</span>
+                              </a>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigator.clipboard.writeText(s.meetLink);
+                                  toast.success("Enlace de Meet copiado al portapapeles");
+                                }}
+                                className="p-1 text-gray-400 hover:text-gray-700 rounded transition shrink-0"
+                                title="Copiar enlace"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </button>
+                            </div>
                           )}
                         </div>
 
@@ -585,7 +670,7 @@ export default function CalendarPage() {
                       </div>
 
                       {/* Footer de la Tarjeta */}
-                      <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                      <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between gap-2 flex-wrap">
                         {isVirtual ? (
                           <a
                             href={s.meetLink}
@@ -608,15 +693,32 @@ export default function CalendarPage() {
                           </a>
                         )}
 
-                        <button
-                          onClick={() => {
-                            setSelectedSlotForBooking(s);
-                            setShowBookModal(true);
-                          }}
-                          className="px-3.5 py-1.5 bg-black hover:bg-gray-800 text-white rounded-xl text-xs font-bold transition shadow-sm"
-                        >
-                          Inscribir Asesor
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openSendLinkModal(s)}
+                            disabled={subsCount === 0}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs ${
+                              subsCount === 0
+                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white active:scale-95 cursor-pointer shadow-blue-500/20"
+                            }`}
+                            title={subsCount === 0 ? "No hay inscriptos en esta sesión" : "Enviar link de acceso a los inscriptos"}
+                          >
+                            <Send className="w-3 h-3" />
+                            <span>Enviar link a suscriptores</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setSelectedSlotForBooking(s);
+                              setShowBookModal(true);
+                            }}
+                            className="px-3.5 py-1.5 bg-black hover:bg-gray-800 text-white rounded-xl text-xs font-bold transition shadow-sm active:scale-95"
+                          >
+                            Inscribir Asesor
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -1221,6 +1323,189 @@ export default function CalendarPage() {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {/* Modal para Enviar Link de Meet a Suscriptores */}
+          {showSendLinkModal && selectedSlotForSendLink && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-md">
+                      <Send className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-base text-gray-900">
+                        Enviar Enlace a Suscriptores
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        Recordatorio y sala de acceso para los candidatos inscriptos
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowSendLinkModal(false)}
+                    className="p-1.5 text-gray-400 hover:text-gray-700 rounded-xl hover:bg-gray-100 transition"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="mt-4 space-y-4">
+                  {/* Resumen del Turno */}
+                  <div className="p-3.5 bg-indigo-50/60 rounded-2xl border border-indigo-100 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-black text-xs text-indigo-950">
+                        {selectedSlotForSendLink.titulo}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-200 text-indigo-900">
+                        {selectedSlotForSendLink.modalidad}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-indigo-800">
+                      <span className="flex items-center gap-1 font-bold">
+                        <CalendarIcon className="w-3.5 h-3.5 text-indigo-600" />
+                        {selectedSlotForSendLink.fechaStr}
+                      </span>
+                      <span className="flex items-center gap-1 font-bold font-mono">
+                        <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                        {selectedSlotForSendLink.horarioStr}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Enlace de Google Meet editable */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-black text-gray-700 uppercase tracking-wider flex items-center gap-1">
+                        <Video className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Enlace de Sala Google Meet</span>
+                      </label>
+                      {sendLinkMeetUrl && (
+                        <a
+                          href={sendLinkMeetUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[11px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                        >
+                          <span>Probar Sala</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      value={sendLinkMeetUrl}
+                      onChange={(e) => setSendLinkMeetUrl(e.target.value)}
+                      placeholder="https://meet.google.com/xxx-yyyy-zzz"
+                      className="w-full px-3.5 py-2.5 text-xs font-mono font-bold text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    />
+                    <p className="text-[10px] text-gray-400 mt-1">
+                      Este link será enviado directamente en el mensaje de WhatsApp y botón de acceso por Email.
+                    </p>
+                  </div>
+
+                  {/* Canales de envío */}
+                  <div>
+                    <label className="text-[11px] font-black text-gray-700 uppercase tracking-wider block mb-2">
+                      Canales de Envío
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition ${
+                        sendLinkChannels.whatsapp ? "bg-emerald-50 border-emerald-300 text-emerald-950 font-bold" : "bg-gray-50 border-gray-200 text-gray-500"
+                      }`}>
+                        <input
+                          type="checkbox"
+                          checked={sendLinkChannels.whatsapp}
+                          onChange={(e) => setSendLinkChannels({ ...sendLinkChannels, whatsapp: e.target.checked })}
+                          className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
+                        />
+                        <span className="text-xs">WhatsApp Oficial</span>
+                      </label>
+                      <label className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition ${
+                        sendLinkChannels.email ? "bg-blue-50 border-blue-300 text-blue-950 font-bold" : "bg-gray-50 border-gray-200 text-gray-500"
+                      }`}>
+                        <input
+                          type="checkbox"
+                          checked={sendLinkChannels.email}
+                          onChange={(e) => setSendLinkChannels({ ...sendLinkChannels, email: e.target.checked })}
+                          className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-xs">Email con Plantilla</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Mensaje Adicional Opcional */}
+                  <div>
+                    <label className="text-[11px] font-black text-gray-700 uppercase tracking-wider block mb-1">
+                      Nota o Instrucciones Adicionales (Opcional)
+                    </label>
+                    <input
+                      type="text"
+                      value={sendLinkCustomMsg}
+                      onChange={(e) => setSendLinkCustomMsg(e.target.value)}
+                      placeholder="Ej: Conectarse 5 min antes con audio listo..."
+                      className="w-full px-3 py-2 text-xs text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-black"
+                    />
+                  </div>
+
+                  {/* Destinatarios */}
+                  <div>
+                    <div className="flex items-center justify-between text-xs font-black text-gray-700 uppercase tracking-wider mb-2">
+                      <span>Destinatarios Inscriptos ({selectedSlotForSendLink.subscribers?.length || 0})</span>
+                      <span className="text-[10px] text-indigo-600 font-bold lowercase">se enviará individualmente</span>
+                    </div>
+                    <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1 bg-gray-50 p-2.5 rounded-2xl border border-gray-100">
+                      {selectedSlotForSendLink.subscribers?.map((sub) => (
+                        <div key={sub.id} className="flex items-center justify-between text-xs bg-white px-2.5 py-1.5 rounded-xl border border-gray-200/80">
+                          <div className="truncate mr-2">
+                            <span className="font-extrabold text-gray-900">{sub.nombre}</span>
+                            <span className="text-[11px] text-gray-500 ml-1.5 font-mono">({sub.telefono})</span>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {sub.telefono && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800">WA</span>}
+                            {sub.email && !sub.email.includes('No registrado') && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800">Email</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Botones de acción */}
+                  <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      disabled={sendingLink}
+                      onClick={() => setShowSendLinkModal(false)}
+                      className="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      disabled={sendingLink || (!sendLinkChannels.whatsapp && !sendLinkChannels.email)}
+                      onClick={handleSendLinkToSubscribers}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-black shadow-lg shadow-blue-500/25 active:scale-95 transition"
+                    >
+                      {sendingLink ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Enviando enlaces...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-3.5 h-3.5" />
+                          <span>Enviar Link a {selectedSlotForSendLink.subscribers?.length || 0} Suscriptores</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
