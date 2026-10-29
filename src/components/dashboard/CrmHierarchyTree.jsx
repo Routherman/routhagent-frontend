@@ -176,11 +176,26 @@ export default function CrmHierarchyTree({
                                 <Crown className="w-4 h-4" />
                               </div>
                               <div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   <h4 className="font-extrabold text-sm text-gray-900">{lider.nombre}</h4>
                                   <span className="text-[10px] px-2 py-0.5 rounded-md font-black bg-amber-100 text-amber-800 border border-amber-200 uppercase">
                                     LÍDER
                                   </span>
+                                  {lider.score !== undefined && lider.score !== null && (
+                                    <span 
+                                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black border shadow-2xs ${
+                                        lider.score >= 850
+                                          ? 'bg-purple-100 text-purple-900 border-purple-300'
+                                          : lider.score >= 700
+                                          ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                          : 'bg-blue-100 text-blue-900 border-blue-300'
+                                      }`}
+                                      title={`Score de Gestión: ${lider.score} Pts • Rango ${lider.rango || 'Oro'}`}
+                                    >
+                                      <span>{lider.score >= 850 ? '💎' : lider.score >= 700 ? '🥇' : '🥈'}</span>
+                                      <span className="font-mono">{lider.score} pts</span>
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-3 text-xs text-gray-500 font-mono mt-0.5">
                                   <span>{lider.email}</span>
@@ -223,12 +238,29 @@ export default function CrmHierarchyTree({
                                             <UserCheck className="w-4 h-4" />
                                           </div>
                                           <div>
-                                            <div className="flex items-center gap-1.5">
+                                            <div className="flex items-center gap-1.5 flex-wrap">
                                               <span className="text-xs text-gray-400 font-mono">➔</span>
                                               <h5 className="font-extrabold text-xs text-gray-900">{asesor.nombre}</h5>
                                               <span className="text-[9px] px-1.5 py-0.2 rounded font-black bg-blue-100 text-blue-800 border border-blue-200 uppercase">
                                                 ASESOR
                                               </span>
+                                              {asesor.score !== undefined && asesor.score !== null && (
+                                                <span 
+                                                  className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[9px] font-black border shadow-2xs ${
+                                                    asesor.score >= 850
+                                                      ? 'bg-purple-100 text-purple-900 border-purple-300'
+                                                      : asesor.score >= 700
+                                                      ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                                      : asesor.score >= 500
+                                                      ? 'bg-blue-100 text-blue-900 border-blue-300'
+                                                      : 'bg-orange-100 text-orange-900 border-orange-300'
+                                                  }`}
+                                                  title={`Score de Rendimiento: ${asesor.score} Pts • Rango ${asesor.rango || 'Plata'}`}
+                                                >
+                                                  <span>{asesor.score >= 850 ? '💎' : asesor.score >= 700 ? '🥇' : asesor.score >= 500 ? '🥈' : '🥉'}</span>
+                                                  <span className="font-mono">{asesor.score} pts</span>
+                                                </span>
+                                              )}
                                             </div>
                                             <div className="flex items-center gap-2 text-[11px] text-gray-500 font-mono mt-0.5">
                                               <span>{asesor.email}</span>

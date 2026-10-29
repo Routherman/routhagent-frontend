@@ -32,7 +32,9 @@ import {
   Clock,
   Crown,
   Layers,
-  ArrowRight
+  ArrowRight,
+  FileText,
+  Award
 } from 'lucide-react';
 import CrmHierarchyTree from '@/components/dashboard/CrmHierarchyTree';
 import ContactActionMenu from '@/components/dashboard/ContactActionMenu';
@@ -510,6 +512,18 @@ export default function CrmPage() {
                 <span>Importar CSV</span>
               </button>
 
+              <a
+                href={`${API_URL}/empresas/${codigoEmpresa}/scores/pdf-guia`}
+                target="_blank"
+                rel="noreferrer"
+                download="Reglamento_Sistema_de_Puntos_Colaboratium.pdf"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 text-indigo-900 border border-indigo-200 text-xs font-black transition shadow-xs hover:scale-[1.02]"
+                title="Descargar Reglamento Oficial del Sistema de Puntos y Score 360°"
+              >
+                <FileText className="w-4 h-4 text-indigo-600" />
+                <span>Reglamento Score (PDF)</span>
+              </a>
+
               <button
                 onClick={() => {
                   setEditingId(null);
@@ -819,8 +833,29 @@ export default function CrmPage() {
                       <tr key={c.id} className="hover:bg-gray-50/60 transition-colors">
                         {/* Name & DNI */}
                         <td className="py-3.5 px-4">
-                          <div className="font-extrabold text-gray-900 text-sm">
-                            {c.nombre || 'Sin Nombre'}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-extrabold text-gray-900 text-sm">
+                              {c.nombre || 'Sin Nombre'}
+                            </span>
+                            {c.score !== null && c.score !== undefined && (
+                              <span 
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black border shadow-2xs ${
+                                  c.score >= 850
+                                    ? 'bg-purple-100 text-purple-900 border-purple-300'
+                                    : c.score >= 700
+                                    ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                    : c.score >= 500
+                                    ? 'bg-blue-100 text-blue-900 border-blue-300'
+                                    : c.score >= 350
+                                    ? 'bg-orange-100 text-orange-900 border-orange-300'
+                                    : 'bg-red-100 text-red-900 border-red-300'
+                                }`}
+                                title={`Score de Rendimiento: ${c.score} Pts • Rango ${c.rango || 'Plata'}`}
+                              >
+                                <span>{c.rangoMeta?.icono || (c.score >= 850 ? '💎' : c.score >= 700 ? '🥇' : c.score >= 500 ? '🥈' : '🥉')}</span>
+                                <span className="font-mono font-bold">{c.score} pts</span>
+                              </span>
+                            )}
                           </div>
                           <div className="flex items-center gap-2 text-gray-400 text-[11px] mt-0.5">
                             {c.dni ? (
