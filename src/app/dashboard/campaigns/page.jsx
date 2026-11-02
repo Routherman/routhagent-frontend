@@ -42,7 +42,9 @@ import {
   Zap,
   Calendar,
   Sliders,
-  X
+  X,
+  Cpu,
+  Building2
 } from 'lucide-react';
 
 export default function CampaignsPage() {
@@ -60,6 +62,7 @@ export default function CampaignsPage() {
   const [plantillas, setPlantillas] = useState([]);
   const [medios, setMedios] = useState([]);
   const [crmContacts, setCrmContacts] = useState([]);
+  const [b2bProspects, setB2bProspects] = useState([]);
 
   // Estados de Modales
   const [showMetaModal, setShowMetaModal] = useState(false);
@@ -268,14 +271,15 @@ export default function CampaignsPage() {
       if (isInitial) setLoading(true);
       const headers = { 'ngrok-skip-browser-warning': 'true' };
 
-      const [resCamp, resPlan, resMed, resCont, resMetaTpls, resSlots, resMon] = await Promise.all([
+      const [resCamp, resPlan, resMed, resCont, resMetaTpls, resSlots, resMon, resB2B] = await Promise.all([
         fetch(`${API_URL}/empresas/${codigoEmpresa}/campanas`, { headers }),
         fetch(`${API_URL}/empresas/${codigoEmpresa}/plantillas`, { headers }),
         fetch(`${API_URL}/empresas/${codigoEmpresa}/medios`, { headers }),
         fetch(`${API_URL}/empresas/${codigoEmpresa}/crm/contacts`, { headers }),
         fetch(`${API_URL}/empresas/${codigoEmpresa}/templates`, { headers }).catch(() => ({ ok: false })),
         fetch(`${API_URL}/empresas/${codigoEmpresa}/calendar/slots`, { headers }).catch(() => ({ ok: false })),
-        fetch(`${API_URL}/empresas/${codigoEmpresa}/inbox/monitor-status`, { headers }).catch(() => ({ ok: false }))
+        fetch(`${API_URL}/empresas/${codigoEmpresa}/inbox/monitor-status`, { headers }).catch(() => ({ ok: false })),
+        fetch(`${API_URL}/b2b-prospects?codigoEmpresa=${codigoEmpresa}&limit=10000`, { headers }).catch(() => ({ ok: false }))
       ]);
 
       if (resCamp.ok) setCampaigns(await resCamp.json());
@@ -305,6 +309,12 @@ export default function CampaignsPage() {
         const monData = await resMon.json();
         if (monData.success) {
           setMonitorStatus(monData);
+        }
+      }
+      if (resB2B && resB2B.ok) {
+        const b2bData = await resB2B.json();
+        if (b2bData.success && Array.isArray(b2bData.prospects)) {
+          setB2bProspects(b2bData.prospects);
         }
       }
     } catch (e) {
@@ -617,11 +627,7 @@ export default function CampaignsPage() {
     if (emailForm.selectedContactIds && emailForm.selectedContactIds.length > 0) {
       finalContactIds = emailForm.selectedContactIds;
     } else {
-      let targetContacts = crmContacts.filter(c => c.email && c.email.includes('@'));
-      if (emailForm.targetGroup !== 'TODOS') {
-        targetContacts = targetContacts.filter(c => (c.grupo || '').toUpperCase() === emailForm.targetGroup.toUpperCase());
-      }
-      finalContactIds = targetContacts.map(c => c.id);
+      finalContactIds = availableInGroup.map(c => c.id);
     }
 
     if (finalContactIds.length === 0) {
@@ -756,11 +762,154 @@ export default function CampaignsPage() {
     toast.success("Enlace copiado al portapapeles");
   };
 
-  // Contactos con email filtrados por rubro y búsqueda para el modal de email
-  const contactsWithEmail = crmContacts.filter(c => c.email && c.email.includes('@'));
-  const availableInGroup = emailForm.targetGroup === 'TODOS'
-    ? contactsWithEmail
-    : (emailForm.targetGroup === 'CUSTOM' ? contactsWithEmail : contactsWithEmail.filter(c => (c.grupo || '').toUpperCase() === emailForm.targetGroup.toUpperCase()));
+  // Prospectos B2B formateados para campañas
+  const b2bProspectsFormatted = React.useMemo(() => {
+    return (b2bProspects || [])
+      .filter(p => p.email && p.email.includes('@') && p.campaign_status !== 'OPT_OUT_BAJA')
+      .map(p => {
+        const isLider = p.detected_role === 'LIDER_BROKER_POTENCIAL';
+        const fullName = `${p.first_name || ''} ${p.last_name || ''}`.trim();
+        const displayLabel = fullName 
+          ? `${fullName} (${p.office_name || p.company_or_board || 'RE/MAX'})` 
+          : (p.office_name || p.company_or_board || 'Prospecto B2B');
+        return {
+          id: `b2b_${p.id}`,
+          nombre: displayLabel,
+          first_name: p.first_name,
+          last_name: p.last_name,
+          email: p.email,
+          telefono: p.phone_e164 || p.phone_raw,
+          grupo: isLider ? 'B2B_LIDERES' : 'B2B_ASESORES',
+          detected_role: p.detected_role,
+          office_name: p.office_name,
+          company_or_board: p.company_or_board,
+          isB2B: true
+        };
+      });
+  }, [b2bProspects]);
+
+  // Consolidar contactos CRM con prospectos B2B
+  const contactsWithEmail = React.useMemo(() => {
+    const crm = crmContacts.filter(c => c.email && c.email.includes('@'));
+    return [...crm, ...b2bProspectsFormatted];
+  }, [crmContacts, b2bProspectsFormatted]);
+
+  const b2bAsesoresCount = b2bProspectsFormatted.filter(c => c.grupo === 'B2B_ASESORES').length;
+  const b2bLideresCount = b2bProspectsFormatted.filter(c => c.grupo === 'B2B_LIDERES').length;
+
+  const availableInGroup = React.useMemo(() => {
+    const grp = (emailForm.targetGroup || '').toUpperCase();
+    if (grp === 'TODOS' || grp === 'CUSTOM') {
+      return contactsWithEmail;
+    }
+    if (grp === 'B2B_TODOS') {
+      return b2bProspectsFormatted;
+    }
+    if (grp === 'B2B_ASESORES') {
+      return b2bProspectsFormatted.filter(c => c.grupo === 'B2B_ASESORES');
+    }
+    if (grp === 'B2B_LIDERES') {
+      return b2bProspectsFormatted.filter(c => c.grupo === 'B2B_LIDERES');
+    }
+    return contactsWithEmail.filter(c => (c.grupo || '').toUpperCase() === grp);
+  }, [contactsWithEmail, b2bProspectsFormatted, emailForm.targetGroup]);
+
+  // Detector de modo B2B para Regla de Oro (0 adjuntos)
+  const isB2BColdEmail = (emailForm.targetGroup || '').startsWith('B2B') || 
+    [9, 10, '9', '10'].includes(emailForm.plantillaId) ||
+    plantillas.some(p => (p.id === Number(emailForm.plantillaId)) && (p.nombre?.toLowerCase().includes('prospección') || p.nombre?.toLowerCase().includes('re/max')));
+
+  // Manejador inteligente de cambio de público / rubro
+  const handleEmailTargetGroupChange = (newGrp) => {
+    let grpContacts = [];
+    const grpUpper = newGrp.toUpperCase();
+    if (grpUpper === 'TODOS' || grpUpper === 'CUSTOM') {
+      grpContacts = contactsWithEmail;
+    } else if (grpUpper === 'B2B_TODOS') {
+      grpContacts = b2bProspectsFormatted;
+    } else if (grpUpper === 'B2B_ASESORES') {
+      grpContacts = b2bProspectsFormatted.filter(c => c.grupo === 'B2B_ASESORES');
+    } else if (grpUpper === 'B2B_LIDERES') {
+      grpContacts = b2bProspectsFormatted.filter(c => c.grupo === 'B2B_LIDERES');
+    } else {
+      grpContacts = contactsWithEmail.filter(c => (c.grupo || '').toUpperCase() === grpUpper);
+    }
+
+    let updatedForm = {
+      ...emailForm,
+      targetGroup: newGrp,
+      selectedContactIds: grpContacts.map(c => c.id)
+    };
+
+    // Auto-asignación inteligente de plantillas B2B y Regla de Oro (0 adjuntos)
+    if (newGrp === 'B2B_ASESORES') {
+      const tplAsesores = plantillas.find(p => p.id === 9 || p.nombre?.toLowerCase().includes('agentes inmobiliarios') || p.nombre?.toLowerCase().includes('flujo 2'));
+      if (tplAsesores) {
+        updatedForm.plantillaId = tplAsesores.id;
+        updatedForm.asunto = tplAsesores.asunto || emailForm.asunto;
+        updatedForm.htmlContent = tplAsesores.contenido;
+      }
+      updatedForm.selectedMedia = []; // Regla de Oro: 0 adjuntos en B2B
+      toast.info(`🏢 Modo B2B Asesores activo: Plantilla Asesores (Flujo 2) asignada (${grpContacts.length} destinatarios, 0 adjuntos).`);
+    } else if (newGrp === 'B2B_LIDERES') {
+      const tplLideres = plantillas.find(p => p.id === 10 || p.nombre?.toLowerCase().includes('broker') || p.nombre?.toLowerCase().includes('flujo 3'));
+      if (tplLideres) {
+        updatedForm.plantillaId = tplLideres.id;
+        updatedForm.asunto = tplLideres.asunto || emailForm.asunto;
+        updatedForm.htmlContent = tplLideres.contenido;
+      }
+      updatedForm.selectedMedia = []; // Regla de Oro: 0 adjuntos en B2B
+      toast.info(`👑 Modo B2B Líderes activo: Plantilla Brokers (Flujo 3) asignada (${grpContacts.length} destinatarios, 0 adjuntos).`);
+    }
+
+    setEmailForm(updatedForm);
+  };
+
+  // Manejador inteligente de cambio de plantilla
+  const handleEmailTemplateChange = (templateId) => {
+    const sel = plantillas.find(p => p.id === Number(templateId));
+    if (!sel) {
+      setEmailForm(prev => ({ ...prev, plantillaId: '' }));
+      return;
+    }
+
+    const isB2BAsesores = sel.id === 9 || sel.nombre?.toLowerCase().includes('agentes inmobiliarios') || sel.nombre?.toLowerCase().includes('flujo 2');
+    const isB2BLideres = sel.id === 10 || sel.nombre?.toLowerCase().includes('broker') || sel.nombre?.toLowerCase().includes('flujo 3');
+
+    if (isB2BAsesores) {
+      const grpContacts = b2bProspectsFormatted.filter(c => c.grupo === 'B2B_ASESORES');
+      setEmailForm(prev => ({
+        ...prev,
+        plantillaId: sel.id,
+        asunto: sel.asunto || prev.asunto,
+        htmlContent: sel.contenido,
+        targetGroup: 'B2B_ASESORES',
+        selectedContactIds: grpContacts.map(c => c.id),
+        selectedMedia: [] // Regla de Oro: 0 adjuntos
+      }));
+      toast.info(`🏢 Plantilla B2B Asesores: Segmentados automáticamente ${grpContacts.length} agentes RE/MAX (0 adjuntos).`);
+    } else if (isB2BLideres) {
+      const grpContacts = b2bProspectsFormatted.filter(c => c.grupo === 'B2B_LIDERES');
+      setEmailForm(prev => ({
+        ...prev,
+        plantillaId: sel.id,
+        asunto: sel.asunto || prev.asunto,
+        htmlContent: sel.contenido,
+        targetGroup: 'B2B_LIDERES',
+        selectedContactIds: grpContacts.map(c => c.id),
+        selectedMedia: [] // Regla de Oro: 0 adjuntos
+      }));
+      toast.info(`👑 Plantilla B2B Líderes: Segmentados automáticamente ${grpContacts.length} brokers RE/MAX (0 adjuntos).`);
+    } else {
+      setEmailForm(prev => ({
+        ...prev,
+        plantillaId: sel.id,
+        asunto: sel.asunto || prev.asunto,
+        htmlContent: sel.contenido,
+        selectedMedia: sel.archivos_adjuntos || []
+      }));
+    }
+  };
 
   const filteredForSelection = availableInGroup.filter(c => {
     if (!emailContactSearch) return true;
@@ -875,6 +1024,10 @@ export default function CampaignsPage() {
       .replace(/\{\{fecha\}\}/gi, fechaSlot)
       .replace(/\{\{hora\}\}/gi, horaSlot)
       .replace(/\{\{duracion\}\}/gi, '1 hora y media (90 minutos)')
+      .replace(/\{\{First Name\}\}/g, 'Damián')
+      .replace(/\{\{Last Name\}\}/g, 'Duff')
+      .replace(/\{\{Office\}\}/g, 'RE/MAX Total')
+      .replace(/\{\{Company\}\}/g, 'RE/MAX Argentina')
       .replace(/\{\{1\}\}/g, fechaSlot)
       .replace(/\{\{2\}\}/g, horaSlot)
       .replace(/\{\{3\}\}/g, '1 hora y media (90 minutos)')
@@ -1131,6 +1284,38 @@ export default function CampaignsPage() {
                 <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-bold">{plantillas.length}</span>
               </button>
             </div>
+          </div>
+
+          {/* Banner Directo: Motor B2B & Crawler Playwright Stealth */}
+          <div className="mb-5 p-4 bg-gradient-to-r from-[#0a1824] via-[#0f2536] to-[#08151f] border-2 border-cyan-500/50 rounded-2xl shadow-lg shadow-cyan-950/40 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-cyan-500/20 border-2 border-cyan-400/50 flex items-center justify-center shrink-0 shadow-md">
+                <Cpu className="w-6 h-6 text-cyan-300 animate-pulse" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="text-sm font-black text-white tracking-wide flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-[#D4AF37]" />
+                    Motor de Extracción B2B • Playwright Stealth (215 Oficinas RE/MAX)
+                  </h4>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 animate-pulse flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    CRAWLER ACTIVO EN VIVO
+                  </span>
+                </div>
+                <p className="text-xs text-cyan-200/80 font-medium mt-0.5">
+                  Extracción continua con emulación humana (Jitter 2.5s-4.8s), bloqueo de imágenes/fuentes (-70% RAM) y puntos de control en MySQL.
+                </p>
+              </div>
+            </div>
+            <a
+              href="/dashboard/prospectos-b2b"
+              className="px-4 py-2.5 bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-cyan-500/30 flex items-center gap-2 shrink-0 transition-transform active:scale-95 ring-2 ring-cyan-300/70"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>Abrir Motor B2B & Consola Playwright</span>
+              <ExternalLink className="w-3.5 h-3.5 ml-0.5" />
+            </a>
           </div>
 
           {/* LANZADOR RÁPIDO DE ENVÍOS MASIVOS (WHATSAPP META / GMAIL) */}
@@ -2490,55 +2675,55 @@ export default function CampaignsPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">Público Destino / Rubro</label>
+                    <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">
+                      Público Destino / Rubro
+                    </label>
                     <select
                       value={emailForm.targetGroup}
-                      onChange={e => {
-                        const newGrp = e.target.value;
-                        const grpContacts = newGrp === 'TODOS' || newGrp === 'CUSTOM'
-                          ? contactsWithEmail
-                          : contactsWithEmail.filter(c => (c.grupo || '').toUpperCase() === newGrp.toUpperCase());
-                        setEmailForm({ 
-                          ...emailForm, 
-                          targetGroup: newGrp,
-                          selectedContactIds: grpContacts.map(c => c.id) 
-                        });
-                      }}
+                      onChange={e => handleEmailTargetGroupChange(e.target.value)}
                       className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 text-gray-950 dark:text-white border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     >
-                      <option value="PROSPECTO ASESORES">
-                        PROSPECTO ASESORES ({contactsWithEmail.filter(c => (c.grupo || '').toUpperCase() === 'PROSPECTO ASESORES').length} con email del Excel)
-                      </option>
-                      <option value="TODOS">
-                        Todos los Contactos con Email ({contactsWithEmail.length})
-                      </option>
-                      <option value="ASESORES">Asesores Comerciales Activos</option>
-                      <option value="LIDERES">Líderes de Equipo</option>
-                      <option value="INVERSORES">Inversores</option>
-                      <option value="CLIENTES">Clientes Tomadores</option>
-                      <option value="CUSTOM">Selección Personalizada Manual</option>
+                      <optgroup label="🏢 Prospección Fría B2B (RE/MAX & Padrones)">
+                        <option value="B2B_ASESORES">
+                          🏢 B2B: Asesores RE/MAX y Corredores — Flujo 2 ({b2bAsesoresCount} con email)
+                        </option>
+                        <option value="B2B_LIDERES">
+                          👑 B2B: Líderes y Brokers RE/MAX — Flujo 3 ({b2bLideresCount} con email)
+                        </option>
+                        <option value="B2B_TODOS">
+                          🌐 B2B: Consolidado Completo ({b2bProspectsFormatted.length} con email)
+                        </option>
+                      </optgroup>
+                      <optgroup label="📁 Base de Contactos CRM">
+                        <option value="PROSPECTO ASESORES">
+                          PROSPECTO ASESORES ({contactsWithEmail.filter(c => (c.grupo || '').toUpperCase() === 'PROSPECTO ASESORES').length} con email del Excel)
+                        </option>
+                        <option value="TODOS">
+                          Todos los Contactos con Email ({contactsWithEmail.length})
+                        </option>
+                        <option value="ASESORES">Asesores Comerciales Activos</option>
+                        <option value="LIDERES">Líderes de Equipo</option>
+                        <option value="INVERSORES">Inversores</option>
+                        <option value="CLIENTES">Clientes Tomadores</option>
+                        <option value="CUSTOM">Selección Personalizada Manual</option>
+                      </optgroup>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">Plantilla de Email</label>
+                    <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">
+                      Plantilla de Email
+                    </label>
                     <select
                       value={emailForm.plantillaId}
-                      onChange={e => {
-                        const sel = plantillas.find(p => p.id === Number(e.target.value));
-                        setEmailForm({
-                          ...emailForm,
-                          plantillaId: e.target.value,
-                          asunto: sel ? sel.asunto || emailForm.asunto : emailForm.asunto,
-                          htmlContent: sel ? sel.contenido : emailForm.htmlContent,
-                          selectedMedia: sel ? sel.archivos_adjuntos || [] : []
-                        });
-                      }}
+                      onChange={e => handleEmailTemplateChange(e.target.value)}
                       className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 text-gray-950 dark:text-white border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     >
                       <option value="">-- Redacción manual / Sin plantilla --</option>
                       {plantillas.filter(p => p.tipo === 'email').map(p => (
-                        <option key={p.id} value={p.id}>{p.nombre}</option>
+                        <option key={p.id} value={p.id}>
+                          {p.nombre} {p.id === 9 ? '⭐ (B2B Asesores)' : (p.id === 10 ? '👑 (B2B Brokers)' : '')}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -2926,32 +3111,52 @@ export default function CampaignsPage() {
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">Adjuntos desde Biblioteca de Medios</label>
-                  <div className="max-h-24 overflow-y-auto border border-gray-200 dark:border-white/10 rounded-xl p-2 space-y-1 bg-gray-50/50 dark:bg-slate-900/50">
-                    {medios.map(m => {
-                      const isSelected = emailForm.selectedMedia.some(att => att.nombre === m.nombre);
-                      return (
-                        <div
-                          key={m.id}
-                          onClick={() => {
-                            if (isSelected) {
-                              setEmailForm({ ...emailForm, selectedMedia: emailForm.selectedMedia.filter(att => att.nombre !== m.nombre) });
-                            } else {
-                              setEmailForm({ ...emailForm, selectedMedia: [...emailForm.selectedMedia, { nombre: m.nombre, url: m.archivo_url, rubro: m.rubro }] });
-                            }
-                          }}
-                          className={`flex items-center justify-between p-1.5 rounded-lg text-xs font-bold cursor-pointer transition ${
-                            isSelected ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-900 dark:text-blue-300 border border-blue-300 dark:border-blue-500/30' : 'hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-800 dark:text-slate-200'
-                          }`}
-                        >
-                          <span className="truncate">{m.nombre} ({m.rubro})</span>
-                          {isSelected && <Check className="w-3.5 h-3.5 text-blue-700 dark:text-blue-400" />}
-                        </div>
-                      );
-                    })}
+                {/* Archivos Adjuntos con Enforzamiento de la Regla de Oro B2B */}
+                {isB2BColdEmail ? (
+                  <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-start gap-2.5">
+                    <ShieldCheck className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                    <div>
+                      <div className="text-xs font-black text-amber-800 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <span>Regla de Oro Anti-Spam: Prospección Fría B2B (0 Adjuntos)</span>
+                        <span className="px-1.5 py-0.2 bg-amber-500/20 text-amber-700 dark:text-amber-200 text-[10px] rounded-md font-extrabold border border-amber-500/30">
+                          100% Bandeja Principal
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-amber-900/80 dark:text-amber-200/80 mt-0.5 leading-relaxed">
+                        Para maximizar la entregabilidad hacia casillas corporativas de <strong>RE/MAX</strong> y colegios de corredores, los correos fríos se despachan en HTML limpio sin archivos adjuntos pesados, evitando filtros de spam y bloqueos automáticos.
+                      </p>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">
+                      Adjuntos desde Biblioteca de Medios
+                    </label>
+                    <div className="max-h-24 overflow-y-auto border border-gray-200 dark:border-white/10 rounded-xl p-2 space-y-1 bg-gray-50/50 dark:bg-slate-900/50">
+                      {medios.map(m => {
+                        const isSelected = emailForm.selectedMedia.some(att => att.nombre === m.nombre);
+                        return (
+                          <div
+                            key={m.id}
+                            onClick={() => {
+                              if (isSelected) {
+                                setEmailForm({ ...emailForm, selectedMedia: emailForm.selectedMedia.filter(att => att.nombre !== m.nombre) });
+                              } else {
+                                setEmailForm({ ...emailForm, selectedMedia: [...emailForm.selectedMedia, { nombre: m.nombre, url: m.archivo_url, rubro: m.rubro }] });
+                              }
+                            }}
+                            className={`flex items-center justify-between p-1.5 rounded-lg text-xs font-bold cursor-pointer transition ${
+                              isSelected ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-900 dark:text-blue-300 border border-blue-300 dark:border-blue-500/30' : 'hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-800 dark:text-slate-200'
+                            }`}
+                          >
+                            <span className="truncate">{m.nombre} ({m.rubro})</span>
+                            {isSelected && <Check className="w-3.5 h-3.5 text-blue-700 dark:text-blue-400" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* SECCIÓN PROGRAMADOR DE CAMPAÑA EMAIL */}
                 <div className="p-3.5 bg-gradient-to-r from-purple-50/70 to-indigo-50/70 dark:from-purple-950/20 dark:to-indigo-950/20 border border-purple-200/80 dark:border-purple-500/30 rounded-2xl space-y-2.5">

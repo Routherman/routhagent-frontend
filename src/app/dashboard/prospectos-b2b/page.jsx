@@ -34,6 +34,10 @@ import {
   Play,
   Layers,
   Check,
+  Pause,
+  Square,
+  Terminal,
+  Cpu,
   X
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -90,6 +94,21 @@ export default function ProspectosB2BPage() {
 
   // Scraper en ejecución
   const [scraping, setScraping] = useState(false);
+  const [importingLotes, setImportingLotes] = useState(false);
+
+  // Crawler Playwright Stealth en tiempo real
+  const [crawlerStatus, setCrawlerStatus] = useState({
+    isRunning: false,
+    isPaused: false,
+    jobId: null,
+    currentOffice: null,
+    currentOfficeIndex: 0,
+    totalOffices: 215,
+    percent: 0,
+    extractedCount: 0,
+    etaStr: 'Calculando...',
+    logs: []
+  });
 
   // Cargar KPIs
   const fetchKPIs = async () => {
@@ -303,6 +322,135 @@ export default function ProspectosB2BPage() {
     }
   };
 
+  // Consultar estado en vivo del Crawler Playwright Stealth
+  const fetchCrawlerStatus = async () => {
+    try {
+      const res = await fetch(`${API_URL}/b2b-prospects/crawler/status`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCrawlerStatus(data);
+      }
+    } catch (e) {}
+  };
+
+  // Polling del estado del crawler
+  useEffect(() => {
+    fetchCrawlerStatus();
+    const interval = setInterval(() => {
+      if (showScraperModal || crawlerStatus.isRunning) {
+        fetchCrawlerStatus();
+        fetchKPIs();
+      }
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [showScraperModal, crawlerStatus.isRunning]);
+
+  // Iniciar Crawler Playwright Stealth
+  const handleStartCrawler = async (fresh = false) => {
+    setScraping(true);
+    try {
+      toast.info('🕷️ Inicializando navegador Chromium Headless con flags Stealth...');
+      const res = await fetch(`${API_URL}/b2b-prospects/crawler/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+        body: JSON.stringify({ layer: 'CAPA_1_REMAX', fresh, codigoEmpresa: 'KRZMJI' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message);
+        fetchCrawlerStatus();
+      } else {
+        toast.error(data.message || 'Error al iniciar crawler');
+      }
+    } catch(e) {
+      toast.error('Error de conexión con el crawler');
+    } finally {
+      setScraping(false);
+    }
+  };
+
+  // Pausar Crawler
+  const handlePauseCrawler = async () => {
+    try {
+      toast.info('Pausando crawler...');
+      const res = await fetch(`${API_URL}/b2b-prospects/crawler/pause`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.warning('⏸️ Crawler pausado en punto de control.');
+        fetchCrawlerStatus();
+      }
+    } catch(e) {
+      toast.error('Error al pausar');
+    }
+  };
+
+  // Reanudar Crawler
+  const handleResumeCrawler = async () => {
+    try {
+      toast.info('Reanudando crawler...');
+      const res = await fetch(`${API_URL}/b2b-prospects/crawler/resume`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('⏯️ Crawler reanudado desde último checkpoint.');
+        fetchCrawlerStatus();
+      }
+    } catch(e) {
+      toast.error('Error al reanudar');
+    }
+  };
+
+  // Detener Crawler
+  const handleStopCrawler = async () => {
+    try {
+      const res = await fetch(`${API_URL}/b2b-prospects/crawler/stop`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.info('⏹️ Crawler detenido.');
+        fetchCrawlerStatus();
+        fetchKPIs();
+        fetchProspects();
+      }
+    } catch(e) {
+      toast.error('Error al detener');
+    }
+  };
+
+  // Importar Lotes 1 y 2 de RE/MAX desde Excel
+  const handleImportLotesExcel = async () => {
+    setImportingLotes(true);
+    toast.info('📥 Importando y normalizando lotes 1 y 2 de RE/MAX (830 agentes)...');
+    try {
+      const res = await fetch(`${API_URL}/b2b-prospects/import-lotes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+        body: JSON.stringify({ codigoEmpresa: 'KRZMJI' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`🎉 Lotes 1 y 2 importados: ${data.totalInExcel} perfiles procesados (${data.withEmail} con email, ${data.withPhone} con WhatsApp E.164)`);
+        fetchKPIs();
+        fetchProspects();
+      } else {
+        toast.error(data.error || 'Error al importar Excel de lotes');
+      }
+    } catch(e) {
+      toast.error('Error de red al importar lotes');
+    } finally {
+      setImportingLotes(false);
+    }
+  };
+
   // Ejecutar Scraper / Conector
   const handleRunScraper = async (layer) => {
     setScraping(true);
@@ -317,10 +465,10 @@ export default function ProspectosB2BPage() {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success(data.message);
-        setShowScraperModal(false);
+        toast.success(data.message || 'Scraper iniciado en segundo plano');
         fetchKPIs();
         fetchProspects();
+        fetchCrawlerStatus();
       } else {
         toast.error('Error al ejecutar conector');
       }
@@ -436,6 +584,27 @@ Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Tus datos fueron relevados de tu 
               </button>
 
               <button
+                disabled={importingLotes}
+                onClick={handleImportLotesExcel}
+                className="px-3.5 py-2.5 bg-[#1b1a1a] hover:bg-[#232121] border border-emerald-500/40 text-emerald-400 font-bold text-xs rounded-xl flex items-center gap-2 transition-all transform active:scale-95 disabled:opacity-50 shadow-sm"
+              >
+                <FileSpreadsheet className={`w-4 h-4 ${importingLotes ? 'animate-spin' : 'text-emerald-400'}`} />
+                <span>{importingLotes ? 'Importando Lotes...' : 'Importar Lotes 1 y 2 (Excel)'}</span>
+              </button>
+
+              <button
+                onClick={() => setShowScraperModal(true)}
+                className="px-4 py-2.5 bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-cyan-500/30 flex items-center gap-2 transition-all transform active:scale-95 ring-2 ring-cyan-300/70"
+              >
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-900 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-slate-950"></span>
+                </span>
+                <Cpu className="w-4 h-4 text-slate-950" />
+                <span>🤖 CRAWLER PLAYWRIGHT STEALTH (EN VIVO)</span>
+              </button>
+
+              <button
                 onClick={() => setShowTemplatesModal(true)}
                 className="px-3.5 py-2.5 bg-[#232121] hover:bg-[#2c2929] border border-[#A28444]/40 text-[#D4AF37] font-bold text-xs rounded-xl flex items-center gap-2 transition-all"
               >
@@ -450,15 +619,107 @@ Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Tus datos fueron relevados de tu 
                 <Upload className="w-4 h-4 text-neutral-400" />
                 <span>Importar CSV</span>
               </button>
-
-              <button
-                onClick={() => setShowScraperModal(true)}
-                className="px-3.5 py-2.5 bg-[#232121] hover:bg-[#2c2929] border border-white/10 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition-all"
-              >
-                <Play className="w-4 h-4 text-emerald-400" />
-                <span>Ejecutar Scraper</span>
-              </button>
             </div>
+          </div>
+
+          {/* Hero Widget: Motor de Extracción Playwright Stealth (En Vivo) */}
+          <div className="p-5 bg-gradient-to-r from-[#0a1824] via-[#0f2536] to-[#08151f] border-2 border-cyan-500/50 rounded-2xl shadow-xl shadow-cyan-950/60 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-80 h-full bg-gradient-to-l from-cyan-500/10 to-transparent pointer-events-none" />
+            
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
+              <div className="flex items-center gap-4">
+                <div className="w-13 h-13 rounded-2xl bg-cyan-500/20 border-2 border-cyan-400/50 flex items-center justify-center shrink-0 shadow-lg shadow-cyan-500/20">
+                  <Cpu className="w-7 h-7 text-cyan-300 animate-pulse" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h2 className="text-base font-black text-white tracking-wide flex items-center gap-2">
+                      Motor Headless Playwright Stealth • RE/MAX Argentina
+                    </h2>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border flex items-center gap-1.5 ${
+                      crawlerStatus.isRunning 
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.35)]' 
+                        : (crawlerStatus.isPaused 
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/50' 
+                            : 'bg-neutral-800 text-neutral-300 border-white/20')
+                    }`}>
+                      <span className={`w-2 h-2 rounded-full ${crawlerStatus.isRunning ? 'bg-emerald-400 animate-ping' : (crawlerStatus.isPaused ? 'bg-amber-400' : 'bg-neutral-500')}`} />
+                      {crawlerStatus.isRunning ? 'EJECUTÁNDOSE EN SEGUNDO PLANO' : (crawlerStatus.isPaused ? 'PAUSADO EN CHECKPOINT' : 'LISTO PARA INICIAR')}
+                    </span>
+                  </div>
+                  <p className="text-xs text-cyan-200/90 mt-1 max-w-3xl leading-relaxed">
+                    {crawlerStatus.isRunning 
+                      ? <>Oficina actual: <strong className="text-white font-extrabold">{crawlerStatus.currentOffice || 'Iniciando...'}</strong> (#{crawlerStatus.currentOfficeIndex} de {crawlerStatus.totalOffices}) • <strong className="text-emerald-300">{crawlerStatus.extractedCount} prospectos</strong> acumulados en sesión • Jitter humano ({'2.5s - 4.8s'}) • ETA: {crawlerStatus.etaStr}</>
+                      : 'Navegador Chromium Headless con flags Stealth, bloqueo de assets (-70% RAM), demoras aleatorias de 2.5s a 4.8s y persistencia en base de datos con puntos de control (scraper_checkpoints).'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Botones de Acción Directa del Widget */}
+              <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+                {!crawlerStatus.isRunning ? (
+                  <button
+                    onClick={() => handleStartCrawler(false)}
+                    className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-500 hover:brightness-110 text-white font-black text-xs rounded-xl shadow-lg shadow-emerald-500/25 flex items-center gap-2 transition-all transform active:scale-95"
+                  >
+                    <Play className="w-4 h-4 fill-current" />
+                    <span>Iniciar Extracción (215 Oficinas)</span>
+                  </button>
+                ) : (
+                  <>
+                    {!crawlerStatus.isPaused ? (
+                      <button
+                        onClick={handlePauseCrawler}
+                        className="px-3.5 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow transition-all"
+                      >
+                        <Pause className="w-4 h-4 fill-current" />
+                        <span>Pausar Worker</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleResumeCrawler}
+                        className="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow transition-all"
+                      >
+                        <Play className="w-4 h-4 fill-current" />
+                        <span>Reanudar desde Checkpoint</span>
+                      </button>
+                    )}
+
+                    <button
+                      onClick={handleStopCrawler}
+                      className="px-3.5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow transition-all"
+                    >
+                      <Square className="w-3.5 h-3.5 fill-current" />
+                      <span>Detener</span>
+                    </button>
+                  </>
+                )}
+
+                <button
+                  onClick={() => setShowScraperModal(true)}
+                  className="px-4 py-2.5 bg-gradient-to-r from-cyan-500/25 to-blue-500/25 hover:bg-cyan-500/40 text-cyan-200 border-2 border-cyan-400/60 font-black text-xs rounded-xl flex items-center gap-2 shadow-lg shadow-cyan-950/40 transition-all transform active:scale-95"
+                >
+                  <Terminal className="w-4 h-4 text-cyan-300" />
+                  <span>Ver Consola & Logs en Vivo</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Barra de Progreso en Vivo en el Widget */}
+            {crawlerStatus.isRunning && (
+              <div className="mt-4 pt-3 border-t border-cyan-500/20">
+                <div className="flex items-center justify-between text-[11px] text-cyan-300 font-mono mb-1.5">
+                  <span>Oficinas completadas: <strong>{crawlerStatus.currentOfficeIndex}</strong> / {crawlerStatus.totalOffices}</span>
+                  <span className="font-bold text-emerald-400">{crawlerStatus.percent}% • ETA: {crawlerStatus.etaStr}</span>
+                </div>
+                <div className="w-full bg-black/60 border border-cyan-500/30 rounded-full h-2.5 overflow-hidden">
+                  <div 
+                    className="bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 h-full rounded-full transition-all duration-500"
+                    style={{ width: `${crawlerStatus.percent}%` }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* KPI Summary Cards */}
@@ -1150,10 +1411,10 @@ Mart. Ana López, alopez@remax.com.ar, 342 15-5123456, RE/MAX Litoral, Santa Fe,
           </div>
         )}
 
-        {/* MODAL 4: EJECUTAR CONECTORES / SCRAPERS */}
+        {/* MODAL 4: CONSOLA Y CONTROL DEL CRAWLER PLAYWRIGHT STEALTH */}
         {showScraperModal && (
-          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="bg-[#1b1a1a] border border-white/10 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative text-left">
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-[#181717] border border-cyan-500/30 rounded-3xl max-w-2xl w-full p-6 shadow-2xl relative text-left max-h-[92vh] overflow-y-auto">
               <button
                 onClick={() => setShowScraperModal(false)}
                 className="absolute top-5 right-5 p-1.5 rounded-full hover:bg-white/10 text-neutral-400 hover:text-white"
@@ -1161,47 +1422,173 @@ Mart. Ana López, alopez@remax.com.ar, 342 15-5123456, RE/MAX Litoral, Santa Fe,
                 <X className="w-5 h-5" />
               </button>
 
-              <h3 className="text-lg font-black text-white mb-1">Conectores de Extracción B2B</h3>
-              <p className="text-xs text-neutral-400 mb-4">
-                Workers asíncronos con Rate Limiting (2.5s a 5s) y bloqueo de assets para máxima velocidad.
-              </p>
-
-              <div className="space-y-3">
-                <div className="p-3.5 bg-[#141313] border border-white/5 rounded-2xl flex items-center justify-between">
-                  <div>
-                    <h4 className="font-bold text-white text-xs">Capa 1: RE/MAX Argentina</h4>
-                    <p className="text-[11px] text-neutral-400">Directorio de 215 oficinas y agentes con email y celular.</p>
-                  </div>
-                  <button
-                    disabled={scraping}
-                    onClick={() => handleRunScraper('CAPA_1_REMAX')}
-                    className="px-3.5 py-1.5 bg-[#A28444] text-black font-extrabold text-xs rounded-xl hover:brightness-110"
-                  >
-                    {scraping ? 'Extrayendo...' : 'Sincronizar'}
-                  </button>
+              {/* Encabezado del Modal */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-11 h-11 rounded-2xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center text-cyan-300">
+                  <Cpu className="w-6 h-6" />
                 </div>
-
-                <div className="p-3.5 bg-[#141313] border border-white/5 rounded-2xl flex items-center justify-between">
-                  <div>
-                    <h4 className="font-bold text-white text-xs">Capa 2: Padrones Corredores Inmobiliarios</h4>
-                    <p className="text-[11px] text-neutral-400">Santa Fe, Entre Ríos (Vigentes), Salta (CUCIS) y La Matanza.</p>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-black text-white">Crawler Playwright Stealth • RE/MAX Argentina</h3>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                      crawlerStatus.isRunning 
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 animate-pulse' 
+                        : (crawlerStatus.isPaused 
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' 
+                            : 'bg-neutral-800 text-neutral-400 border-white/10')
+                    }`}>
+                      {crawlerStatus.isRunning ? 'EN EJECUCIÓN' : (crawlerStatus.isPaused ? 'PAUSADO' : 'INACTIVO')}
+                    </span>
                   </div>
+                  <p className="text-xs text-neutral-400">
+                    Navegador Headless Chrome • Bloqueo de Assets (-70% RAM) • Jitter Humano (2.5s-4.8s) • Checkpoints en MySQL
+                  </p>
+                </div>
+              </div>
+
+              {/* Métricas en Vivo del Trabajo */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
+                <div className="p-3 bg-[#121111] border border-white/5 rounded-xl">
+                  <span className="text-[10px] font-bold uppercase text-neutral-400 block mb-0.5">Oficinas</span>
+                  <span className="text-base font-black text-white font-mono">
+                    {crawlerStatus.currentOfficeIndex} <span className="text-xs text-neutral-500 font-normal">/ {crawlerStatus.totalOffices}</span>
+                  </span>
+                </div>
+                <div className="p-3 bg-[#121111] border border-white/5 rounded-xl">
+                  <span className="text-[10px] font-bold uppercase text-neutral-400 block mb-0.5">Agentes Extraídos</span>
+                  <span className="text-base font-black text-cyan-300 font-mono">
+                    {crawlerStatus.extractedCount}
+                  </span>
+                </div>
+                <div className="p-3 bg-[#121111] border border-white/5 rounded-xl">
+                  <span className="text-[10px] font-bold uppercase text-neutral-400 block mb-0.5">Progreso</span>
+                  <span className="text-base font-black text-emerald-400 font-mono">
+                    {crawlerStatus.percent}%
+                  </span>
+                </div>
+                <div className="p-3 bg-[#121111] border border-white/5 rounded-xl">
+                  <span className="text-[10px] font-bold uppercase text-neutral-400 block mb-0.5">Tiempo Estimado</span>
+                  <span className="text-xs font-black text-amber-300 font-mono">
+                    {crawlerStatus.etaStr}
+                  </span>
+                </div>
+              </div>
+
+              {/* Barra de Progreso */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between text-[11px] text-neutral-400 mb-1.5 font-bold">
+                  <span>Oficina actual: <strong className="text-cyan-200">{crawlerStatus.currentOffice || 'En espera'}</strong></span>
+                  <span>{crawlerStatus.percent}%</span>
+                </div>
+                <div className="w-full bg-[#121111] border border-white/10 rounded-full h-2.5 overflow-hidden">
+                  <div 
+                    className="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full rounded-full transition-all duration-500"
+                    style={{ width: `${crawlerStatus.percent}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Botones de Control del Worker */}
+              <div className="flex flex-wrap items-center gap-2.5 p-3 bg-[#121111] border border-white/5 rounded-2xl mb-4">
+                {!crawlerStatus.isRunning ? (
                   <button
                     disabled={scraping}
-                    onClick={() => handleRunScraper('CAPA_2_PADRONES_CORREDORES')}
-                    className="px-3.5 py-1.5 bg-[#232121] text-white border border-white/10 font-bold text-xs rounded-xl hover:bg-[#2c2929]"
+                    onClick={() => handleStartCrawler(false)}
+                    className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-500 hover:brightness-110 text-white font-extrabold text-xs rounded-xl flex items-center gap-2 shadow-md"
                   >
-                    {scraping ? 'Extrayendo...' : 'Sincronizar'}
+                    <Play className="w-4 h-4 fill-current" />
+                    <span>Iniciar Extracción en Segundo Plano</span>
                   </button>
+                ) : (
+                  <>
+                    {!crawlerStatus.isPaused ? (
+                      <button
+                        onClick={handlePauseCrawler}
+                        className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-xs rounded-xl flex items-center gap-2 shadow-md"
+                      >
+                        <Pause className="w-4 h-4 fill-current" />
+                        <span>Pausar Worker</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleResumeCrawler}
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl flex items-center gap-2 shadow-md"
+                      >
+                        <Play className="w-4 h-4 fill-current" />
+                        <span>Reanudar desde Checkpoint</span>
+                      </button>
+                    )}
+
+                    <button
+                      onClick={handleStopCrawler}
+                      className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs rounded-xl flex items-center gap-2 shadow-md"
+                    >
+                      <Square className="w-3.5 h-3.5 fill-current" />
+                      <span>Detener Crawler</span>
+                    </button>
+                  </>
+                )}
+
+                <button
+                  disabled={importingLotes}
+                  onClick={handleImportLotesExcel}
+                  className="px-3.5 py-2 bg-[#232121] hover:bg-[#2c2929] border border-emerald-500/40 text-emerald-300 font-bold text-xs rounded-xl flex items-center gap-1.5 ml-auto"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Importar Lotes 1 y 2 (Excel)</span>
+                </button>
+              </div>
+
+              {/* Principios de Arquitectura skillscrap.md */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] p-3 bg-[#121111]/80 border border-white/5 rounded-xl mb-4 text-neutral-300">
+                <div className="flex items-start gap-1.5">
+                  <span className="text-cyan-400 font-bold shrink-0">🛡️ Playwright Stealth:</span>
+                  <span>Bypass de WAF Cloudflare con huella de Chrome real y cookies de sesión.</span>
+                </div>
+                <div className="flex items-start gap-1.5">
+                  <span className="text-emerald-400 font-bold shrink-0">⚡ Bloqueo de Assets:</span>
+                  <span>Imágenes, fuentes y scripts analíticos cancelados (-70% RAM, +500% velocidad).</span>
+                </div>
+                <div className="flex items-start gap-1.5">
+                  <span className="text-amber-400 font-bold shrink-0">⏳ Jitter Humano:</span>
+                  <span>Demoras aleatorias de 2.5s a 4.8s por oficina para evitar baneos de IP.</span>
+                </div>
+                <div className="flex items-start gap-1.5">
+                  <span className="text-purple-400 font-bold shrink-0">💾 Checkpoints en MySQL:</span>
+                  <span>Si se interrumpe, reanuda desde la última oficina sin reiniciar desde 0.</span>
+                </div>
+              </div>
+
+              {/* Consola de Logs en Tiempo Real */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5 text-xs text-neutral-400">
+                  <span className="flex items-center gap-1.5 font-bold">
+                    <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+                    Consola de Salida del Worker (Live Logs):
+                  </span>
+                  <span className="text-[10px] text-neutral-500 font-mono">Actualización cada 2.5s</span>
+                </div>
+                <div className="bg-black/90 border border-white/10 rounded-xl p-3 font-mono text-[11px] text-emerald-400 h-44 overflow-y-auto space-y-1">
+                  {crawlerStatus.logs && crawlerStatus.logs.length > 0 ? (
+                    crawlerStatus.logs.map((log, idx) => (
+                      <div key={idx} className="leading-tight">
+                        {log}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-neutral-500 italic">
+                      Listo para iniciar. Haz clic en &quot;Iniciar Extracción en Segundo Plano&quot; para comenzar el recorrido de las 215 oficinas.
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div className="mt-5 pt-3 border-t border-white/10 flex justify-end">
                 <button
                   onClick={() => setShowScraperModal(false)}
-                  className="px-4 py-2 bg-[#232121] text-neutral-300 font-bold text-xs rounded-xl"
+                  className="px-4 py-2 bg-[#232121] hover:bg-[#2c2929] text-neutral-300 font-bold text-xs rounded-xl"
                 >
-                  Cerrar
+                  Cerrar Ventana
                 </button>
               </div>
             </div>

@@ -166,7 +166,7 @@ export default function Sidebar() {
     { label: 'Tickets Helpdesk', href: '/dashboard/tickets', icon: Ticket, count: pendingTicketsCount, permission: 'view_tickets' },
     { label: 'Agenda CRM', href: '/dashboard/crm', icon: Users, permission: 'view_crm' },
     { label: 'Campañas (Meta & Mail)', href: '/dashboard/campaigns', icon: BarChart3, permission: 'view_campaigns' },
-    { label: 'Prospectos B2B', href: '/dashboard/prospectos-b2b', icon: Building2, target: '_blank', badgeText: 'B2B', permission: 'view_crm' },
+    { label: 'Prospectos B2B (Crawler)', href: '/dashboard/prospectos-b2b', icon: Building2, badgeText: 'CRAWLER VIVO', permission: 'view_crm' },
   ];
 
   const rawConfigItem = { label: 'Configuración', href: '/dashboard/user', icon: Settings, permission: 'view_settings' };
@@ -257,6 +257,8 @@ export default function Sidebar() {
                     </span>
                   ) : item.badge ? (
                     <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border border-black animate-pulse shadow-sm" />
+                  ) : item.badgeText === 'CRAWLER VIVO' ? (
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-cyan-400 rounded-full border border-black animate-ping shadow-sm" />
                   ) : null}
                 </div>
 
@@ -264,9 +266,12 @@ export default function Sidebar() {
                 <span className="ml-3.5 text-xs font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-[-6px] group-hover:translate-x-0 overflow-hidden flex items-center gap-2 w-full">
                   <span>{item.label}</span>
                   {item.badgeText && (
-                    <span className="ml-auto px-1.5 py-0.5 text-[9px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-md flex items-center gap-1 shadow-sm">
+                    <span className={`ml-auto px-1.5 py-0.5 text-[9px] font-black uppercase rounded-md flex items-center gap-1 shadow-sm ${
+                      item.badgeText === 'CRAWLER VIVO' 
+                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 shadow-cyan-500/20' 
+                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                    }`}>
                       <span>{item.badgeText}</span>
-                      <ExternalLink className="w-2.5 h-2.5" />
                     </span>
                   )}
                   {item.count > 0 && (
