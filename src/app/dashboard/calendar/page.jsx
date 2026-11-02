@@ -92,7 +92,7 @@ export default function CalendarPage() {
   const [selectedSlotForSendLink, setSelectedSlotForSendLink] = useState(null);
   const [sendLinkMeetUrl, setSendLinkMeetUrl] = useState("");
   const [sendLinkCustomMsg, setSendLinkCustomMsg] = useState("");
-  const [sendLinkChannels, setSendLinkChannels] = useState({ whatsapp: true, email: true });
+  const [sendLinkChannels, setSendLinkChannels] = useState({ whatsapp: false, email: true });
   const [sendingLink, setSendingLink] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
@@ -223,20 +223,14 @@ export default function CalendarPage() {
     setSelectedSlotForSendLink(slot);
     setSendLinkMeetUrl(slot.meetLink || "https://meet.google.com/new");
     setSendLinkCustomMsg("Por favor conéctate 5 minutos antes con micrófono y cámara listos.");
-    setSendLinkChannels({ whatsapp: true, email: true });
+    setSendLinkChannels({ whatsapp: false, email: true });
     setShowSendLinkModal(true);
   };
 
   const handleSendLinkToSubscribers = async () => {
     if (!selectedSlotForSendLink) return;
-    const channels = [];
-    if (sendLinkChannels.whatsapp) channels.push("whatsapp");
-    if (sendLinkChannels.email) channels.push("email");
-
-    if (channels.length === 0) {
-      toast.error("Selecciona al menos un canal (WhatsApp o Email)");
-      return;
-    }
+    // Disparo exclusivo por Email según directiva operativa
+    const channels = ["email"];
 
     setSendingLink(true);
     try {
@@ -1369,11 +1363,14 @@ export default function CalendarPage() {
                       <Send className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-base text-gray-900">
-                        Enviar Enlace a Suscriptores
+                      <h3 className="font-extrabold text-base text-gray-900 flex items-center gap-2">
+                        <span>Disparo en 1 Clic (Solo por Email)</span>
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-blue-100 text-blue-800">
+                          Gmail
+                        </span>
                       </h3>
                       <p className="text-xs text-gray-500">
-                        Recordatorio y sala de acceso para los candidatos inscriptos
+                        Envía el link de la reunión por correo electrónico unos minutos antes de que empiece el webinar
                       </p>
                     </div>
                   </div>
@@ -1435,39 +1432,38 @@ export default function CalendarPage() {
                       className="w-full px-3.5 py-2.5 text-xs font-mono font-bold text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
                     />
                     <p className="text-[10px] text-gray-400 mt-1">
-                      Este link será enviado directamente en el mensaje de WhatsApp y botón de acceso por Email.
+                      Este link será incorporado automáticamente en el botón de acceso prioritario del correo electrónico.
                     </p>
                   </div>
 
-                  {/* Canales de envío */}
+                  {/* Canal de envío (Solo Email) */}
                   <div>
                     <label className="text-[11px] font-black text-gray-700 uppercase tracking-wider block mb-2">
-                      Canales de Envío
+                      Canal de Envío Oficial
                     </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <label className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition ${
-                        sendLinkChannels.whatsapp ? "bg-emerald-50 border-emerald-300 text-emerald-950 font-bold" : "bg-gray-50 border-gray-200 text-gray-500"
-                      }`}>
-                        <input
-                          type="checkbox"
-                          checked={sendLinkChannels.whatsapp}
-                          onChange={(e) => setSendLinkChannels({ ...sendLinkChannels, whatsapp: e.target.checked })}
-                          className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
-                        />
-                        <span className="text-xs">WhatsApp Oficial</span>
-                      </label>
-                      <label className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition ${
-                        sendLinkChannels.email ? "bg-blue-50 border-blue-300 text-blue-950 font-bold" : "bg-gray-50 border-gray-200 text-gray-500"
-                      }`}>
-                        <input
-                          type="checkbox"
-                          checked={sendLinkChannels.email}
-                          onChange={(e) => setSendLinkChannels({ ...sendLinkChannels, email: e.target.checked })}
-                          className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-xs">Email con Plantilla</span>
-                      </label>
+                    <div className="p-3 rounded-2xl border border-blue-300 bg-blue-50/70 text-blue-950 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                          <Mail className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-black">Email Oficial (Gmail / Google Colaboratium)</span>
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-blue-600 text-white">Activo</span>
+                          </div>
+                          <p className="text-[10px] text-blue-800/80 font-medium">
+                            Plantilla HTML oficial con botón directo a la sala de Google Meet (Sin WhatsApp)
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold text-gray-400 bg-white px-2.5 py-1 rounded-lg border border-gray-200">
+                        WhatsApp deshabilitado
+                      </span>
                     </div>
+                    <p className="text-[11px] text-blue-700 font-medium mt-1.5 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-blue-600" />
+                      Despacho individual y seguro a la bandeja de entrada de cada suscriptor inscripto.
+                    </p>
                   </div>
 
                   {/* Mensaje Adicional Opcional */}
@@ -1487,20 +1483,26 @@ export default function CalendarPage() {
                   {/* Destinatarios */}
                   <div>
                     <div className="flex items-center justify-between text-xs font-black text-gray-700 uppercase tracking-wider mb-2">
-                      <span>Destinatarios Inscriptos ({selectedSlotForSendLink.subscribers?.length || 0})</span>
-                      <span className="text-[10px] text-indigo-600 font-bold lowercase">se enviará individualmente</span>
+                      <span>Destinatarios Inscriptos ({selectedSlotForSendLink.subscribers?.filter(sub => sub.email && sub.email.includes('@')).length || 0} con email)</span>
+                      <span className="text-[10px] text-indigo-600 font-bold lowercase">envío individual sin CC</span>
                     </div>
                     <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1 bg-gray-50 p-2.5 rounded-2xl border border-gray-100">
                       {selectedSlotForSendLink.subscribers?.map((sub) => (
                         <div key={sub.id} className="flex items-center justify-between text-xs bg-white px-2.5 py-1.5 rounded-xl border border-gray-200/80">
                           <div className="truncate mr-2">
                             <span className="font-extrabold text-gray-900">{sub.nombre}</span>
-                            <span className="text-[11px] text-gray-500 ml-1.5 font-mono">({sub.telefono})</span>
+                            <span className="text-[11px] text-blue-600 ml-1.5 font-mono">{sub.email || 'Sin email'}</span>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
-                            {sub.telefono && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800">WA</span>}
-                            {sub.email && !sub.email.includes('No registrado') && (
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800">Email</span>
+                            {sub.email && sub.email.includes('@') ? (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800 flex items-center gap-0.5">
+                                <Mail className="w-2.5 h-2.5" />
+                                Email
+                              </span>
+                            ) : (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-gray-100 text-gray-500">
+                                Sin email
+                              </span>
                             )}
                           </div>
                         </div>
@@ -1520,19 +1522,21 @@ export default function CalendarPage() {
                     </button>
                     <button
                       type="button"
-                      disabled={sendingLink || (!sendLinkChannels.whatsapp && !sendLinkChannels.email)}
+                      disabled={sendingLink || !selectedSlotForSendLink.subscribers?.some(s => s.email && s.email.includes('@'))}
                       onClick={handleSendLinkToSubscribers}
                       className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-black shadow-lg shadow-blue-500/25 active:scale-95 transition"
                     >
                       {sendingLink ? (
                         <>
                           <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          <span>Enviando enlaces...</span>
+                          <span>Enviando enlaces por Email...</span>
                         </>
                       ) : (
                         <>
                           <Send className="w-3.5 h-3.5" />
-                          <span>Enviar Link a {selectedSlotForSendLink.subscribers?.length || 0} Suscriptores</span>
+                          <span>
+                            Enviar Enlace por Email a {selectedSlotForSendLink.subscribers?.filter(s => s.email && s.email.includes('@')).length || 0} Inscriptos
+                          </span>
                         </>
                       )}
                     </button>
