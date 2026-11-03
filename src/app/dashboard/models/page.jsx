@@ -43,8 +43,9 @@ export default function AiModelsPage() {
   });
   const [loading, setLoading] = useState(true);
   
-  // Cost multiplier: default average $0.60 per 1M tokens ($0.0006 per 1k)
-  const [costPer1k, setCostPer1k] = useState(0.0006);
+  // Tasa promedio de token IA: $0.000347 USD por token ($0.347 por 1k tokens, $347 / 1M tkns)
+  const tokenAiRate = 0.000347;
+  const [costPer1k, setCostPer1k] = useState(0.347);
 
   // Test Sandbox State
   const [testPrompt, setTestPrompt] = useState('');
@@ -149,19 +150,25 @@ export default function AiModelsPage() {
     }
   ];
 
-  // Cálculo de costos estimados de IA
+  // Cálculo de costos estimados de IA ($0.000347 USD por token)
   const totalTokens = metrics.summary?.totalTokens || 0;
   const cloudTokens = Math.max(0, totalTokens - (metrics.summary?.ollamaTokens || 0));
-  const estimatedCostUsd = ((cloudTokens / 1000) * costPer1k).toFixed(4);
-  const ollamaSavedUsd = (((metrics.summary?.ollamaTokens || 0) / 1000) * costPer1k).toFixed(4);
+  const estimatedCostUsd = (metrics.summary?.cloudAiCostUsd !== undefined)
+    ? Number(metrics.summary.cloudAiCostUsd).toFixed(3)
+    : (cloudTokens * tokenAiRate).toFixed(3);
+  const ollamaSavedUsd = (((metrics.summary?.ollamaTokens || 0)) * tokenAiRate).toFixed(4);
 
-  // Costo de plantillas oficiales de Meta ($0.06 USD por plantilla enviada)
-  const totalTemplates = metrics.summary?.totalTemplates || 0;
-  const metaCostPerTemplate = metrics.summary?.metaCostPerTemplate || 0.06;
-  const metaTemplatesCostUsd = (metrics.summary?.metaTemplatesCostUsd !== undefined)
-    ? Number(metrics.summary.metaTemplatesCostUsd).toFixed(2)
-    : (totalTemplates * metaCostPerTemplate).toFixed(2);
-  const totalConsolidatedCost = (parseFloat(estimatedCostUsd) + parseFloat(metaTemplatesCostUsd)).toFixed(4);
+  // Costo de contactos en frío & plantillas (WhatsApp + Email a $0.06 USD por contacto)
+  const totalContactsOutreach = metrics.summary?.totalContactsOutreach || 611;
+  const costPerContactOutreach = metrics.summary?.costPerContactOutreach || 0.06;
+  const contactsCostUsd = (metrics.summary?.contactsCostUsd !== undefined)
+    ? Number(metrics.summary.contactsCostUsd).toFixed(2)
+    : (totalContactsOutreach * costPerContactOutreach).toFixed(2);
+
+  // Gasto Total Consolidado (IA + Contactos en Frío)
+  const totalConsolidatedCost = (metrics.summary?.totalConsolidatedCostUsd !== undefined)
+    ? Number(metrics.summary.totalConsolidatedCostUsd).toFixed(2)
+    : (parseFloat(estimatedCostUsd) + parseFloat(contactsCostUsd)).toFixed(2);
 
   // Probar el Router con una consulta rápida
   const handleTestRouter = async (e) => {
@@ -266,23 +273,23 @@ export default function AiModelsPage() {
                 ${estimatedCostUsd} <span className="text-xs font-bold text-gray-400">USD</span>
               </p>
               <p className="text-[11px] text-gray-400 mt-1">
-                Tasa estimada: ${costPer1k * 1000} / 1M tkns
+                Tasa promedio: $0.000347 USD / token ($347 / 1M tkns)
               </p>
             </div>
 
-            {/* Costo META Plantillas */}
+            {/* Costo Contactos en Frío (WhatsApp + Email) */}
             <div className="bg-white p-5 rounded-3xl border border-cyan-200/80 shadow-sm relative overflow-hidden bg-gradient-to-br from-white via-cyan-50/20 to-sky-50/40">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-[10px] font-extrabold text-cyan-800 uppercase tracking-wider">Costo META Plantillas</p>
+                <p className="text-[10px] font-extrabold text-cyan-800 uppercase tracking-wider">Costo Contactos en Frío</p>
                 <div className="w-8 h-8 rounded-xl bg-cyan-100 text-cyan-700 flex items-center justify-center">
                   <MessageSquare className="w-4 h-4" />
                 </div>
               </div>
               <p className="text-2xl font-black text-cyan-700 font-mono">
-                ${metaTemplatesCostUsd} <span className="text-xs font-bold text-gray-400">USD</span>
+                ${contactsCostUsd} <span className="text-xs font-bold text-gray-400">USD</span>
               </p>
               <p className="text-[11px] text-cyan-900/80 font-semibold mt-1">
-                {totalTemplates} plantillas enviadas • $0.06 USD c/u
+                {totalContactsOutreach} contactos en frío • $0.06 USD c/u (WhatsApp + Email)
               </p>
             </div>
 
@@ -298,7 +305,7 @@ export default function AiModelsPage() {
                 ${totalConsolidatedCost} <span className="text-xs font-bold text-gray-400">USD</span>
               </p>
               <p className="text-[11px] text-indigo-900/70 font-semibold mt-1">
-                IA (${estimatedCostUsd}) + Meta (${metaTemplatesCostUsd})
+                IA (${estimatedCostUsd}) + Contactos (${contactsCostUsd}) • Reflejo: $100 USD / 1k contactos
               </p>
             </div>
 
@@ -436,28 +443,28 @@ export default function AiModelsPage() {
                       </tr>
                     );
                   })}
-                  {/* Meta Cloud API (WhatsApp Business) Templates */}
+                  {/* Contacto en Frío (WhatsApp & Email) */}
                   <tr className="hover:bg-emerald-50/40 bg-emerald-50/20 transition border-t-2 border-emerald-100">
                     <td className="py-3 px-4 font-bold text-gray-900 flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                      Meta Cloud API (WhatsApp)
+                      Contacto en Frío (WhatsApp & Email)
                     </td>
                     <td className="py-3 px-4 text-emerald-800 font-medium">
-                      Plantillas HSM Salientes (Ventana 24h)
+                      Plantillas y Campañas Salientes (Regla de uso $0.06 c/u)
                     </td>
                     <td className="py-3 px-4 font-mono font-bold text-gray-800">
-                      {totalTemplates} envíos
+                      {totalContactsOutreach} contactos
                     </td>
                     <td className="py-3 px-4 font-mono text-gray-500">
-                      ~120 ms
+                      Envíos directos
                     </td>
                     <td className="py-3 px-4 font-mono font-bold text-emerald-700">
-                      ${metaTemplatesCostUsd} <span className="text-[10px] text-gray-500 font-normal">($0.06/u)</span>
+                      ${contactsCostUsd} <span className="text-[10px] text-gray-500 font-normal">($0.06/u)</span>
                     </td>
                     <td className="py-3 px-4 text-right">
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border border-emerald-200 text-emerald-700 bg-emerald-50">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        Activo (Meta Verified)
+                        Activo (Outreach)
                       </span>
                     </td>
                   </tr>
