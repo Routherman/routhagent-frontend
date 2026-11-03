@@ -61,6 +61,7 @@ export default function ProspectosB2BPage() {
   // Filtros
   const [search, setSearch] = useState('');
   const [filterLayer, setFilterLayer] = useState('ALL');
+  const [filterSegmento, setFilterSegmento] = useState('ALL');
   const [filterRole, setFilterRole] = useState('ALL');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [page, setPage] = useState(1);
@@ -71,13 +72,14 @@ export default function ProspectosB2BPage() {
   const [showTemplatesModal, setShowTemplatesModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showScraperModal, setShowScraperModal] = useState(false);
-  const [activeTemplateTab, setActiveTemplateTab] = useState('asesor'); // 'asesor' | 'broker'
+  const [activeTemplateTab, setActiveTemplateTab] = useState('franquicias'); // 'franquicias' | 'corredores' | 'seguros' | 'broker'
 
   // Parámetros de Generación de Lote Gmail
   const [batchOptions, setBatchOptions] = useState({
     maxPerDomain: 40,
     totalBatchSize: 40,
     targetRole: 'ALL',
+    targetSegment: 'ALL',
     webinarDate: 'Lunes 3 de Noviembre',
     webinarTime: '10:00',
     webinarTitle: 'Reunión Informativa Red de Asesores Independientes',
@@ -137,6 +139,7 @@ export default function ProspectosB2BPage() {
       });
       if (search.trim()) params.append('search', search.trim());
       if (filterLayer !== 'ALL') params.append('layer', filterLayer);
+      if (filterSegmento !== 'ALL') params.append('segmento', filterSegmento);
       if (filterRole !== 'ALL') params.append('role', filterRole);
       if (filterStatus !== 'ALL') params.append('status', filterStatus);
 
@@ -162,7 +165,7 @@ export default function ProspectosB2BPage() {
 
   useEffect(() => {
     fetchProspects();
-  }, [page, filterLayer, filterRole, filterStatus]);
+  }, [page, filterLayer, filterSegmento, filterRole, filterStatus]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -486,27 +489,26 @@ export default function ProspectosB2BPage() {
 
   const totalPages = Math.ceil(totalCount / limit) || 1;
 
-  // Plantillas Cold Email Textos
-  const TEMPLATE_A = {
-    title: 'Plantilla A • Asesor Inmobiliario (Flujo 2)',
-    subject: '[PUBLICIDAD] Alianza para tu cartera de clientes en {{Office}}, {{First Name}} (BCRA Nº 40.015)',
+  // Plantillas Cold Email Textos Diferenciadas por Segmento (Corridas 1 al 3)
+  const TEMPLATE_FRANQUICIAS = {
+    title: 'Plantilla 1 • Franquicias Inmobiliarias (RE/MAX, Century 21)',
+    subject: '[PUBLICIDAD] Alianza para monetizar propiedades y cartera en {{Office}}, {{First Name}} (BCRA Nº 40.015)',
     body: `Hola {{First Name}}, ¿cómo estás?
 
-Vi tu perfil público en el equipo de {{Office}} en {{City}} y te escribo porque en Colaboratium (Global Loan S.A. — Registro BCRA Nº 40.015) estamos incorporando agentes inmobiliarios con cartera activa a nuestra Red de Asesores Independientes.
+Vi tu perfil público en el equipo de {{Office}} en {{City}} y te escribo porque en Colaboratium (Global Loan S.A. — Registro BCRA Nº 40.015) estamos incorporando agentes de redes inmobiliarias con cartera activa a nuestra Red de Asesores Independientes.
 
-Sabemos que en la operatoria inmobiliaria hablás todas las semanas con clientes que acaban de vender, que están esperando cerrar una operación o que tienen excedentes de liquidez y buscan una renta superadora al plazo fijo tradicional sin inmovilizar su capital a largo plazo.
+Sabemos que en la operatoria de franquicias hablás todas las semanas con clientes que acaban de vender y tienen excedentes de liquidez, o bien propietarios con propiedades estancadas que necesitan un crédito puente con garantía hipotecaria/prendaria al 10% de la bolsa para cerrar operaciones.
 
 ¿Cómo funciona la alianza para vos y para tu cliente?
 
-Para tu cliente inversor (Costo 0%): Invierte desde una plataforma 100% bancarizada (Banco BIND y Banco Coinag) operando desde su propio CVU, financiando créditos atomizados que pasan por un motor de Inteligencia Artificial que filtra solo entre el 5% y el 15% de los mejores perfiles crediticios (validando BCRA, Renaper, Nosis, Veraz y UIF). Al inversor jamás se le cobra comisión ni gasto administrativo (todo el costo lo absorbe el tomador del crédito).
+1. Para tu cliente inversor (Costo 0%): Invierte desde una plataforma 100% bancarizada (Banco BIND y Banco Coinag) operando desde su propio CVU, financiando créditos atomizados calificados por Inteligencia Artificial (validando BCRA, Renaper, Nosis, Veraz y UIF). Al inversor jamás se le cobra comisión ni gasto administrativo.
+2. Para vos como Asesor (Comisiones directas del 4% al 6%): Por cada inversor que vincules con tu link propio, cobrás 4% (3 meses), 5% (6 meses) y 6% (12 meses) sobre capital colocado, cobrando un 3% inmediato al calce del crédito y el resto con las cuotas, más el 100% de comisión en cada reinversión futura de tu cliente.
 
-Para vos como Asesor (Esquema similar a RE/MAX): Ya conocés la modalidad de agencia independiente. Por cada inversor que vincules con tu link propio desde nuestra consola, percibís comisiones directas del 4% (plazo 3 meses), 5% (6 meses) y 6% (12 meses) sobre el capital colocado, cobrando un 3% de forma inmediata al calce del crédito y el resto con las cuotas, más el 100% de comisión en cada reinversión futura de tu cliente. Además, podés recibir inversores captados por las campañas de marketing de Colaboratium.
-
-Este {{1}} a las {{2}} hs vamos a dar una reunión informativa online de {{3}} exclusiva para profesionales independientes, donde mostramos la consola en vivo, la escala de comisiones y el respaldo normativo del BCRA.
+Este {{1}} a las {{2}} hs brindaremos una reunión informativa online de {{3}} exclusiva para agentes y brokers de redes, donde mostramos la consola en vivo y la escala de comisiones.
 
 👉 Podés reservar tu lugar sin costo acá: {{4}}
 
-Si preferís conocer nuestras oficinas comerciales personalmente, estamos en Av. del Libertador 264, 1° Piso Contrafrente, Vicente López (podés responderme este correo o escribirme por WhatsApp y coordinamos un café de 15 minutos).
+Si preferís conocer nuestras oficinas personalmente, estamos en Av. del Libertador 264, 1° Piso Contrafrente, Vicente López (respondeme este correo y coordinamos un café de 15 minutos).
 
 Te mando un cordial saludo,
 
@@ -515,10 +517,73 @@ Presidente | Global Loan S.A. — Colaboratium
 Registro BCRA PNFC Nº 40.015 (Verificable en bcra.gob.ar)
 Av. del Libertador 264, 1° Piso, Vicente López / Maipú 568, Piso 8°, CABA
 
-Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Te contactamos únicamente porque tu correo profesional figura publicado como contacto comercial en el directorio público de tu red en {{City}}. Según el Art. 27 de la Ley 25.326 y el Decreto 1558/2001, tenés derecho de acceso gratuito y de solicitar el retiro o bloqueo total de tu nombre y correo de nuestra base en cualquier momento haciendo clic en [este enlace de baja inmediata ({{5}})] o respondiendo este correo con la palabra "BAJA".`
+Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Correo profesional obtenido del directorio público de tu red en {{City}}. Tenés derecho de acceso y baja inmediata haciendo clic en [este enlace ({{5}})] o respondiendo "BAJA".`
   };
 
-  const TEMPLATE_B = {
+  const TEMPLATE_CORREDORES = {
+    title: 'Plantilla 2 • Corredores Inmobiliarios Matriculados (Colegios Oficiales / CCi)',
+    subject: '[PUBLICIDAD] Financiamiento ágil para destrabar operaciones inmobiliarias en {{City}}, {{First Name}} (BCRA Nº 40.015)',
+    body: `Hola {{First Name}}, ¿cómo estás?
+
+Te contacto como Corredor Inmobiliario Matriculado en {{City}} porque en Colaboratium (Global Loan S.A. — Primera plataforma Fintech de créditos entre particulares registrada en el BCRA bajo el Nº 40.015) desarrollamos un canal específico para martilleros y corredores colegiados independientes.
+
+Sabemos que uno de los mayores frenos en la operatoria inmobiliaria son las operaciones que se caen o se demoran 90 a 120 días por la lentitud de los créditos bancarios tradicionales, o clientes compradores que necesitan un crédito puente con garantía para calzar la compra de su nueva propiedad antes de vender la anterior.
+
+¿Qué soluciones brindamos para tu inmobiliaria y tus clientes?
+
+1. Créditos Puente y Mutuos con Garantía Real: Financiación ágil en 48 hs aprobada por motor de IA, permitiendo destrabar reservas y boletos de compraventa para clientes calificados.
+2. Destino para Clientes Vendedores con Liquidez: Si tu cliente acaba de vender y busca renta en pesos 100% bancarizada (vía Banco BIND y Banco Coinag con CVU propio), invierte sin comisiones ni cargos administrativos financiando carteras atomizadas de bajo riesgo.
+3. Honorarios y Comisiones para Vos: Percibís entre el 4% y el 6% de honorarios directos sobre el capital colocado, cobrando un 3% inmediato al calce de la operación y el saldo en cuotas, más el 100% en reinversiones futuras.
+
+Este {{1}} a las {{2}} hs brindaremos una sesión online de {{3}} exclusiva para Corredores Matriculados donde mostramos cómo estructurar los mutuos puente y el marco legal regulatorio.
+
+👉 Podés reservar tu acceso sin cargo acá: {{4}}
+
+O bien respondeme este correo y coordinamos una reunión de 15 minutos personalizada.
+
+Un cordial saludo,
+
+Lic. Damián Feuermann
+Presidente | Global Loan S.A. — Colaboratium
+Registro BCRA PNFC Nº 40.015
+Av. del Libertador 264, 1° Piso, Vicente López / Maipú 568, Piso 8°, CABA
+
+Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Tus datos fueron obtenidos del padrón público oficial de profesionales habilitados en {{City}}. Tenés derecho a la baja inmediata haciendo clic en [este enlace ({{5}})] o respondiendo con la palabra "BAJA".`
+  };
+
+  const TEMPLATE_SEGUROS = {
+    title: 'Plantilla 3 • Productores Asesores de Seguros (PAS - Matrícula SSN)',
+    subject: '[PUBLICIDAD] Nueva unidad de préstamos con garantía y jubilados para tu cartera, {{First Name}} (PAS Mat. SSN)',
+    body: `Hola {{First Name}}, ¿cómo estás?
+
+Te escribo como Productor Asesor de Seguros (PAS) matriculado ante la Superintendencia de Seguros de la Nación porque en Colaboratium (Global Loan S.A. — Plataforma registrada en el BCRA bajo el Nº 40.015) creamos una alianza estratégica para que productores independientes sumen colocación de créditos a su cartera de asegurados.
+
+Como PAS, ya contás con la confianza y el conocimiento financiero de tus asegurados particulares y comerciales. Nuestra plataforma te permite monetizar esa relación con productos que tu cliente ya necesita:
+
+1. Préstamos a Jubilados y Pensionados: Créditos con cuota fija y débito seguro, ideales para familiares o asegurados de vida y retiro.
+2. Créditos Prendarios e Hipotecarios: Para clientes de autos o patrimoniales que buscan liquidez inmediata sin desarmar posiciones de ahorro.
+3. Inversión en Créditos con Rendimiento Superior al Plazo Fijo: Para asegurados con excedentes de liquidez en cuenta bancaria, con respaldo bancario vía Banco BIND y Coinag.
+
+Tus Beneficios como Productor:
+- Comisiones de entre el 4% y el 6% sobre el desembolso total del crédito (cobrando un 3% inmediato al calce).
+- Ingresos residuales mes a mes y 100% de comisión sobre cada renovación de crédito.
+- Operatoria 100% digital desde tu consola propia: el análisis de scoring crediticio (Veraz, Nosis, BCRA y UIF) lo realiza nuestra Inteligencia Artificial en segundos.
+
+Este {{1}} a las {{2}} hs daremos una charla informativa online de {{3}} para Productores de Seguros.
+
+👉 Reservá tu cupo sin costo acá: {{4}}
+
+Te mando un cordial saludo,
+
+Lic. Damián Feuermann
+Presidente | Global Loan S.A. — Colaboratium
+Registro BCRA PNFC Nº 40.015
+Av. del Libertador 264, 1° Piso, Vicente López / Maipú 568, Piso 8°, CABA
+
+Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Correo enviado en base a los datos públicos de matriculación profesional en la SSN. Podés solicitar la baja inmediata haciendo clic en [este link ({{5}})] o respondiendo "BAJA".`
+  };
+
+  const TEMPLATE_BROKER = {
     title: 'Plantilla B • Broker / Martillero Responsable (Flujo 3: Nodo + 10% Overriding)',
     subject: '[PUBLICIDAD] Unidad de negocio adicional para tu equipo en {{Office}}, {{First Name}} (BCRA Nº 40.015)',
     body: `Hola {{First Name}}, ¿cómo estás?
@@ -545,6 +610,9 @@ Registro BCRA PNFC Nº 40.015
 
 Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Tus datos fueron relevados de tu perfil público profesional en el directorio de {{Office}}. Conforme al Art. 27 de la Ley 25.326, podés ejercer sin cargo tu derecho de acceso, retiro o bloqueo inmediato de nuestra base haciendo clic en [Darme de baja ({{5}})] o respondiendo con la palabra "BAJA".`
   };
+
+  const TEMPLATE_A = TEMPLATE_FRANQUICIAS;
+  const TEMPLATE_B = TEMPLATE_BROKER;
 
   return (
     <div className="flex h-screen bg-[#141313] text-[#FEFEFE] font-sans overflow-hidden">
@@ -821,10 +889,26 @@ Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Tus datos fueron relevados de tu 
                   className="bg-[#121111] border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#A28444]"
                 >
                   <option value="ALL">Todas las Capas</option>
-                  <option value="CAPA_1_REMAX">Capa 1: RE/MAX Argentina</option>
+                  <option value="CAPA_1_REMAX">Capa 1: Franquicias (RE/MAX, C21)</option>
                   <option value="CAPA_2_PADRONES_CORREDORES">Capa 2: Padrones Corredores</option>
                   <option value="CAPA_3_PREVISIONALISTAS">Capa 3: Previsionalistas</option>
-                  <option value="CAPA_5_PAS">Capa 5: Productores Seguros</option>
+                  <option value="CAPA_5_PAS">Capa 5: Productores Seguros (PAS)</option>
+                </select>
+              </div>
+
+              {/* Filtro Segmento & Plantilla */}
+              <div className="flex items-center gap-1.5 text-xs text-neutral-400">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#D4AF37]">Origen / Plantilla:</span>
+                <select
+                  value={filterSegmento}
+                  onChange={(e) => { setFilterSegmento(e.target.value); setPage(1); }}
+                  className="bg-[#121111] border border-[#A28444]/40 rounded-xl px-2.5 py-1.5 text-xs text-white font-bold focus:outline-none focus:border-[#A28444]"
+                >
+                  <option value="ALL">Todos los Orígenes / Plantillas</option>
+                  <option value="FRANQUICIA_INMOBILIARIA">🏢 Franquicias (RE/MAX & Century 21)</option>
+                  <option value="CORREDORES_MATRICULADOS">📜 Corredores Matriculados (CCi Santa Fe)</option>
+                  <option value="PRODUCTOR_SEGUROS_PAS">🛡️ Productores Seguros (PAS SSN)</option>
+                  <option value="ABOGADOS_PREVISIONALISTAS">⚖️ Abogados Previsionales</option>
                 </select>
               </div>
 
@@ -876,6 +960,7 @@ Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Tus datos fueron relevados de tu 
                   <tr>
                     <th className="py-3.5 px-4">Prospecto / Organización</th>
                     <th className="py-3.5 px-4">Clasificación / Flujo Bot</th>
+                    <th className="py-3.5 px-4">Origen / Plantilla</th>
                     <th className="py-3.5 px-4">Email Institucional</th>
                     <th className="py-3.5 px-4">WhatsApp (E.164)</th>
                     <th className="py-3.5 px-4">Oficina & Ubicación</th>
@@ -887,14 +972,14 @@ Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Tus datos fueron relevados de tu 
                 <tbody className="divide-y divide-white/5">
                   {loading ? (
                     <tr>
-                      <td colSpan="8" className="py-12 text-center text-neutral-500">
+                      <td colSpan="9" className="py-12 text-center text-neutral-500">
                         <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#A28444]" />
                         <span>Cargando prospectos B2B...</span>
                       </td>
                     </tr>
                   ) : prospects.length === 0 ? (
                     <tr>
-                      <td colSpan="8" className="py-12 text-center text-neutral-500">
+                      <td colSpan="9" className="py-12 text-center text-neutral-500">
                         <Users className="w-8 h-8 mx-auto mb-2 opacity-40" />
                         <p className="font-semibold text-neutral-400">No se encontraron prospectos con los filtros seleccionados</p>
                         <p className="text-[11px] mt-1 text-neutral-600">Prueba ajustando los criterios de búsqueda o ejecuta el Scraper.</p>
@@ -946,6 +1031,32 @@ Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Tus datos fueron relevados de tu 
                                 <span className="text-[9px] text-neutral-500 font-mono">FLOW_2_ASESORES (4-6%)</span>
                               </div>
                             )}
+                          </td>
+
+                          {/* Origen & Plantilla Sugerida */}
+                          <td className="py-3.5 px-4">
+                            <div className="flex flex-col gap-1">
+                              {p.segmento_origen === 'FRANQUICIA_INMOBILIARIA' ? (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-amber-500/10 text-amber-300 border border-amber-500/30 w-fit flex items-center gap-1">
+                                  🏢 Franquicia
+                                </span>
+                              ) : p.segmento_origen === 'CORREDORES_MATRICULADOS' ? (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 w-fit flex items-center gap-1">
+                                  📜 Corredor Mat.
+                                </span>
+                              ) : p.segmento_origen === 'PRODUCTOR_SEGUROS_PAS' ? (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 w-fit flex items-center gap-1">
+                                  🛡️ Seguros (PAS)
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-purple-500/10 text-purple-300 border border-purple-500/30 w-fit flex items-center gap-1">
+                                  ⚖️ Previsional
+                                </span>
+                              )}
+                              <span className="text-[9px] text-neutral-400 font-mono font-semibold">
+                                {p.plantilla_sugerida || 'PLANTILLA_FRANQUICIAS'}
+                              </span>
+                            </div>
                           </td>
 
                           {/* Email */}
@@ -1178,7 +1289,7 @@ Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Tus datos fueron relevados de tu 
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-[10px] uppercase font-bold text-neutral-400 mb-1">
                       Destinatarios a Filtrar
@@ -1191,6 +1302,22 @@ Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Tus datos fueron relevados de tu 
                       <option value="ALL">Todos (Asesores & Líderes)</option>
                       <option value="ASESOR_POTENCIAL">Solo Asesores Potenciales</option>
                       <option value="LIDER_BROKER_POTENCIAL">Solo Brokers / Líderes</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase font-bold text-[#D4AF37] mb-1">
+                      Segmento / Plantilla Objetivo
+                    </label>
+                    <select
+                      value={batchOptions.targetSegment}
+                      onChange={(e) => setBatchOptions({ ...batchOptions, targetSegment: e.target.value })}
+                      className="w-full bg-[#121111] border border-[#A28444]/40 rounded-xl px-3 py-2 text-xs text-white font-bold focus:outline-none focus:border-[#D4AF37]"
+                    >
+                      <option value="ALL">Todos los Segmentos</option>
+                      <option value="FRANQUICIA_INMOBILIARIA">🏢 Franquicias (RE/MAX, C21)</option>
+                      <option value="CORREDORES_MATRICULADOS">📜 Corredores Matriculados (CCi)</option>
+                      <option value="PRODUCTOR_SEGUROS_PAS">🛡️ Productores Seguros (PAS)</option>
+                      <option value="ABOGADOS_PREVISIONALISTAS">⚖️ Previsionales</option>
                     </select>
                   </div>
                   <div>
@@ -1244,7 +1371,7 @@ Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Tus datos fueron relevados de tu 
         {/* MODAL 2: PLANTILLAS COLD EMAIL LISTAS PARA COPIAR */}
         {showTemplatesModal && (
           <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="bg-[#1b1a1a] border border-[#A28444]/40 rounded-3xl max-w-3xl w-full p-6 shadow-2xl relative text-left max-h-[90vh] flex flex-col">
+            <div className="bg-[#1b1a1a] border border-[#A28444]/40 rounded-3xl max-w-4xl w-full p-6 shadow-2xl relative text-left max-h-[90vh] flex flex-col">
               <button
                 onClick={() => setShowTemplatesModal(false)}
                 className="absolute top-5 right-5 p-1.5 rounded-full hover:bg-white/10 text-neutral-400 hover:text-white"
@@ -1258,38 +1385,60 @@ Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Tus datos fueron relevados de tu 
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-white">Plantillas Oficiales de Prospección Fría (Gmail)</h3>
-                  <p className="text-xs text-neutral-400">Personalizadas con variables Mail Merge para Asesores y Brokers</p>
+                  <p className="text-xs text-neutral-400">Personalizadas y segmentadas por origen: Franquicias, Corredores Colegiados y PAS Seguros</p>
                 </div>
               </div>
 
-              {/* Tabs */}
-              <div className="flex items-center gap-2 border-b border-white/10 pb-2 mb-4">
+              {/* Tabs Diferenciadas por Segmento */}
+              <div className="flex flex-wrap items-center gap-2 border-b border-white/10 pb-2 mb-4">
                 <button
-                  onClick={() => setActiveTemplateTab('asesor')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                    activeTemplateTab === 'asesor'
-                      ? 'bg-[#A28444] text-black shadow'
+                  onClick={() => setActiveTemplateTab('franquicias')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    activeTemplateTab === 'franquicias'
+                      ? 'bg-amber-500 text-black shadow'
                       : 'bg-[#232121] text-neutral-400 hover:text-white'
                   }`}
                 >
-                  Plantilla A • Asesores Inmobiliarios (Flujo 2)
+                  <span>🏢 1. Franquicias (C21 / RE/MAX)</span>
+                </button>
+                <button
+                  onClick={() => setActiveTemplateTab('corredores')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    activeTemplateTab === 'corredores'
+                      ? 'bg-cyan-500 text-black shadow'
+                      : 'bg-[#232121] text-neutral-400 hover:text-white'
+                  }`}
+                >
+                  <span>📜 2. Corredores Colegiados (CCi)</span>
+                </button>
+                <button
+                  onClick={() => setActiveTemplateTab('seguros')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    activeTemplateTab === 'seguros'
+                      ? 'bg-emerald-500 text-black shadow'
+                      : 'bg-[#232121] text-neutral-400 hover:text-white'
+                  }`}
+                >
+                  <span>🛡️ 3. Productores Seguros (PAS)</span>
                 </button>
                 <button
                   onClick={() => setActiveTemplateTab('broker')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                     activeTemplateTab === 'broker'
                       ? 'bg-[#A28444] text-black shadow'
                       : 'bg-[#232121] text-neutral-400 hover:text-white'
                   }`}
                 >
-                  Plantilla B • Broker / Martillero (Flujo 3: 10% Overriding)
+                  <span>👑 Líderes & Brokers (10% Over.)</span>
                 </button>
               </div>
 
               {/* Template Content */}
               <div className="flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
                 {(() => {
-                  const t = activeTemplateTab === 'asesor' ? TEMPLATE_A : TEMPLATE_B;
+                  const t = activeTemplateTab === 'franquicias' ? TEMPLATE_FRANQUICIAS :
+                            activeTemplateTab === 'corredores' ? TEMPLATE_CORREDORES :
+                            activeTemplateTab === 'seguros' ? TEMPLATE_SEGUROS : TEMPLATE_BROKER;
                   return (
                     <div className="space-y-3">
                       <div>
