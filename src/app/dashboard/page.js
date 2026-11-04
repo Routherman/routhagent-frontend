@@ -154,7 +154,7 @@ export default function Dashboard() {
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                             
-                            {/* Stats Card: Total Chats */}
+                            {/* Stats Card 1: Total Chats */}
                             <div className="bg-white dark:bg-slate-900/80 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-white/10 flex flex-col justify-between hover:shadow-md transition-shadow">
                                 <div>
                                     <h3 className="text-gray-500 dark:text-slate-400 font-medium text-sm mb-1">Total de Chats</h3>
@@ -168,40 +168,34 @@ export default function Dashboard() {
                                 </div>
                             </div>
 
-                            {/* Attention Required Card (Handoffs) */}
-                            <div className="bg-white dark:bg-slate-900/80 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-white/10 lg:col-span-2 flex flex-col hover:shadow-md transition-shadow">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-gray-800 dark:text-white font-bold text-lg flex items-center gap-2">
-                                        <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
-                                        Chats requieren atención ({handoffChats.length})
-                                    </h3>
-                                    <Link href="/dashboard/messages" className="text-sm font-medium text-blue-600 dark:text-sky-400 hover:underline">
-                                        Ver bandeja →
-                                    </Link>
+                            {/* Stats Card 2: Equipo & Asesores */}
+                            <div className="bg-white dark:bg-slate-900/80 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-white/10 flex flex-col justify-between hover:shadow-md transition-shadow">
+                                <div>
+                                    <h3 className="text-gray-500 dark:text-slate-400 font-medium text-sm mb-1">Equipo & Asesores</h3>
+                                    <div className="text-4xl font-bold text-indigo-600 dark:text-indigo-400">{team.length}</div>
                                 </div>
-                                <div className="flex-1 overflow-y-auto max-h-40 pr-2">
-                                    {handoffChats.length === 0 ? (
-                                        <div className="h-full flex items-center justify-center text-gray-400 dark:text-slate-500 text-sm">
-                                            Todo en orden, la IA está gestionando todo.
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col gap-3">
-                                            {handoffChats.map(c => (
-                                                <Link href="/dashboard/messages" key={c.id} className="flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors border border-transparent hover:border-gray-100 dark:hover:border-white/10">
-                                                    <div className="flex items-center gap-3">
-                                                        <img src={`https://ui-avatars.com/api/?name=${c.nombre || 'Desconocido'}&background=random`} alt="avatar" className="w-10 h-10 rounded-full" />
-                                                        <div>
-                                                            <p className="text-sm font-semibold text-gray-800 dark:text-white">{c.nombre || c.telefono}</p>
-                                                            <p className="text-xs text-red-500 dark:text-red-400">Esperando agente humano</p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-xs text-gray-400 dark:text-slate-500 font-medium">
-                                                        {new Date(c.creado_en).toLocaleDateString()}
-                                                    </div>
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    )}
+                                <div className="mt-6 flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 w-fit px-3 py-1 rounded-full border border-transparent dark:border-indigo-500/20">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                                    </svg>
+                                    <span>Estructura Colaboratium</span>
+                                </div>
+                            </div>
+
+                            {/* Stats Card 3: Estado del Sistema & IA */}
+                            <div className="bg-white dark:bg-slate-900/80 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-white/10 flex flex-col justify-between hover:shadow-md transition-shadow">
+                                <div>
+                                    <h3 className="text-gray-500 dark:text-slate-400 font-medium text-sm mb-1">Motor IA Multi-Router</h3>
+                                    <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                                        <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                                        Activo 24/7
+                                    </div>
+                                </div>
+                                <div className="mt-6 flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 w-fit px-3 py-1 rounded-full border border-transparent dark:border-emerald-500/20">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                    </svg>
+                                    <span>SLAs BCRA Cumplidos</span>
                                 </div>
                             </div>
 

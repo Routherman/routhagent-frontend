@@ -31,6 +31,7 @@ import { API_URL } from '@/config/api';
 
 // Global variable to persist known handoffs across Sidebar remounts during navigation
 let globalHandoffs = new Set();
+let isFirstPoll = true;
 
 export default function Sidebar() {
   const rawPath = usePathname();
@@ -104,10 +105,12 @@ export default function Sidebar() {
                     currentHandoffs++;
                     if (!globalHandoffs.has(c.id)) {
                       globalHandoffs.add(c.id);
-                      playAlertSound();
-                      toast.error('Atención: se desactivó la IA en un chat. Requiere intervención humana.', {
-                        duration: 8000,
-                      });
+                      if (!isFirstPoll) {
+                        playAlertSound();
+                        toast.error('Atención: se desactivó la IA en un chat. Requiere intervención humana.', {
+                          duration: 6000,
+                        });
+                      }
                     }
                   } else {
                     if (globalHandoffs.has(c.id)) {
@@ -132,6 +135,7 @@ export default function Sidebar() {
               if (tData.success && Array.isArray(tData.tickets)) {
                 setPendingTicketsCount(tData.tickets.length);
               }
+              isFirstPoll = false;
             } catch (err) {
               console.warn("Sidebar pollStatus:", err.message || err);
             }

@@ -27,9 +27,12 @@ import {
   ArrowRight,
   ShieldCheck,
   CheckCircle2,
-  Clock
+  Clock,
+  GripVertical,
+  ShieldAlert
 } from "lucide-react";
 import { toast } from "sonner";
+import ReportProblemModal from "./ReportProblemModal";
 
 export default function FloatingCopilot() {
   const rawPath = usePathname();
@@ -39,6 +42,73 @@ export default function FloatingCopilot() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [codigoEmpresa, setCodigoEmpresa] = useState("KRZMJI");
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+
+  // Posición flotante con persistencia por usuario
+  const [position, setPosition] = useState(null); // { x, y }
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef(null);
+  const dragStartRef = useRef({ mouseX: 0, mouseY: 0, posX: 0, posY: 0, moved: false });
+
+  // Cargar posición guardada en localStorage por usuario
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const storageKey = `copilot_pos_${user?.id || "guest"}`;
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.x === "number" && typeof parsed.y === "number") {
+          const validX = Math.max(10, Math.min(window.innerWidth - 180, parsed.x));
+          const validY = Math.max(10, Math.min(window.innerHeight - 80, parsed.y));
+          setPosition({ x: validX, y: validY });
+          return;
+        }
+      } catch (e) {}
+    }
+    // Posición por defecto
+    setPosition({ x: Math.max(10, window.innerWidth - 240), y: Math.max(10, window.innerHeight - 85) });
+  }, [user]);
+
+  // Manejo de drag and drop fluido
+  const handlePointerDown = (e) => {
+    dragStartRef.current = {
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      posX: position?.x ?? (window.innerWidth - 240),
+      posY: position?.y ?? (window.innerHeight - 85),
+      moved: false
+    };
+    setIsDragging(true);
+
+    const onPointerMove = (moveEvent) => {
+      const dx = moveEvent.clientX - dragStartRef.current.mouseX;
+      const dy = moveEvent.clientY - dragStartRef.current.mouseY;
+      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+        dragStartRef.current.moved = true;
+      }
+      const newX = Math.max(10, Math.min(window.innerWidth - 220, dragStartRef.current.posX + dx));
+      const newY = Math.max(10, Math.min(window.innerHeight - 80, dragStartRef.current.posY + dy));
+      setPosition({ x: newX, y: newY });
+    };
+
+    const onPointerUp = () => {
+      setIsDragging(false);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+
+      setPosition(currentPos => {
+        if (currentPos) {
+          const storageKey = `copilot_pos_${user?.id || "guest"}`;
+          localStorage.setItem(storageKey, JSON.stringify(currentPos));
+        }
+        return currentPos;
+      });
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+  };
 
   const [messages, setMessages] = useState([
     {
@@ -654,30 +724,79 @@ export default function FloatingCopilot() {
   ].slice(0, 3);
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 font-sans pointer-events-auto">
-      {/* Botón Flotante FAB (cuando está cerrado) */}
-      {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="group relative flex items-center gap-3 px-4 py-3 rounded-full bg-gradient-to-r from-gray-950 via-gray-900 to-black text-white shadow-2xl border border-white/20 hover:border-indigo-500/50 hover:shadow-indigo-500/20 transition-all duration-300 transform hover:scale-105 active:scale-95"
-        >
-          <div className="relative">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-inner">
-              <Sparkles className="w-5 h-5 animate-pulse" />
+    <>
+      <div 
+        ref={dragRef}
+        style={{
+          position: "fixed",
+          left: position ? `${position.x}px` : undefined,
+          top: position ? `${position.y}px` : undefined,
+          right: !position ? "24px" : undefined,
+          bottom: !position ? "24px" : undefined,
+          touchAction: "none"
+        }}
+        className={`z-50 font-sans pointer-events-auto select-none ${isDragging ? "cursor-grabbing" : ""}`}
+      >
+        {/* Barra Flotante FAB con Copilot y Botón Reportar Problema */}
+        {!isOpen && (
+          <div 
+            onPointerDown={handlePointerDown}
+            className="flex items-center gap-2 p-1.5 rounded-full bg-gray-950/90 backdrop-blur-xl border border-white/20 shadow-2xl hover:border-indigo-500/40 transition-all duration-300"
+          >
+            {/* Grip Handle para arrastrar */}
+            <div 
+              className="pl-2 pr-0.5 py-2 text-gray-500 hover:text-gray-300 cursor-grab active:cursor-grabbing flex items-center justify-center"
+              title="Arrastrar para mover de lugar"
+            >
+              <GripVertical className="w-3.5 h-3.5" />
             </div>
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 border-2 border-black rounded-full" />
+
+            {/* Botón 1: Reportar Problema (Hover se agranda) */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!dragStartRef.current.moved) {
+                  setIsReportModalOpen(true);
+                }
+              }}
+              title="Reportar Problema / Abrir Ticket"
+              className="group relative flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-tr from-rose-600 via-rose-500 to-amber-500 text-white shadow-lg border border-white/20 hover:border-rose-400 hover:shadow-rose-500/40 transition-transform duration-300 transform hover:scale-125 active:scale-95"
+            >
+              <ShieldAlert className="w-4 h-4 transition-transform duration-300 group-hover:rotate-12" />
+              <span className="sr-only">Reportar Problema</span>
+            </button>
+
+            {/* Botón 2: Copilot Routh IA (Hover se agranda) */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!dragStartRef.current.moved) {
+                  setIsOpen(true);
+                }
+              }}
+              title="Copiloto Routh IA"
+              className="group relative flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-full bg-gradient-to-r from-indigo-950 via-purple-950/80 to-black text-white shadow-lg border border-indigo-500/30 hover:border-indigo-400 hover:shadow-indigo-500/30 transition-transform duration-300 transform hover:scale-125 active:scale-95"
+            >
+              <div className="relative">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-inner">
+                  <Sparkles className="w-4 h-4 animate-pulse" />
+                </div>
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-500 border-2 border-black rounded-full" />
+              </div>
+              <div className="text-left pr-1">
+                <div className="text-[11px] font-black tracking-wide flex items-center gap-1">
+                  <span>Copiloto</span>
+                  <span className="px-1 py-0.2 rounded-full text-[8px] bg-indigo-500/30 text-indigo-300 font-mono">IA</span>
+                </div>
+                <div className="text-[9px] text-gray-400 font-medium truncate max-w-[90px]">
+                  {sectionInfo.name}
+                </div>
+              </div>
+            </button>
           </div>
-          <div className="text-left pr-1">
-            <div className="text-xs font-black tracking-wide flex items-center gap-1.5">
-              <span>Copiloto Routh</span>
-              <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-indigo-500/30 text-indigo-300 font-mono">IA</span>
-            </div>
-            <div className="text-[10px] text-gray-400 font-medium truncate max-w-[140px]">
-              {sectionInfo.name}
-            </div>
-          </div>
-        </button>
-      )}
+        )}
 
       {/* Ventana Flotante del Copiloto */}
       {isOpen && (
@@ -894,6 +1013,14 @@ export default function FloatingCopilot() {
           )}
         </div>
       )}
-    </div>
+      </div>
+
+      {/* Modal Reportar Problema con trazabilidad y adjunto */}
+      <ReportProblemModal 
+        isOpen={isReportModalOpen} 
+        onClose={() => setIsReportModalOpen(false)} 
+        codigoEmpresa={codigoEmpresa} 
+      />
+    </>
   );
 }
