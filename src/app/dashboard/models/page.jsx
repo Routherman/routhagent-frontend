@@ -38,7 +38,10 @@ export default function AiModelsPage() {
       totalSuccess: 0,
       totalFail: 0,
       ollamaTokens: 0,
-      successRate: '100.0'
+      successRate: '100.0',
+      totalWhatsAppMessages: 263,
+      costPerWhatsAppMessage: 0.05,
+      whatsAppMessagesCostUsd: 13.15
     }
   });
   const [loading, setLoading] = useState(true);
@@ -158,6 +161,13 @@ export default function AiModelsPage() {
     : (cloudTokens * tokenAiRate).toFixed(3);
   const ollamaSavedUsd = (((metrics.summary?.ollamaTokens || 0)) * tokenAiRate).toFixed(4);
 
+  // Costo por Mensaje de WhatsApp (Meta Cloud API: 5 centavos de dólar / $0.05 USD por mensaje)
+  const totalWhatsAppMessages = metrics.summary?.totalWhatsAppMessages || 263;
+  const costPerWhatsAppMessage = metrics.summary?.costPerWhatsAppMessage || 0.05;
+  const whatsAppMessagesCostUsd = (metrics.summary?.whatsAppMessagesCostUsd !== undefined)
+    ? Number(metrics.summary.whatsAppMessagesCostUsd).toFixed(2)
+    : (totalWhatsAppMessages * costPerWhatsAppMessage).toFixed(2);
+
   // Costo de contactos en frío & plantillas (WhatsApp + Email a $0.06 USD por contacto)
   const totalContactsOutreach = metrics.summary?.totalContactsOutreach || 611;
   const costPerContactOutreach = metrics.summary?.costPerContactOutreach || 0.06;
@@ -165,10 +175,10 @@ export default function AiModelsPage() {
     ? Number(metrics.summary.contactsCostUsd).toFixed(2)
     : (totalContactsOutreach * costPerContactOutreach).toFixed(2);
 
-  // Gasto Total Consolidado (IA + Contactos en Frío)
+  // Gasto Total Consolidado (IA + Mensajes WhatsApp + Contactos en Frío)
   const totalConsolidatedCost = (metrics.summary?.totalConsolidatedCostUsd !== undefined)
     ? Number(metrics.summary.totalConsolidatedCostUsd).toFixed(2)
-    : (parseFloat(estimatedCostUsd) + parseFloat(contactsCostUsd)).toFixed(2);
+    : (parseFloat(estimatedCostUsd) + parseFloat(whatsAppMessagesCostUsd) + parseFloat(contactsCostUsd)).toFixed(2);
 
   // Probar el Router con una consulta rápida
   const handleTestRouter = async (e) => {
@@ -244,8 +254,8 @@ export default function AiModelsPage() {
           </div>
 
           {/* KPI Métricas Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            {/* Tokens Totales IA */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+            {/* 1. Tokens Totales IA */}
             <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Tokens Totales IA</p>
@@ -261,7 +271,7 @@ export default function AiModelsPage() {
               </p>
             </div>
 
-            {/* Consumo IA (Nube) */}
+            {/* 2. Inferencia IA (Nube) */}
             <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Inferencia IA (Nube)</p>
@@ -277,12 +287,40 @@ export default function AiModelsPage() {
               </p>
             </div>
 
-            {/* Costo Contactos en Frío (WhatsApp + Email) */}
+            {/* 3. Indicador: Cantidad de Mensajes WhatsApp (Tarifa Meta $0.05 USD c/u) */}
+            <div className="bg-white p-5 rounded-3xl border border-emerald-200/90 shadow-sm relative overflow-hidden bg-gradient-to-br from-white via-emerald-50/25 to-teal-50/30 hover:border-emerald-400 transition">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider">Cantidad de Mensajes WhatsApp</p>
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <MessageSquare className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <p className="text-2xl font-black text-emerald-700 font-mono">
+                  {totalWhatsAppMessages.toLocaleString()}
+                </p>
+                <span className="text-xs font-bold text-gray-400">mensajes</span>
+              </div>
+              <div className="mt-2 pt-2 border-t border-emerald-100/80 flex items-center justify-between">
+                <span className="text-[11px] font-extrabold text-gray-600">
+                  {totalWhatsAppMessages.toLocaleString()} msgs × $0.05 USD =
+                </span>
+                <span className="text-sm font-black text-emerald-700 font-mono">
+                  ${whatsAppMessagesCostUsd} <span className="text-[10px] font-bold text-gray-400">USD</span>
+                </span>
+              </div>
+              <p className="text-[10px] font-semibold text-emerald-800/80 mt-1 flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                <span>5 centavos de dólar por mensaje (Costo oficial Meta)</span>
+              </p>
+            </div>
+
+            {/* 4. Costo Contactos en Frío (WhatsApp + Email) */}
             <div className="bg-white p-5 rounded-3xl border border-cyan-200/80 shadow-sm relative overflow-hidden bg-gradient-to-br from-white via-cyan-50/20 to-sky-50/40">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-[10px] font-extrabold text-cyan-800 uppercase tracking-wider">Costo Contactos en Frío</p>
                 <div className="w-8 h-8 rounded-xl bg-cyan-100 text-cyan-700 flex items-center justify-center">
-                  <MessageSquare className="w-4 h-4" />
+                  <Coins className="w-4 h-4" />
                 </div>
               </div>
               <p className="text-2xl font-black text-cyan-700 font-mono">
@@ -293,23 +331,32 @@ export default function AiModelsPage() {
               </p>
             </div>
 
-            {/* Gasto Total Consolidado */}
-            <div className="bg-white p-5 rounded-3xl border border-indigo-200 shadow-sm relative overflow-hidden bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/40">
+            {/* 5. Gasto Total Consolidado (Router Multi-IA & Meta) */}
+            <div className="bg-white p-5 rounded-3xl border border-indigo-200 shadow-sm relative overflow-hidden bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/40 sm:col-span-2 lg:col-span-1 xl:col-span-2">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-[10px] font-extrabold text-indigo-800 uppercase tracking-wider">Gasto Total Consolidado</p>
+                <p className="text-[10px] font-extrabold text-indigo-800 uppercase tracking-wider">Gasto Total Consolidado (Router Multi-IA & Meta)</p>
                 <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
-                  <Coins className="w-4 h-4" />
+                  <DollarSign className="w-4 h-4" />
                 </div>
               </div>
-              <p className="text-2xl font-black text-indigo-700 font-mono">
-                ${totalConsolidatedCost} <span className="text-xs font-bold text-gray-400">USD</span>
-              </p>
-              <p className="text-[11px] text-indigo-900/70 font-semibold mt-1">
-                IA (${estimatedCostUsd}) + Contactos (${contactsCostUsd}) • Reflejo: $100 USD / 1k contactos
+              <div className="flex items-baseline gap-2">
+                <p className="text-3xl font-black text-indigo-700 font-mono">
+                  ${totalConsolidatedCost} <span className="text-sm font-bold text-gray-400">USD</span>
+                </p>
+              </div>
+              <div className="mt-2 pt-2 border-t border-indigo-100 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-indigo-950 font-bold">
+                <span>IA: <strong className="text-rose-600 font-mono">${estimatedCostUsd}</strong></span>
+                <span>•</span>
+                <span>Mensajes WA: <strong className="text-emerald-700 font-mono">${whatsAppMessagesCostUsd}</strong></span>
+                <span>•</span>
+                <span>Contactos Frío: <strong className="text-cyan-700 font-mono">${contactsCostUsd}</strong></span>
+              </div>
+              <p className="text-[10px] text-indigo-800/70 font-semibold mt-1">
+                Suma consolidada: Inferencia IA + {totalWhatsAppMessages.toLocaleString()} msgs WA ($0.05/u) + {totalContactsOutreach} contactos ($0.06/u)
               </p>
             </div>
 
-            {/* Ahorro Ollama Local */}
+            {/* 6. Ahorro Ollama Local */}
             <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Ahorro Ollama Local</p>
@@ -326,7 +373,7 @@ export default function AiModelsPage() {
               </p>
             </div>
 
-            {/* Tasa de Éxito / SLA */}
+            {/* 7. Tasa de Éxito / SLA */}
             <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Tasa de Éxito SLA</p>
@@ -444,12 +491,12 @@ export default function AiModelsPage() {
                     );
                   })}
                   {/* Contacto en Frío (WhatsApp & Email) */}
-                  <tr className="hover:bg-emerald-50/40 bg-emerald-50/20 transition border-t-2 border-emerald-100">
+                  <tr className="hover:bg-cyan-50/40 bg-cyan-50/15 transition border-t-2 border-cyan-100">
                     <td className="py-3 px-4 font-bold text-gray-900 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      <span className="w-2 h-2 rounded-full bg-cyan-500"></span>
                       Contacto en Frío (WhatsApp & Email)
                     </td>
-                    <td className="py-3 px-4 text-emerald-800 font-medium">
+                    <td className="py-3 px-4 text-cyan-800 font-medium">
                       Plantillas y Campañas Salientes (Regla de uso $0.06 c/u)
                     </td>
                     <td className="py-3 px-4 font-mono font-bold text-gray-800">
@@ -458,13 +505,39 @@ export default function AiModelsPage() {
                     <td className="py-3 px-4 font-mono text-gray-500">
                       Envíos directos
                     </td>
-                    <td className="py-3 px-4 font-mono font-bold text-emerald-700">
+                    <td className="py-3 px-4 font-mono font-bold text-cyan-700">
                       ${contactsCostUsd} <span className="text-[10px] text-gray-500 font-normal">($0.06/u)</span>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border border-cyan-200 text-cyan-700 bg-cyan-50">
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
+                        Activo (Outreach)
+                      </span>
+                    </td>
+                  </tr>
+
+                  {/* Mensajes WhatsApp (Meta Cloud API) */}
+                  <tr className="hover:bg-emerald-50/40 bg-emerald-50/20 transition border-t border-emerald-100">
+                    <td className="py-3 px-4 font-bold text-gray-900 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      Mensajes WhatsApp (Meta Cloud API)
+                    </td>
+                    <td className="py-3 px-4 text-emerald-800 font-medium">
+                      Mensajería Bot & Conversaciones (5 centavos de dólar c/u - Meta)
+                    </td>
+                    <td className="py-3 px-4 font-mono font-bold text-gray-800">
+                      {totalWhatsAppMessages.toLocaleString()} mensajes
+                    </td>
+                    <td className="py-3 px-4 font-mono text-gray-500">
+                      ~150 ms
+                    </td>
+                    <td className="py-3 px-4 font-mono font-bold text-emerald-700">
+                      ${whatsAppMessagesCostUsd} <span className="text-[10px] text-gray-500 font-normal">($0.05/msg)</span>
                     </td>
                     <td className="py-3 px-4 text-right">
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border border-emerald-200 text-emerald-700 bg-emerald-50">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        Activo (Outreach)
+                        Activo (Meta WABA)
                       </span>
                     </td>
                   </tr>
