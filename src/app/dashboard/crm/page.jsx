@@ -518,12 +518,12 @@ export default function CrmPage() {
                 href={`${API_URL}/empresas/${codigoEmpresa}/scores/pdf-guia`}
                 target="_blank"
                 rel="noreferrer"
-                download="Reglamento_Sistema_de_Puntos_Colaboratium.pdf"
+                download="Colaboratium_Reglamento_Score_2026_Disponibilidad_Declarada.pdf"
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 text-indigo-900 border border-indigo-200 text-xs font-black transition shadow-xs hover:scale-[1.02]"
-                title="Descargar Reglamento Oficial del Sistema de Puntos y Score 360°"
+                title="Descargar Reglamento Oficial 2026 con Disponibilidad Declarada (PDF)"
               >
                 <FileText className="w-4 h-4 text-indigo-600" />
-                <span>Reglamento Score (PDF)</span>
+                <span>Reglamento Score 2026 (PDF)</span>
               </a>
 
               <button

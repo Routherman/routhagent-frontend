@@ -209,8 +209,8 @@ export default function Dashboard() {
                                     <div>
                                         <div className="flex items-center gap-2 mb-2">
                                             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                                                <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
-                                                Gamificación & SLAs 360°
+                                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                Gamificación 360° • Disponibilidad Declarada
                                             </span>
                                             <span className="text-xs text-slate-400">Normativa Colaboratium BCRA 40.015</span>
                                         </div>
@@ -218,7 +218,7 @@ export default function Dashboard() {
                                             🏆 Ranking de Desempeño y Sistema de Puntos
                                         </h3>
                                         <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 mt-1">
-                                            Puntaje en vivo de velocidad de respuesta, resolución de tickets, cartera de inversión y acompañamiento de equipo.
+                                            Puntaje en vivo según Disponibilidad Declarada (los tiempos solo corren en el horario de atención informado), conversión y SLAs.
                                         </p>
                                     </div>
 
@@ -228,9 +228,9 @@ export default function Dashboard() {
                                             href={`${API_URL}/empresas/${codigoEmpresa}/scores/pdf-guia`}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            download="Reglamento_Sistema_de_Puntos_Colaboratium.pdf"
+                                            download="Colaboratium_Reglamento_Score_2026_Disponibilidad_Declarada.pdf"
                                             className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-bold text-xs uppercase tracking-wider shadow-lg shadow-amber-500/25 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
-                                            title="Descargar documento normativo oficial en formato PDF"
+                                            title="Descargar Reglamento Oficial 2026 con Disponibilidad Declarada (PDF)"
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -339,9 +339,15 @@ export default function Dashboard() {
                                                                     {item.rol || 'ASESORES'}
                                                                 </span>
                                                             </div>
-                                                            <p className="text-xs text-gray-400 dark:text-slate-500 truncate">
-                                                                {item.telefono || item.email || 'Sin contacto'}
-                                                            </p>
+                                                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                                                <p className="text-xs text-gray-400 dark:text-slate-500 truncate">
+                                                                    {item.telefono || item.email || 'Sin contacto'}
+                                                                </p>
+                                                                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/40">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                                    {item.horario_inicio || '09:00'} - {item.horario_fin || '18:00'} hs
+                                                                </span>
+                                                            </div>
                                                         </div>
                                                     </div>
 
@@ -349,7 +355,7 @@ export default function Dashboard() {
                                                     <div className="flex items-center justify-between sm:justify-end gap-5">
                                                         {/* Métricas secundarias */}
                                                         <div className="hidden md:flex items-center gap-3 text-xs text-gray-500 dark:text-slate-400">
-                                                            <span title="Tiempo promedio de respuesta a leads">
+                                                            <span title="Tiempo promedio de respuesta en horario disponible">
                                                                 ⚡ {item.tiempo_promedio_min || '8.0'}m
                                                             </span>
                                                             <span title="Leads atendidos">
@@ -404,9 +410,14 @@ export default function Dashboard() {
                                             📜
                                         </div>
                                         <div>
-                                            <h4 className="text-sm font-bold text-white">Reglamento Oficial de Puntos y SLAs</h4>
+                                            <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                                                <span>Reglamento Oficial de Score 2026</span>
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
+                                                    Disponibilidad Declarada Activa
+                                                </span>
+                                            </h4>
                                             <p className="text-xs text-slate-400 mt-0.5">
-                                                Respuesta &lt; 5m (+20 pts) • Cierre de Inversión (+50 pts) • Demora &gt; 30m (-30 pts) • Ticket reclamo (-50 pts). Descargá el PDF de 2 páginas con la matriz completa y beneficios por rango.
+                                                Respuesta inicial &lt; 5m (+15 pts) • Respuesta 5 a 15m (+8 pts) • Inversión (+50 pts) • Reinversión (+35 pts) • Demora &gt; 1h (-10 pts) • Demora &gt; 24h (-40 pts). Los tiempos solo cuentan en el horario informado como disponible.
                                             </p>
                                         </div>
                                     </div>
@@ -414,10 +425,10 @@ export default function Dashboard() {
                                         href={`${API_URL}/empresas/${codigoEmpresa}/scores/pdf-guia`}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        download="Reglamento_Sistema_de_Puntos_Colaboratium.pdf"
-                                        className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold whitespace-nowrap transition-colors border border-white/10 shrink-0"
+                                        download="Colaboratium_Reglamento_Score_2026_Disponibilidad_Declarada.pdf"
+                                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 text-xs font-bold whitespace-nowrap transition-transform hover:scale-105 shadow-md shadow-amber-500/20 shrink-0"
                                     >
-                                        Ver Matriz en PDF →
+                                        Descargar PDF Oficial 2026 →
                                     </a>
                                 </div>
                             </div>
