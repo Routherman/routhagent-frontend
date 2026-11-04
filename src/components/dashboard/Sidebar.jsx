@@ -157,8 +157,8 @@ export default function Sidebar() {
   const rawOpsItems = [
     { label: 'Equipo & Roles', href: '/dashboard/roles', icon: ShieldCheck, permission: 'view_roles' },
     { label: 'Router Multi-IA', href: '/dashboard/models', icon: Cpu, permission: 'view_models' },
-    { label: 'Biblioteca de Medios', href: '/dashboard/campaigns?tab=media', icon: FolderOpen, permission: 'view_campaigns' },
-    { label: 'Automatización', href: '/dashboard/automation', icon: Zap, permission: 'view_flows' },
+    { label: 'Biblioteca de Medios', href: '/dashboard/campaigns?tab=media', icon: FolderOpen, permission: 'view_media' },
+    { label: 'Automatización', href: '/dashboard/automation', icon: Zap, permission: 'view_automation' },
     { label: 'Flujos Bot', href: '/dashboard/flows', icon: GitFork, permission: 'view_flows' },
   ];
 
@@ -170,7 +170,7 @@ export default function Sidebar() {
     { label: 'Tickets Helpdesk', href: '/dashboard/tickets', icon: Ticket, count: pendingTicketsCount, permission: 'view_tickets' },
     { label: 'Agenda CRM', href: '/dashboard/crm', icon: Users, permission: 'view_crm' },
     { label: 'Campañas (Meta & Mail)', href: '/dashboard/campaigns', icon: BarChart3, permission: 'view_campaigns' },
-    { label: 'Prospectos B2B (Crawler)', href: '/dashboard/prospectos-b2b', icon: Building2, badgeText: 'CRAWLER VIVO', permission: 'view_crm' },
+    { label: 'Prospectos B2B (Crawler)', href: '/dashboard/prospectos-b2b', icon: Building2, badgeText: 'CRAWLER VIVO', permission: 'view_prospectos_b2b' },
   ];
 
   const rawConfigItem = { label: 'Configuración', href: '/dashboard/user', icon: Settings, permission: 'view_settings' };
@@ -197,6 +197,18 @@ export default function Sidebar() {
   const filterPerm = (item) => {
     if (isSuperAdmin) return true;
     if (!userPrivs) return true;
+    if (item.permission === 'view_prospectos_b2b') {
+      if (userPrivs.view_prospectos_b2b !== undefined) return Boolean(userPrivs.view_prospectos_b2b);
+      return userPrivs.view_crm !== false;
+    }
+    if (item.permission === 'view_media') {
+      if (userPrivs.view_media !== undefined) return Boolean(userPrivs.view_media);
+      return userPrivs.view_campaigns !== false;
+    }
+    if (item.permission === 'view_automation') {
+      if (userPrivs.view_automation !== undefined) return Boolean(userPrivs.view_automation);
+      return userPrivs.view_flows !== false;
+    }
     return userPrivs[item.permission] !== false;
   };
 

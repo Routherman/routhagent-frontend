@@ -19,10 +19,176 @@ import {
     Mail, 
     Lock,
     Eye,
-    Zap
+    Zap,
+    LayoutGrid,
+    MessageSquare,
+    Building2,
+    BarChart3,
+    FolderOpen,
+    Cpu,
+    GitFork,
+    Settings,
+    FileText
 } from 'lucide-react';
 import { API_URL } from '@/config/api';
 import { toast } from 'sonner';
+
+/**
+ * Catálogo maestro de todas las secciones del sistema Colaboratium / Routh Agent
+ */
+export const SECCIONES_SISTEMA = [
+    {
+        id: 'dashboard',
+        label: 'Dashboard / Métricas',
+        desc: 'Panel principal de estadísticas, ranking de puntos y KPIs en vivo.',
+        icon: LayoutGrid,
+        badge: 'General',
+        badgeColor: 'bg-gray-100 text-gray-700 border-gray-200',
+        canCrud: false, // Panel de estadísticas solo lectura
+    },
+    {
+        id: 'messages',
+        label: 'Chats & Conversaciones',
+        desc: 'Bandeja en vivo WhatsApp, handoff IA y respuestas a clientes.',
+        icon: MessageSquare,
+        badge: 'WhatsApp',
+        badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+        canCrud: true,
+    },
+    {
+        id: 'inbox',
+        label: 'Bandeja de Entrada (Gmail)',
+        desc: 'Lectura y despacho de correos electrónicos sincronizados con Google.',
+        icon: Mail,
+        badge: 'Email',
+        badgeColor: 'bg-rose-100 text-rose-800 border-rose-200',
+        canCrud: true,
+    },
+    {
+        id: 'calendar',
+        label: 'Calendario & Google Meet',
+        desc: 'Agenda comercial, turnos de Meet, webinars de inducción y eventos.',
+        icon: Calendar,
+        badge: 'Reuniones',
+        badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
+        canCrud: true,
+    },
+    {
+        id: 'tickets',
+        label: 'Tickets Helpdesk',
+        desc: 'Mesa de soporte, solicitudes internas, autorizaciones y trazabilidad.',
+        icon: Ticket,
+        badge: 'Soporte',
+        badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
+        canCrud: true,
+    },
+    {
+        id: 'crm',
+        label: 'Agenda CRM (Contactos & Asesores)',
+        desc: 'Fichas de clientes, inversores, asesores, jerarquías y datos bancarios.',
+        icon: Users,
+        badge: 'Comercial',
+        badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+        canCrud: true,
+    },
+    {
+        id: 'prospectos_b2b',
+        label: 'Prospectos B2B (Crawler Playwright)',
+        desc: 'Scraping autónomo de corredores inmobiliarios, filtros y prospección masiva.',
+        icon: Building2,
+        badge: 'CRAWLER VIVO',
+        badgeColor: 'bg-cyan-100 text-cyan-800 border-cyan-200',
+        canCrud: true,
+    },
+    {
+        id: 'campaigns',
+        label: 'Campañas Masivas (Meta & Email)',
+        desc: 'Envíos masivos por WhatsApp Cloud API y correos con plantillas oficiales.',
+        icon: BarChart3,
+        badge: 'Marketing',
+        badgeColor: 'bg-pink-100 text-pink-800 border-pink-200',
+        canCrud: true,
+    },
+    {
+        id: 'media',
+        label: 'Biblioteca de Medios',
+        desc: 'Subida, visualización y gestión de archivos, imágenes y catálogos PDF.',
+        icon: FolderOpen,
+        badge: 'Archivos',
+        badgeColor: 'bg-violet-100 text-violet-800 border-violet-200',
+        canCrud: true,
+    },
+    {
+        id: 'models',
+        label: 'Router Multi-IA',
+        desc: 'Modelos de lenguaje (Ollama, Groq, Cerebras, OpenRouter) y fallbacks.',
+        icon: Cpu,
+        badge: 'Inteligencia',
+        badgeColor: 'bg-teal-100 text-teal-800 border-teal-200',
+        canCrud: true,
+    },
+    {
+        id: 'automation',
+        label: 'Automatización & Skills',
+        desc: 'Disparadores automáticos, reglas de negocio y automatismos de sistema.',
+        icon: Zap,
+        badge: 'Reglas',
+        badgeColor: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+        canCrud: true,
+    },
+    {
+        id: 'flows',
+        label: 'Flujos del Bot',
+        desc: 'Diseñador visual de árboles conversacionales y nodos de respuesta.',
+        icon: GitFork,
+        badge: 'Bot Engine',
+        badgeColor: 'bg-orange-100 text-orange-800 border-orange-200',
+        canCrud: true,
+    },
+    {
+        id: 'roles',
+        label: 'Equipo & Roles',
+        desc: 'Administración de usuarios de la empresa, creación y edición de roles.',
+        icon: ShieldCheck,
+        badge: 'Seguridad',
+        badgeColor: 'bg-purple-100 text-purple-800 border-purple-200',
+        canCrud: true,
+    },
+    {
+        id: 'settings',
+        label: 'Configuración de Empresa & Perfil',
+        desc: 'Datos institucionales, vinculación de Meta Cloud API y credenciales.',
+        icon: Settings,
+        badge: 'Ajustes',
+        badgeColor: 'bg-slate-100 text-slate-800 border-slate-200',
+        canCrud: true,
+    }
+];
+
+export const getDefaultPrivs = (isSuper = false) => {
+    const privs = {};
+    SECCIONES_SISTEMA.forEach(sec => {
+        privs[`view_${sec.id}`] = isSuper ? true : ['dashboard', 'messages', 'inbox', 'calendar', 'tickets', 'crm', 'prospectos_b2b'].includes(sec.id);
+        if (sec.canCrud) {
+            privs[`create_${sec.id}`] = isSuper ? true : ['messages', 'crm', 'tickets', 'calendar', 'prospectos_b2b'].includes(sec.id);
+            privs[`edit_${sec.id}`] = isSuper ? true : ['messages', 'crm', 'tickets', 'calendar', 'prospectos_b2b'].includes(sec.id);
+            privs[`delete_${sec.id}`] = isSuper ? true : false;
+        }
+    });
+    // Flags heredados y operativos para compatibilidad
+    privs.manage_calendar_webinar = isSuper;
+    privs.manage_calendar_meet = isSuper;
+    privs.manage_calendar_events = isSuper;
+    privs.manage_contacts = isSuper;
+    privs.manage_tickets = isSuper;
+    privs.can_manage_users = isSuper;
+    privs.can_manage_roles = isSuper;
+    privs.can_manage_social = isSuper;
+    privs.can_edit_company = isSuper;
+    privs.can_access_support_chats = true;
+    privs.can_access_sales_chats = true;
+    return privs;
+};
 
 export default function Equipo({ userData, privilegios }) {
     const [usuarios, setUsuarios] = useState([]);
@@ -41,33 +207,7 @@ export default function Equipo({ userData, privilegios }) {
     const [editingRole, setEditingRole] = useState(null);
     const [roleForm, setRoleForm] = useState({
         nombre: '',
-        privilegios: {
-            // Vistas del Dashboard
-            view_dashboard: true,
-            view_messages: true,
-            view_inbox: true,
-            view_calendar: true,
-            view_tickets: true,
-            view_crm: true,
-            view_models: false,
-            view_campaigns: false,
-            view_flows: false,
-            view_roles: false,
-            view_settings: true,
-            // Alcance Operativo
-            manage_calendar_webinar: false,
-            manage_calendar_meet: false,
-            manage_calendar_events: false,
-            manage_contacts: true,
-            manage_tickets: true,
-            // Gestión de Sistema
-            can_manage_users: false,
-            can_manage_roles: false,
-            can_manage_social: false,
-            can_edit_company: false,
-            can_access_support_chats: true,
-            can_access_sales_chats: true
-        }
+        privilegios: getDefaultPrivs(false)
     });
 
     useEffect(() => {
@@ -159,6 +299,17 @@ export default function Equipo({ userData, privilegios }) {
         }
 
         try {
+            const payloadPrivs = { ...roleForm.privilegios };
+            // Sincronizar flags de compatibilidad
+            payloadPrivs.manage_contacts = Boolean(payloadPrivs.create_crm || payloadPrivs.edit_crm || payloadPrivs.delete_crm || payloadPrivs.manage_contacts);
+            payloadPrivs.manage_tickets = Boolean(payloadPrivs.create_tickets || payloadPrivs.edit_tickets || payloadPrivs.manage_tickets);
+            payloadPrivs.manage_calendar_events = Boolean(payloadPrivs.create_calendar || payloadPrivs.edit_calendar || payloadPrivs.delete_calendar || payloadPrivs.manage_calendar_events);
+
+            const payload = {
+                nombre: roleForm.nombre,
+                privilegios: payloadPrivs
+            };
+
             let res;
             if (editingRole) {
                 res = await fetch(`${API_URL}/empresas/${userData.codigo_empresa}/roles/${editingRole.id}`, {
@@ -167,7 +318,7 @@ export default function Equipo({ userData, privilegios }) {
                         'Content-Type': 'application/json',
                         'ngrok-skip-browser-warning': 'true'
                     },
-                    body: JSON.stringify(roleForm)
+                    body: JSON.stringify(payload)
                 });
             } else {
                 res = await fetch(`${API_URL}/empresas/${userData.codigo_empresa}/roles`, {
@@ -176,7 +327,7 @@ export default function Equipo({ userData, privilegios }) {
                         'Content-Type': 'application/json',
                         'ngrok-skip-browser-warning': 'true'
                     },
-                    body: JSON.stringify(roleForm)
+                    body: JSON.stringify(payload)
                 });
             }
             const data = await res.json();
@@ -226,71 +377,164 @@ export default function Equipo({ userData, privilegios }) {
         if (role) {
             setEditingRole(role);
             let privs = typeof role.privilegios === 'string' ? JSON.parse(role.privilegios) : (role.privilegios || {});
+            const merged = getDefaultPrivs(role.is_system);
+
+            SECCIONES_SISTEMA.forEach(sec => {
+                const vKey = `view_${sec.id}`;
+                if (privs[vKey] !== undefined) {
+                    merged[vKey] = Boolean(privs[vKey]);
+                } else if (sec.id === 'prospectos_b2b') {
+                    merged[vKey] = privs.view_crm !== undefined ? Boolean(privs.view_crm) : false;
+                } else if (sec.id === 'media') {
+                    merged[vKey] = privs.view_campaigns !== undefined ? Boolean(privs.view_campaigns) : false;
+                } else if (sec.id === 'automation') {
+                    merged[vKey] = privs.view_flows !== undefined ? Boolean(privs.view_flows) : false;
+                }
+
+                if (sec.canCrud) {
+                    const cKey = `create_${sec.id}`;
+                    const eKey = `edit_${sec.id}`;
+                    const dKey = `delete_${sec.id}`;
+
+                    if (privs[cKey] !== undefined) merged[cKey] = Boolean(privs[cKey]);
+                    else if (sec.id === 'crm') merged[cKey] = Boolean(privs.manage_contacts ?? true);
+                    else if (sec.id === 'tickets') merged[cKey] = Boolean(privs.manage_tickets ?? true);
+                    else if (sec.id === 'calendar') merged[cKey] = Boolean(privs.manage_calendar_events || privs.manage_calendar_meet || privs.manage_calendar_webinar);
+
+                    if (privs[eKey] !== undefined) merged[eKey] = Boolean(privs[eKey]);
+                    else if (sec.id === 'crm') merged[eKey] = Boolean(privs.manage_contacts ?? true);
+                    else if (sec.id === 'tickets') merged[eKey] = Boolean(privs.manage_tickets ?? true);
+                    else if (sec.id === 'calendar') merged[eKey] = Boolean(privs.manage_calendar_events);
+
+                    if (privs[dKey] !== undefined) merged[dKey] = Boolean(privs[dKey]);
+                    else if (sec.id === 'crm') merged[dKey] = Boolean(privs.manage_contacts && role.is_system);
+                    else if (sec.id === 'tickets') merged[dKey] = false;
+                }
+            });
+
+            // Legacy & Administrative flags
+            merged.manage_calendar_webinar = privs.manage_calendar_webinar ?? false;
+            merged.manage_calendar_meet = privs.manage_calendar_meet ?? false;
+            merged.manage_calendar_events = privs.manage_calendar_events ?? false;
+            merged.manage_contacts = privs.manage_contacts ?? false;
+            merged.manage_tickets = privs.manage_tickets ?? false;
+            merged.can_manage_users = privs.can_manage_users ?? false;
+            merged.can_manage_roles = privs.can_manage_roles ?? false;
+            merged.can_manage_social = privs.can_manage_social ?? false;
+            merged.can_edit_company = privs.can_edit_company ?? false;
+            merged.can_access_support_chats = privs.can_access_support_chats ?? true;
+            merged.can_access_sales_chats = privs.can_access_sales_chats ?? true;
+
             setRoleForm({
                 nombre: role.nombre,
-                privilegios: {
-                    view_dashboard: privs.view_dashboard ?? true,
-                    view_messages: privs.view_messages ?? true,
-                    view_inbox: privs.view_inbox ?? true,
-                    view_calendar: privs.view_calendar ?? true,
-                    view_tickets: privs.view_tickets ?? true,
-                    view_crm: privs.view_crm ?? true,
-                    view_models: privs.view_models ?? false,
-                    view_campaigns: privs.view_campaigns ?? false,
-                    view_flows: privs.view_flows ?? false,
-                    view_roles: privs.view_roles ?? false,
-                    view_settings: privs.view_settings ?? true,
-                    manage_calendar_webinar: privs.manage_calendar_webinar ?? false,
-                    manage_calendar_meet: privs.manage_calendar_meet ?? false,
-                    manage_calendar_events: privs.manage_calendar_events ?? false,
-                    manage_contacts: privs.manage_contacts ?? true,
-                    manage_tickets: privs.manage_tickets ?? true,
-                    can_manage_users: privs.can_manage_users ?? false,
-                    can_manage_roles: privs.can_manage_roles ?? false,
-                    can_manage_social: privs.can_manage_social ?? false,
-                    can_edit_company: privs.can_edit_company ?? false,
-                    can_access_support_chats: privs.can_access_support_chats ?? true,
-                    can_access_sales_chats: privs.can_access_sales_chats ?? true,
-                }
+                privilegios: merged
             });
         } else {
             setEditingRole(null);
             setRoleForm({
                 nombre: '',
-                privilegios: {
-                    view_dashboard: true,
-                    view_messages: true,
-                    view_inbox: true,
-                    view_calendar: true,
-                    view_tickets: true,
-                    view_crm: true,
-                    view_models: false,
-                    view_campaigns: false,
-                    view_flows: false,
-                    view_roles: false,
-                    view_settings: true,
-                    manage_calendar_webinar: false,
-                    manage_calendar_meet: false,
-                    manage_calendar_events: false,
-                    manage_contacts: true,
-                    manage_tickets: true,
-                    can_manage_users: false,
-                    can_manage_roles: false,
-                    can_manage_social: false,
-                    can_edit_company: false,
-                    can_access_support_chats: true,
-                    can_access_sales_chats: true
-                }
+                privilegios: getDefaultPrivs(false)
             });
         }
         setShowRoleForm(true);
     };
 
-    const toggleAllPrivs = (value) => {
-        const updated = {};
-        Object.keys(roleForm.privilegios).forEach(k => {
-            updated[k] = value;
+    const setAllViews = (value) => {
+        const updated = { ...roleForm.privilegios };
+        SECCIONES_SISTEMA.forEach(sec => {
+            updated[`view_${sec.id}`] = value;
+            if (!value && sec.canCrud) {
+                updated[`create_${sec.id}`] = false;
+                updated[`edit_${sec.id}`] = false;
+                updated[`delete_${sec.id}`] = false;
+            }
         });
+        setRoleForm(prev => ({ ...prev, privilegios: updated }));
+    };
+
+    const setAllCrud = (value) => {
+        const updated = { ...roleForm.privilegios };
+        SECCIONES_SISTEMA.forEach(sec => {
+            if (sec.canCrud) {
+                updated[`create_${sec.id}`] = value;
+                updated[`edit_${sec.id}`] = value;
+                updated[`delete_${sec.id}`] = value;
+                if (value) updated[`view_${sec.id}`] = true;
+            }
+        });
+        setRoleForm(prev => ({ ...prev, privilegios: updated }));
+    };
+
+    const setReadOnly = () => {
+        const updated = { ...roleForm.privilegios };
+        SECCIONES_SISTEMA.forEach(sec => {
+            updated[`view_${sec.id}`] = true;
+            if (sec.canCrud) {
+                updated[`create_${sec.id}`] = false;
+                updated[`edit_${sec.id}`] = false;
+                updated[`delete_${sec.id}`] = false;
+            }
+        });
+        setRoleForm(prev => ({ ...prev, privilegios: updated }));
+    };
+
+    const toggleRowView = (secId, val) => {
+        const updated = { ...roleForm.privilegios };
+        updated[`view_${secId}`] = val;
+        if (!val) {
+            updated[`create_${secId}`] = false;
+            updated[`edit_${secId}`] = false;
+            updated[`delete_${secId}`] = false;
+        }
+        setRoleForm(prev => ({ ...prev, privilegios: updated }));
+    };
+
+    const toggleRowCrud = (secId, action, val) => {
+        const updated = { ...roleForm.privilegios };
+        updated[`${action}_${secId}`] = val;
+        if (val) {
+            updated[`view_${secId}`] = true;
+        }
+        setRoleForm(prev => ({ ...prev, privilegios: updated }));
+    };
+
+    const toggleAllPrivs = (value) => {
+        const updated = { ...roleForm.privilegios };
+        SECCIONES_SISTEMA.forEach(sec => {
+            updated[`view_${sec.id}`] = value;
+            if (sec.canCrud) {
+                updated[`create_${sec.id}`] = value;
+                updated[`edit_${sec.id}`] = value;
+                updated[`delete_${sec.id}`] = value;
+            }
+        });
+        updated.can_edit_company = value;
+        updated.can_manage_social = value;
+        updated.can_manage_users = value;
+        updated.can_manage_roles = value;
+        updated.can_access_support_chats = value;
+        updated.can_access_sales_chats = value;
+        updated.manage_calendar_webinar = value;
+        updated.manage_calendar_meet = value;
+        updated.manage_calendar_events = value;
+        updated.manage_contacts = value;
+        updated.manage_tickets = value;
+        setRoleForm(prev => ({ ...prev, privilegios: updated }));
+    };
+
+    const setOperatorMode = () => {
+        const updated = { ...roleForm.privilegios };
+        SECCIONES_SISTEMA.forEach(sec => {
+            updated[`view_${sec.id}`] = true;
+            if (sec.canCrud) {
+                updated[`create_${sec.id}`] = true;
+                updated[`edit_${sec.id}`] = true;
+                updated[`delete_${sec.id}`] = false;
+            }
+        });
+        updated.manage_contacts = true;
+        updated.manage_tickets = true;
+        updated.manage_calendar_events = true;
         setRoleForm(prev => ({ ...prev, privilegios: updated }));
     };
 
@@ -495,9 +739,23 @@ export default function Equipo({ userData, privilegios }) {
                                 const privs = typeof rol.privilegios === 'string' ? JSON.parse(rol.privilegios) : (rol.privilegios || {});
                                 const isSuper = ['master', 'main'].includes(rol.nombre.toLowerCase());
 
-                                // Contar vistas autorizadas
-                                const viewKeys = ['view_dashboard', 'view_messages', 'view_inbox', 'view_calendar', 'view_tickets', 'view_crm', 'view_models', 'view_campaigns', 'view_flows', 'view_settings'];
-                                const allowedViews = viewKeys.filter(k => isSuper || privs[k] === true);
+                                // Secciones visibles autorizadas
+                                const allowedSections = SECCIONES_SISTEMA.filter(sec => {
+                                    if (isSuper) return true;
+                                    if (privs[`view_${sec.id}`] !== undefined) return Boolean(privs[`view_${sec.id}`]);
+                                    if (sec.id === 'prospectos_b2b') return Boolean(privs.view_crm ?? true);
+                                    return ['dashboard', 'messages', 'inbox', 'calendar', 'tickets', 'crm'].includes(sec.id);
+                                });
+
+                                // Conteo de permisos CRUD activos
+                                const crudPermissionsCount = SECCIONES_SISTEMA.filter(sec => sec.canCrud).reduce((acc, sec) => {
+                                    let c = 0;
+                                    if (isSuper || privs[`create_${sec.id}`]) c++;
+                                    if (isSuper || privs[`edit_${sec.id}`]) c++;
+                                    if (isSuper || privs[`delete_${sec.id}`]) c++;
+                                    return acc + c;
+                                }, 0);
+                                const maxCrudPossible = SECCIONES_SISTEMA.filter(sec => sec.canCrud).length * 3;
 
                                 return (
                                     <div key={rol.id} className="border border-gray-200/80 rounded-3xl p-5 hover:shadow-lg transition-all bg-white flex flex-col justify-between">
@@ -578,23 +836,33 @@ export default function Equipo({ userData, privilegios }) {
                                                         Vistas en Dashboard
                                                     </span>
                                                     <span className="text-[10px] font-bold text-gray-500 font-mono">
-                                                        {isSuper ? 'Todas (10)' : `${allowedViews.length} visibles`}
+                                                        {isSuper ? `Todas (${SECCIONES_SISTEMA.length})` : `${allowedSections.length} de ${SECCIONES_SISTEMA.length} visibles`}
                                                     </span>
                                                 </div>
                                                 <div className="flex flex-wrap gap-1">
                                                     {isSuper ? (
-                                                        <span className="px-2 py-0.5 bg-gray-100 text-gray-800 text-[10px] font-bold rounded-md">
-                                                            Acceso a Todas las Secciones
+                                                        <span className="px-2 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-black rounded-md">
+                                                            Acceso Total a las 14 Secciones
                                                         </span>
-                                                    ) : allowedViews.length === 0 ? (
+                                                    ) : allowedSections.length === 0 ? (
                                                         <span className="text-[11px] text-gray-400 italic">Sin secciones asignadas</span>
                                                     ) : (
-                                                        allowedViews.map(k => (
-                                                            <span key={k} className="px-1.5 py-0.5 bg-gray-100 text-gray-700 text-[9px] font-bold rounded">
-                                                                {k.replace('view_', '')}
+                                                        allowedSections.map(sec => (
+                                                            <span key={sec.id} className="px-1.5 py-0.5 bg-gray-100 text-gray-800 text-[10px] font-bold rounded border border-gray-200/70 flex items-center gap-1">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                                {sec.label.split('(')[0].trim()}
                                                             </span>
                                                         ))
                                                     )}
+                                                </div>
+                                                <div className="mt-2.5 flex items-center justify-between text-[10px] font-semibold text-gray-500 bg-gray-50/80 px-2.5 py-1.5 rounded-xl border border-gray-100">
+                                                    <span className="flex items-center gap-1 text-gray-700 font-bold">
+                                                        <Zap className="w-3 h-3 text-indigo-500" />
+                                                        Permisos CRUD:
+                                                    </span>
+                                                    <span className="font-mono font-bold text-gray-900">
+                                                        {isSuper ? 'Crear, Modificar y Borrar (Full)' : `${crudPermissionsCount} / ${maxCrudPossible} activos`}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
@@ -629,22 +897,52 @@ export default function Equipo({ userData, privilegios }) {
                                     Define el alcance operativo y qué secciones del dashboard puede ver o no este rol.
                                 </p>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                                 <button 
+                                    type="button"
                                     onClick={() => toggleAllPrivs(true)} 
-                                    className="px-2.5 py-1 bg-white hover:bg-gray-100 border border-gray-200 rounded-xl text-[11px] font-bold text-gray-700"
+                                    className="px-2.5 py-1.5 bg-black hover:bg-gray-800 text-white rounded-xl text-[11px] font-black shadow-xs flex items-center gap-1.5 transition"
+                                    title="Activar vistas y permisos CRUD en todas las secciones"
                                 >
-                                    Marcar Todo
+                                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                                    ⚡ Full Admin (Todo)
                                 </button>
                                 <button 
+                                    type="button"
+                                    onClick={() => setAllViews(true)} 
+                                    className="px-2.5 py-1.5 bg-white hover:bg-gray-100 border border-gray-200 rounded-xl text-[11px] font-bold text-gray-700 shadow-2xs transition"
+                                    title="Habilitar todas las vistas de menú"
+                                >
+                                    👁️ Todas las Vistas
+                                </button>
+                                <button 
+                                    type="button"
+                                    onClick={setOperatorMode} 
+                                    className="px-2.5 py-1.5 bg-white hover:bg-gray-100 border border-gray-200 rounded-xl text-[11px] font-bold text-indigo-700 shadow-2xs transition"
+                                    title="Vistas habilitadas + Crear y Modificar (sin borrar)"
+                                >
+                                    ✏️ Operador (Crear + Modificar)
+                                </button>
+                                <button 
+                                    type="button"
+                                    onClick={setReadOnly} 
+                                    className="px-2.5 py-1.5 bg-white hover:bg-gray-100 border border-gray-200 rounded-xl text-[11px] font-bold text-gray-700 shadow-2xs transition"
+                                    title="Solo ver secciones sin permiso CRUD"
+                                >
+                                    🔒 Solo Lectura
+                                </button>
+                                <button 
+                                    type="button"
                                     onClick={() => toggleAllPrivs(false)} 
-                                    className="px-2.5 py-1 bg-white hover:bg-gray-100 border border-gray-200 rounded-xl text-[11px] font-bold text-gray-700"
+                                    className="px-2.5 py-1.5 bg-white hover:bg-red-50 border border-gray-200 rounded-xl text-[11px] font-bold text-red-600 transition"
+                                    title="Desmarcar todas las secciones y permisos"
                                 >
-                                    Desmarcar
+                                    ❌ Desmarcar
                                 </button>
                                 <button 
+                                    type="button"
                                     onClick={() => setShowRoleForm(false)} 
-                                    className="p-1.5 rounded-xl hover:bg-gray-200 text-gray-500 transition"
+                                    className="p-1.5 rounded-xl hover:bg-gray-200 text-gray-500 transition ml-1"
                                 >
                                     <X className="w-5 h-5" />
                                 </button>
@@ -670,61 +968,203 @@ export default function Equipo({ userData, privilegios }) {
                                 )}
                             </div>
 
-                            {/* 1. SECCIONES VISIBLES DEL DASHBOARD */}
-                            <div className="p-5 bg-white rounded-2xl border border-gray-200/80">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <Eye className="w-4 h-4 text-indigo-600" />
-                                    <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider">
-                                        1. Vistas Autorizadas del Dashboard (Ver o NO cada sección)
-                                    </h4>
+                            {/* 1. MATRIZ DE PERMISOS POR SECCIÓN (TODAS LAS SECCIONES CRUD) */}
+                            <div className="p-6 bg-white rounded-3xl border border-gray-200/90 shadow-xs">
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4 pb-3 border-b border-gray-100">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-7 h-7 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
+                                                <Eye className="w-4 h-4" />
+                                            </div>
+                                            <h4 className="text-sm font-black text-gray-900 uppercase tracking-wider">
+                                                1. Matriz de Permisos por Sección ({SECCIONES_SISTEMA.length} Módulos del Sistema)
+                                            </h4>
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Configura qué secciones ve el rol en el sidebar y sus facultades operativas: <b>Mostrar (Vista)</b>, <b>Crear</b>, <b>Modificar</b> y <b>Borrar</b>.
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[11px]">
+                                        <span className="text-gray-400 font-medium">Atajos rápidos:</span>
+                                        <button 
+                                            type="button"
+                                            onClick={() => setAllCrud(true)} 
+                                            className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold rounded-lg hover:bg-emerald-100 transition"
+                                        >
+                                            + Todo CRUD
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            onClick={setReadOnly} 
+                                            className="px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 font-bold rounded-lg hover:bg-amber-100 transition"
+                                        >
+                                            Sin CRUD (Solo Ver)
+                                        </button>
+                                    </div>
                                 </div>
-                                <p className="text-[11px] text-gray-500 mb-4">
-                                    Las secciones desmarcadas quedarán ocultas en el sidebar para los usuarios asignados a este rol.
-                                </p>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                    {[
-                                        { key: 'view_dashboard', label: 'Dashboard / Métricas' },
-                                        { key: 'view_messages', label: 'Chats & Conversaciones' },
-                                        { key: 'view_inbox', label: 'Bandeja de Entrada (Gmail)' },
-                                        { key: 'view_calendar', label: 'Calendario & Google Meet' },
-                                        { key: 'view_tickets', label: 'Tickets Helpdesk' },
-                                        { key: 'view_crm', label: 'Agenda CRM (Contactos)' },
-                                        { key: 'view_models', label: 'Router Multi-IA' },
-                                        { key: 'view_campaigns', label: 'Campañas Masivas' },
-                                        { key: 'view_flows', label: 'Flujos del Bot' },
-                                        { key: 'view_settings', label: 'Configuración General' },
-                                    ].map(item => (
-                                        <label key={item.key} className="flex items-center gap-2.5 p-3 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-gray-100 cursor-pointer transition">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={roleForm.privilegios[item.key] || false}
-                                                onChange={e => setRoleForm({
-                                                    ...roleForm,
-                                                    privilegios: { ...roleForm.privilegios, [item.key]: e.target.checked }
-                                                })}
-                                                className="w-4 h-4 text-black focus:ring-black rounded border-gray-300"
-                                            />
-                                            <span className="text-xs font-bold text-gray-800">{item.label}</span>
-                                        </label>
-                                    ))}
+
+                                {/* Tabla / Matriz CRUD */}
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse min-w-[700px]">
+                                        <thead>
+                                            <tr className="border-b border-gray-200 text-[11px] font-black text-gray-500 uppercase tracking-wider bg-gray-50/70 rounded-xl">
+                                                <th className="py-3 px-4 rounded-l-xl">Módulo / Sección</th>
+                                                <th className="py-3 px-3 text-center">
+                                                    <div className="inline-flex items-center gap-1.5 text-indigo-700 font-black">
+                                                        <Eye className="w-3.5 h-3.5" />
+                                                        <span>Mostrar</span>
+                                                    </div>
+                                                </th>
+                                                <th className="py-3 px-3 text-center">
+                                                    <div className="inline-flex items-center gap-1.5 text-emerald-700 font-black">
+                                                        <Plus className="w-3.5 h-3.5" />
+                                                        <span>Crear</span>
+                                                    </div>
+                                                </th>
+                                                <th className="py-3 px-3 text-center">
+                                                    <div className="inline-flex items-center gap-1.5 text-amber-700 font-black">
+                                                        <Edit2 className="w-3.5 h-3.5" />
+                                                        <span>Modificar</span>
+                                                    </div>
+                                                </th>
+                                                <th className="py-3 px-3 text-center rounded-r-xl">
+                                                    <div className="inline-flex items-center gap-1.5 text-rose-700 font-black">
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                        <span>Borrar</span>
+                                                    </div>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100">
+                                            {SECCIONES_SISTEMA.map(sec => {
+                                                const IconComponent = sec.icon || LayoutGrid;
+                                                const isVisible = Boolean(roleForm.privilegios[`view_${sec.id}`]);
+                                                const canCreate = Boolean(roleForm.privilegios[`create_${sec.id}`]);
+                                                const canEdit = Boolean(roleForm.privilegios[`edit_${sec.id}`]);
+                                                const canDelete = Boolean(roleForm.privilegios[`delete_${sec.id}`]);
+
+                                                return (
+                                                    <tr 
+                                                        key={sec.id} 
+                                                        className={`transition-colors ${
+                                                            isVisible ? 'hover:bg-indigo-50/20' : 'bg-gray-50/40 opacity-70 hover:opacity-100'
+                                                        }`}
+                                                    >
+                                                        {/* Info del Módulo */}
+                                                        <td className="py-3.5 px-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+                                                                    isVisible ? sec.badgeColor : 'bg-gray-100 text-gray-400 border-gray-200'
+                                                                }`}>
+                                                                    <IconComponent className="w-4 h-4" />
+                                                                </div>
+                                                                <div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="font-extrabold text-xs text-gray-900 block">
+                                                                            {sec.label}
+                                                                        </span>
+                                                                        <span className={`px-2 py-0.2 rounded-full text-[9px] font-black tracking-wide border ${sec.badgeColor}`}>
+                                                                            {sec.badge}
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-[11px] text-gray-400 font-medium line-clamp-1">
+                                                                        {sec.desc}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+
+                                                        {/* 1. MOSTRAR */}
+                                                        <td className="py-3.5 px-3 text-center">
+                                                            <label className="inline-flex items-center justify-center cursor-pointer p-1">
+                                                                <input 
+                                                                    type="checkbox" 
+                                                                    checked={isVisible}
+                                                                    onChange={e => toggleRowView(sec.id, e.target.checked)}
+                                                                    className="w-5 h-5 rounded-lg border-2 border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                                                />
+                                                            </label>
+                                                        </td>
+
+                                                        {/* 2. CREAR */}
+                                                        <td className="py-3.5 px-3 text-center">
+                                                            {sec.canCrud ? (
+                                                                <label className={`inline-flex items-center justify-center p-1 ${
+                                                                    !isVisible ? 'cursor-not-allowed opacity-30' : 'cursor-pointer'
+                                                                }`}>
+                                                                    <input 
+                                                                        type="checkbox" 
+                                                                        disabled={!isVisible}
+                                                                        checked={canCreate}
+                                                                        onChange={e => toggleRowCrud(sec.id, 'create', e.target.checked)}
+                                                                        className="w-5 h-5 rounded-lg border-2 border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer disabled:cursor-not-allowed"
+                                                                    />
+                                                                </label>
+                                                            ) : (
+                                                                <span className="text-[10px] text-gray-400 font-bold italic">—</span>
+                                                            )}
+                                                        </td>
+
+                                                        {/* 3. MODIFICAR */}
+                                                        <td className="py-3.5 px-3 text-center">
+                                                            {sec.canCrud ? (
+                                                                <label className={`inline-flex items-center justify-center p-1 ${
+                                                                    !isVisible ? 'cursor-not-allowed opacity-30' : 'cursor-pointer'
+                                                                }`}>
+                                                                    <input 
+                                                                        type="checkbox" 
+                                                                        disabled={!isVisible}
+                                                                        checked={canEdit}
+                                                                        onChange={e => toggleRowCrud(sec.id, 'edit', e.target.checked)}
+                                                                        className="w-5 h-5 rounded-lg border-2 border-gray-300 text-amber-600 focus:ring-amber-500 cursor-pointer disabled:cursor-not-allowed"
+                                                                    />
+                                                                </label>
+                                                            ) : (
+                                                                <span className="text-[10px] text-gray-400 font-bold italic">—</span>
+                                                            )}
+                                                        </td>
+
+                                                        {/* 4. BORRAR */}
+                                                        <td className="py-3.5 px-3 text-center">
+                                                            {sec.canCrud ? (
+                                                                <label className={`inline-flex items-center justify-center p-1 ${
+                                                                    !isVisible ? 'cursor-not-allowed opacity-30' : 'cursor-pointer'
+                                                                }`}>
+                                                                    <input 
+                                                                        type="checkbox" 
+                                                                        disabled={!isVisible}
+                                                                        checked={canDelete}
+                                                                        onChange={e => toggleRowCrud(sec.id, 'delete', e.target.checked)}
+                                                                        className="w-5 h-5 rounded-lg border-2 border-gray-300 text-rose-600 focus:ring-rose-500 cursor-pointer disabled:cursor-not-allowed"
+                                                                    />
+                                                                </label>
+                                                            ) : (
+                                                                <span className="text-[10px] text-gray-400 font-bold italic">—</span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
 
-                            {/* 2. ALCANCE OPERATIVO */}
+                            {/* 2. ALCANCE OPERATIVO ESPECÍFICO */}
                             <div className="p-5 bg-white rounded-2xl border border-gray-200/80">
-                                <div className="flex items-center gap-2 mb-3">
+                                <div className="flex items-center gap-2 mb-2">
                                     <Zap className="w-4 h-4 text-amber-600" />
                                     <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider">
-                                        2. Alcance Operativo & Acciones de Calendario / CRM
+                                        2. Alcance Operativo Específico de Reuniones & Inducción
                                     </h4>
                                 </div>
+                                <p className="text-[11px] text-gray-500 mb-3">
+                                    Permisos específicos para la emisión de capacitaciones por Webinar y reuniones de Google Meet con clientes e inversores.
+                                </p>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     {[
                                         { key: 'manage_calendar_webinar', label: 'Crear Webinars para Capacitar Asesores (Líderes de Equipo)' },
                                         { key: 'manage_calendar_meet', label: 'Crear Reuniones Google Meet con Inversores (Asesores)' },
-                                        { key: 'manage_calendar_events', label: 'Crear, Modificar y Borrar Eventos de Calendario' },
-                                        { key: 'manage_contacts', label: 'Crear, Modificar y Borrar Contactos (Agenda CRM)' },
-                                        { key: 'manage_tickets', label: 'Modificar, Autorizar y Delegar Tickets Helpdesk' },
                                     ].map(item => (
                                         <label key={item.key} className="flex items-center gap-2.5 p-3 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-gray-100 cursor-pointer transition">
                                             <input 
