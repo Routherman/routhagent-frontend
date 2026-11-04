@@ -60,7 +60,7 @@ export default function CreateAccountPage() {
         setLoading(true);
         setError(null);
         try {
-            const payload = { clerkId: user.id, codigo };
+            const payload = { clerkId: user.id, codigo: (codigo || '').trim().toUpperCase() };
             const res = await fetch(`${API_URL}/empresas/join`, {
                 method: 'POST',
                 headers: { 

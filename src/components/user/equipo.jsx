@@ -133,7 +133,7 @@ export default function Equipo({ userData, privilegios }) {
                     'Content-Type': 'application/json',
                     'ngrok-skip-browser-warning': 'true'
                 },
-                body: JSON.stringify({ rolId })
+                body: JSON.stringify({ rolId: rolId === '' ? null : rolId })
             });
             const data = await res.json();
             if (data.success) {
@@ -419,8 +419,9 @@ export default function Equipo({ userData, privilegios }) {
                                                     value={u.rol_id || ''} 
                                                     onChange={(e) => handleAssignRole(u.id, e.target.value)}
                                                     disabled={!isMasterOrMain || u.id === userData.id}
-                                                    className="bg-gray-50 hover:bg-white border border-gray-200 text-gray-900 text-xs font-bold rounded-xl focus:ring-2 focus:ring-black outline-none block w-full p-2.5 transition shadow-2xs disabled:opacity-60 disabled:cursor-not-allowed"
+                                                    className={`border text-xs font-bold rounded-xl focus:ring-2 focus:ring-black outline-none block w-full p-2.5 transition shadow-2xs disabled:opacity-60 disabled:cursor-not-allowed ${!u.rol_id ? 'border-amber-300 bg-amber-50/60 text-amber-900' : 'bg-gray-50 hover:bg-white border-gray-200 text-gray-900'}`}
                                                 >
+                                                    <option value="" className="text-gray-500 font-medium">-- Sin Rol Asignado (Pendiente) --</option>
                                                     {roles.map(r => (
                                                         <option key={r.id} value={r.id}>
                                                             {r.nombre} {r.is_system ? '(Sistema)' : ''}
@@ -430,28 +431,36 @@ export default function Equipo({ userData, privilegios }) {
                                             </td>
                                             <td className="py-4 px-4">
                                                 <div className="flex flex-wrap gap-1">
-                                                    {isSysAdmin && (
-                                                        <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-purple-100 text-purple-800">
-                                                            Control Total
+                                                    {!uRol ? (
+                                                        <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1">
+                                                            ⚠️ Pendiente de Asignación
                                                         </span>
-                                                    )}
-                                                    {isLead && (
-                                                        <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-100 text-amber-800 flex items-center gap-1">
-                                                            <Calendar className="w-2.5 h-2.5" /> Webinars
-                                                        </span>
-                                                    )}
-                                                    {isAdv && (
-                                                        <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-blue-100 text-blue-800 flex items-center gap-1">
-                                                            <Video className="w-2.5 h-2.5" /> Google Meet
-                                                        </span>
-                                                    )}
-                                                    {isInv && (
-                                                        <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-100 text-emerald-800">
-                                                            Inversor
-                                                        </span>
-                                                    )}
-                                                    {!isSysAdmin && !isLead && !isAdv && !isInv && (
-                                                        <span className="text-[11px] text-gray-400 italic">Operativo Estándar</span>
+                                                    ) : (
+                                                        <>
+                                                            {isSysAdmin && (
+                                                                <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-purple-100 text-purple-800">
+                                                                    Control Total
+                                                                </span>
+                                                            )}
+                                                            {isLead && (
+                                                                <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-100 text-amber-800 flex items-center gap-1">
+                                                                    <Calendar className="w-2.5 h-2.5" /> Webinars
+                                                                </span>
+                                                            )}
+                                                            {isAdv && (
+                                                                <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-blue-100 text-blue-800 flex items-center gap-1">
+                                                                    <Video className="w-2.5 h-2.5" /> Google Meet
+                                                                </span>
+                                                            )}
+                                                            {isInv && (
+                                                                <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-100 text-emerald-800">
+                                                                    Inversor
+                                                                </span>
+                                                            )}
+                                                            {!isSysAdmin && !isLead && !isAdv && !isInv && (
+                                                                <span className="text-[11px] text-gray-400 italic">Operativo Estándar</span>
+                                                            )}
+                                                        </>
                                                     )}
                                                 </div>
                                             </td>
