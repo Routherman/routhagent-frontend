@@ -125,8 +125,17 @@ export default function Configurations() {
         </div>
 
         {/* Clerk UserProfile component embedded */}
-        <div className="w-full overflow-hidden flex justify-center [&_.cl-rootBox]:w-full [&_.cl-card]:w-full [&_.cl-card]:shadow-none [&_.cl-card]:border [&_.cl-card]:border-gray-100 dark:[&_.cl-card]:border-white/10 [&_.cl-card]:rounded-2xl">
-          <UserProfile routing="hash" />
+        <div className="w-full overflow-hidden flex justify-center">
+          <UserProfile 
+            routing="hash"
+            appearance={{
+              elements: {
+                rootBox: "w-full",
+                card: "w-full shadow-none border border-gray-100 dark:border-white/10 rounded-2xl",
+                navbar: "border-r border-gray-100 dark:border-white/10"
+              }
+            }}
+          />
         </div>
       </div>
 

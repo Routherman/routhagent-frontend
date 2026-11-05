@@ -42,6 +42,7 @@ export default function TicketsPage() {
   const [currentUserData, setCurrentUserData] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [teamUsers, setTeamUsers] = useState([]);
+  const [availableRoles, setAvailableRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -108,29 +109,36 @@ export default function TicketsPage() {
     }
   }, [isLoaded, user]);
 
-  // 2. Cargar tickets y usuarios del equipo
+  // 2. Cargar tickets, roles y usuarios del equipo
   const fetchTickets = async () => {
     if (!codigoEmpresa) return;
     try {
       setLoading(true);
       const roleParam = (currentUserData?.rol_nombre ? `role=${encodeURIComponent(currentUserData.rol_nombre)}&user_id=${currentUserData.id}` : '') + (user?.id ? `&clerkId=${user.id}` : '');
-      const [tRes, uRes] = await Promise.all([
+      const [tRes, uRes, rRes] = await Promise.all([
         fetch(`${API_URL}/empresas/${codigoEmpresa}/tickets?${roleParam}`, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         }),
         fetch(`${API_URL}/empresas/${codigoEmpresa}/users`, {
+          headers: { 'ngrok-skip-browser-warning': 'true' }
+        }),
+        fetch(`${API_URL}/empresas/${codigoEmpresa}/roles`, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         })
       ]);
 
       const tData = await tRes.json();
       const uData = await uRes.json();
+      const rData = await rRes.json();
 
       if (tData.success) {
         setTickets(Array.isArray(tData.tickets) ? tData.tickets : []);
       }
       if (Array.isArray(uData)) {
         setTeamUsers(uData);
+      }
+      if (Array.isArray(rData)) {
+        setAvailableRoles(rData);
       }
     } catch (err) {
       console.error('Error fetching tickets or users:', err);
@@ -702,7 +710,7 @@ export default function TicketsPage() {
                           {ticket.phone || ticket.customer_number}
                         </span>
 
-                        {ticket.assigned_to_name && (
+                        {ticket.assigned_to_name ? (
                           <>
                             <span className="text-gray-300">•</span>
                             <span 
@@ -712,6 +720,18 @@ export default function TicketsPage() {
                             >
                               <UserCheck className="w-3 h-3" />
                               {ticket.assigned_to_name}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-gray-300">•</span>
+                            <span 
+                              onClick={() => handleOpenDelegate(ticket)}
+                              className="cursor-pointer inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition"
+                              title="Hacé clic para asignar a un rol o usuario"
+                            >
+                              <Share2 className="w-3 h-3 text-amber-600" />
+                              Sin Asignar (Delegar)
                             </span>
                           </>
                         )}
@@ -1072,34 +1092,68 @@ export default function TicketsPage() {
 
                 <form onSubmit={handleConfirmDelegate} className="mt-4 space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Asignar a Asesor / Líder del Equipo</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Asignar a Rol del Sistema, Mesa o Usuario
+                    </label>
                     <select
                       value={delegateTarget.assigned_to_name}
                       onChange={(e) => {
-                        const selName = e.target.value;
-                        const foundUser = teamUsers.find(u => `${u.first_name} ${u.last_name || ''}`.trim() === selName || u.email === selName);
+                        const selVal = e.target.value;
+                        if (!selVal) {
+                          setDelegateTarget({
+                            ...delegateTarget,
+                            assigned_to_name: '',
+                            assigned_to_user_id: ''
+                          });
+                          return;
+                        }
+                        const foundUser = teamUsers.find(u => `${u.first_name} ${u.last_name || ''}`.trim() === selVal || u.email === selVal);
                         setDelegateTarget({
                           ...delegateTarget,
-                          assigned_to_name: selName,
+                          assigned_to_name: foundUser ? `${foundUser.first_name} ${foundUser.last_name || ''}`.trim() || foundUser.email : selVal,
                           assigned_to_user_id: foundUser ? foundUser.id : ''
                         });
                       }}
-                      className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 font-bold focus:outline-none"
+                      className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-600"
                     >
-                      <option value="">-- Seleccionar Asesor o Equipo --</option>
-                      <optgroup label="Equipos Funcionales">
+                      <option value="">-- Seleccionar Rol, Equipo o Usuario --</option>
+                      
+                      {/* 1. ROLES DEL SISTEMA (Soporte, Líder, Main, Asesor...) */}
+                      <optgroup label="🛡️ Roles del Sistema (Soporte, Líder, Main, Asesor...)">
+                        {availableRoles.length > 0 ? (
+                          availableRoles.map(r => (
+                            <option key={r.id} value={`Rol: ${r.nombre.charAt(0).toUpperCase() + r.nombre.slice(1)}`}>
+                              Rol: {r.nombre.charAt(0).toUpperCase() + r.nombre.slice(1)} {r.is_system ? '(Oficial)' : ''}
+                            </option>
+                          ))
+                        ) : (
+                          <>
+                            <option value="Rol: Soporte">Rol: Soporte</option>
+                            <option value="Rol: Líder">Rol: Líder</option>
+                            <option value="Rol: Asesor">Rol: Asesor</option>
+                            <option value="Rol: Main">Rol: Main</option>
+                            <option value="Rol: Master">Rol: Master</option>
+                          </>
+                        )}
+                      </optgroup>
+
+                      {/* 2. MESAS OPERATIVAS Y EQUIPOS */}
+                      <optgroup label="🏢 Mesas Operativas y Equipos">
+                        <option value="Mesa de Soporte">🛠️ Mesa de Soporte</option>
                         <option value="Mesa de Inversiones">📈 Mesa de Inversiones</option>
                         <option value="Equipo Líderes">👑 Equipo Líderes</option>
                         <option value="Equipo Asesores">💼 Equipo Asesores</option>
                         <option value="Mesa de Créditos">💳 Mesa de Créditos</option>
                       </optgroup>
+
+                      {/* 3. USUARIOS ESPECÍFICOS */}
                       {teamUsers.length > 0 && (
-                        <optgroup label="Usuarios Registrados">
+                        <optgroup label="👤 Usuarios Específicos">
                           {teamUsers.map(u => {
                             const fullName = `${u.first_name} ${u.last_name || ''}`.trim() || u.email;
                             return (
                               <option key={u.id} value={fullName}>
-                                {fullName} ({u.rol_nombre || 'Usuario'})
+                                {fullName} — {u.rol_nombre ? `[${u.rol_nombre.toUpperCase()}]` : '[Usuario]'}
                               </option>
                             );
                           })}
