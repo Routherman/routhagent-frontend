@@ -6,6 +6,7 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import Panel from "@/components/dashboard/Panel";
 import Header from "@/components/dashboard/Header";
 import { API_URL } from '@/config/api';
+import { useRouter } from 'next/navigation';
 import { 
   Users, 
   Search, 
@@ -34,7 +35,13 @@ import {
   Layers,
   ArrowRight,
   FileText,
-  Award
+  Award,
+  Rocket,
+  Sparkles,
+  Send,
+  Zap,
+  Check,
+  Share2
 } from 'lucide-react';
 import CrmHierarchyTree from '@/components/dashboard/CrmHierarchyTree';
 import ContactActionMenu from '@/components/dashboard/ContactActionMenu';
@@ -67,6 +74,132 @@ export const RUBROS_METADATA = {
   'PROSPECTO ASESORES': { label: 'Prospecto Asesores', badge: 'Campañas', desc: 'Candidatos para campañas de captación' }
 };
 
+// Configuración visual y plantillas asignadas a Capas B2B 1 al 5
+export const CRM_CAPAS_INFO = {
+  1: {
+    num: 1,
+    id: 'CAPA_1_REMAX',
+    name: 'Capa 1: Franquicias Inmobiliarias',
+    shortName: 'Franquicias',
+    networks: 'RE/MAX, Century 21, Keller Williams',
+    badgeClass: 'bg-amber-100 text-amber-900 border-amber-300',
+    dotClass: 'bg-amber-500',
+    emailTemplate: 'Prospección Fría: Agentes Inmobiliarios RE/MAX (Flujo 2 - Capa 1)',
+    whatsappTemplate: 'Prospección WhatsApp: Agentes Franquicias (Capa 1)',
+    leaderEmailTemplate: 'Prospección Fría: Broker / Martillero RE/MAX (Flujo 3)'
+  },
+  2: {
+    num: 2,
+    id: 'CAPA_2_PADRONES_CORREDORES',
+    name: 'Capa 2: Corredores Matriculados',
+    shortName: 'Corredores Colegiados',
+    networks: 'Colegios Oficiales, CCi Santa Fe, CUCICBA, CMCPSI',
+    badgeClass: 'bg-cyan-100 text-cyan-900 border-cyan-300',
+    dotClass: 'bg-cyan-500',
+    emailTemplate: 'Prospección Fría: Corredores Matriculados (Capa 2)',
+    whatsappTemplate: 'Prospección WhatsApp: Corredores Matriculados (Capa 2)',
+    leaderEmailTemplate: 'Prospección Fría: Corredores Matriculados (Capa 2)'
+  },
+  3: {
+    num: 3,
+    id: 'CAPA_3_PREVISIONALISTAS',
+    name: 'Capa 3: Abogados y Gestores Previsionales',
+    shortName: 'Previsionales',
+    networks: 'Estudios Jurídicos Previsionales, Gestorías ANSES',
+    badgeClass: 'bg-purple-100 text-purple-900 border-purple-300',
+    dotClass: 'bg-purple-500',
+    emailTemplate: 'Prospección Fría: Abogados y Gestores Previsionales (Capa 3)',
+    whatsappTemplate: 'Prospección WhatsApp: Previsionales (Capa 3)',
+    leaderEmailTemplate: 'Prospección Fría: Abogados y Gestores Previsionales (Capa 3)'
+  },
+  4: {
+    num: 4,
+    id: 'CAPA_4_DESARROLLADORES',
+    name: 'Capa 4: Desarrolladores Urbanos y Fideicomisos',
+    shortName: 'Desarrolladores Urbanos',
+    networks: 'Constructoras, Loteos Urbanos, Fideicomisos',
+    badgeClass: 'bg-orange-100 text-orange-900 border-orange-300',
+    dotClass: 'bg-orange-500',
+    emailTemplate: 'Prospección Fría: Desarrolladores Urbanos y Fideicomisos (Capa 4)',
+    whatsappTemplate: 'Prospección WhatsApp: Desarrolladores Urbanos (Capa 4)',
+    leaderEmailTemplate: 'Prospección Fría: Desarrolladores Urbanos y Fideicomisos (Capa 4)'
+  },
+  5: {
+    num: 5,
+    id: 'CAPA_5_PAS',
+    name: 'Capa 5: Productores Asesores de Seguros (PAS)',
+    shortName: 'Seguros PAS',
+    networks: 'Matrícula Oficial SSN, Productores y Brokers de Seguros',
+    badgeClass: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+    dotClass: 'bg-emerald-500',
+    emailTemplate: 'Prospección Fría: Productores Asesores de Seguros PAS (Capa 5)',
+    whatsappTemplate: 'Prospección WhatsApp: Productores Seguros PAS (Capa 5)',
+    leaderEmailTemplate: 'Prospección Fría: Productores Asesores de Seguros PAS (Capa 5)'
+  }
+};
+
+export function extractB2BLayer(contact) {
+  if (!contact) return null;
+  let meta = contact.metadata_extra;
+  if (typeof meta === 'string') {
+    try {
+      meta = JSON.parse(meta);
+    } catch {
+      meta = null;
+    }
+  }
+
+  if (meta && (meta.origen_b2b || meta.capa_numero || meta.origen_capa)) {
+    const num = Number(meta.capa_numero) || (
+      meta.origen_capa === 'CAPA_1_REMAX' ? 1 :
+      meta.origen_capa === 'CAPA_2_PADRONES_CORREDORES' ? 2 :
+      meta.origen_capa === 'CAPA_3_PREVISIONALISTAS' ? 3 :
+      meta.origen_capa === 'CAPA_4_DESARROLLADORES' ? 4 :
+      meta.origen_capa === 'CAPA_5_PAS' ? 5 : 1
+    );
+    const cfg = CRM_CAPAS_INFO[num] || CRM_CAPAS_INFO[1];
+    return {
+      isB2B: true,
+      num,
+      info: cfg,
+      code: meta.capa_codigo || cfg.id,
+      name: meta.capa_nombre || cfg.name,
+      tag: meta.capa_tag || cfg.shortName,
+      plantillaEmail: meta.plantilla_email_sugerida || cfg.emailTemplate,
+      plantillaWhatsapp: meta.plantilla_whatsapp_sugerida || cfg.whatsappTemplate,
+      canalRecomendado: meta.canal_recomendado || (contact.telefono ? 'WHATSAPP' : 'EMAIL'),
+      detectedRole: meta.detected_role || (contact.grupo === 'LIDERES' ? 'LIDER_BROKER_POTENCIAL' : 'ASESOR_POTENCIAL'),
+      office: meta.office_name || '',
+      city: meta.city || '',
+      province: meta.province || ''
+    };
+  }
+
+  const resumen = contact.resumen_necesidad || '';
+  for (let n = 1; n <= 5; n++) {
+    if (resumen.includes(`CAPA_${n}`) || (contact.origen || '').includes(`CAPA_${n}`)) {
+      const cfg = CRM_CAPAS_INFO[n];
+      return {
+        isB2B: true,
+        num: n,
+        info: cfg,
+        code: cfg.id,
+        name: cfg.name,
+        tag: cfg.shortName,
+        plantillaEmail: cfg.emailTemplate,
+        plantillaWhatsapp: cfg.whatsappTemplate,
+        canalRecomendado: contact.telefono ? 'WHATSAPP' : 'EMAIL',
+        detectedRole: contact.grupo === 'LIDERES' ? 'LIDER_BROKER_POTENCIAL' : 'ASESOR_POTENCIAL',
+        office: '',
+        city: '',
+        province: ''
+      };
+    }
+  }
+
+  return null;
+}
+
 export default function CrmPage() {
   const { user, isLoaded } = useUser();
   const [currentUserData, setCurrentUserData] = useState(null);
@@ -77,6 +210,14 @@ export default function CrmPage() {
   const [selectedGroup, setSelectedGroup] = useState('TODOS');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+
+  // Router & Navegación a Campañas B2B
+  const router = useRouter();
+
+  // Filtro por Capas B2B 1 al 5
+  const [selectedCapaFilter, setSelectedCapaFilter] = useState('ALL'); // 'ALL' | 'ALL_B2B' | 1 | 2 | 3 | 4 | 5
+  const [quickLaunchModalContact, setQuickLaunchModalContact] = useState(null);
+  const [quickLaunchChannel, setQuickLaunchChannel] = useState('whatsapp'); // 'whatsapp' | 'email'
 
   // Árbol de dependencias jerárquico
   const [treeData, setTreeData] = useState(null);
@@ -458,9 +599,17 @@ export default function CrmPage() {
     }
   };
 
+  const getCapaCount = (capaNum) => {
+    const list = allContacts.length > 0 ? allContacts : contacts;
+    if (capaNum === 'ALL_B2B') {
+      return list.filter(c => !!extractB2BLayer(c)).length;
+    }
+    return list.filter(c => extractB2BLayer(c)?.num === Number(capaNum)).length;
+  };
+
   const filtered = contacts.filter(c => {
     const term = search.toLowerCase();
-    return (
+    const matchesSearch = (
       (c.nombre || '').toLowerCase().includes(term) ||
       (c.telefono || '').includes(term) ||
       (c.dni || '').includes(term) ||
@@ -468,6 +617,15 @@ export default function CrmPage() {
       (c.alias || '').toLowerCase().includes(term) ||
       (c.banco || '').toLowerCase().includes(term)
     );
+    if (!matchesSearch) return false;
+    if (selectedCapaFilter && selectedCapaFilter !== 'ALL') {
+      const b2b = extractB2BLayer(c);
+      if (selectedCapaFilter === 'ALL_B2B') {
+        return !!b2b;
+      }
+      return b2b?.num === Number(selectedCapaFilter);
+    }
+    return true;
   });
 
   return (
@@ -784,6 +942,68 @@ export default function CrmPage() {
               })}
             </div>
 
+            {/* Sub-bar de Filtro por Capas B2B (1 al 5) */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pt-2 pb-0.5 scrollbar-thin border-t border-gray-200/50">
+              <div className="text-[10px] font-black uppercase text-gray-400 shrink-0 flex items-center gap-1 pr-1">
+                <Layers className="w-3.5 h-3.5 text-amber-500" />
+                <span>Capas B2B:</span>
+              </div>
+
+              <button
+                onClick={() => setSelectedCapaFilter('ALL')}
+                className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition whitespace-nowrap shrink-0 ${
+                  selectedCapaFilter === 'ALL'
+                    ? 'bg-gray-900 text-white shadow-2xs'
+                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                Todas las Capas
+              </button>
+
+              <button
+                onClick={() => setSelectedCapaFilter('ALL_B2B')}
+                className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+                  selectedCapaFilter === 'ALL_B2B'
+                    ? 'bg-amber-500 text-white shadow-2xs'
+                    : 'bg-amber-50/80 text-amber-800 hover:bg-amber-100 border border-amber-200/80'
+                }`}
+                title="Filtrar solo contactos incorporados desde Prospección B2B"
+              >
+                <span>🚀 Solo B2B</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono font-black ${
+                  selectedCapaFilter === 'ALL_B2B' ? 'bg-white/30 text-white' : 'bg-amber-100 text-amber-900'
+                }`}>
+                  {getCapaCount('ALL_B2B')}
+                </span>
+              </button>
+
+              {[1, 2, 3, 4, 5].map(num => {
+                const cfg = CRM_CAPAS_INFO[num];
+                const count = getCapaCount(num);
+                const isSelected = selectedCapaFilter === num;
+                return (
+                  <button
+                    key={num}
+                    onClick={() => setSelectedCapaFilter(isSelected ? 'ALL' : num)}
+                    className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+                      isSelected
+                        ? `${cfg.badgeClass} ring-2 ring-black/10 font-black shadow-2xs`
+                        : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                    }`}
+                    title={`${cfg.name} • ${cfg.networks}`}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${cfg.dotClass}`} />
+                    <span>Capa {num}: {cfg.shortName}</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold ${
+                      count > 0 ? 'bg-black/5 text-gray-900' : 'bg-gray-100 text-gray-400'
+                    }`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
             {/* Sub-bar with search and active filter indicator */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-gray-200/60">
               <div className="text-xs text-gray-500 font-semibold flex items-center gap-2 self-start sm:self-center">
@@ -873,6 +1093,31 @@ export default function CrmPage() {
                               </span>
                             )}
                           </div>
+
+                          {/* IDENTIFICACIÓN VISUAL DE ORIGEN B2B CAPAS 1 AL 5 */}
+                          {(() => {
+                            const b2b = extractB2BLayer(c);
+                            if (!b2b) return null;
+                            return (
+                              <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                                <span 
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black border shadow-2xs ${b2b.info.badgeClass}`}
+                                  title={`${b2b.name} • Redes: ${b2b.info.networks}`}
+                                >
+                                  <span className={`w-1.5 h-1.5 rounded-full ${b2b.info.dotClass} animate-pulse`} />
+                                  <span>{b2b.tag}</span>
+                                </span>
+
+                                <span 
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-medium bg-gray-100 text-gray-700 border border-gray-200/80 truncate max-w-[210px] cursor-help"
+                                  title={`Plantilla Asignada: ${b2b.canalRecomendado === 'WHATSAPP' ? b2b.plantillaWhatsapp : b2b.plantillaEmail}`}
+                                >
+                                  <span>{b2b.canalRecomendado === 'WHATSAPP' ? '💬 WA:' : '📧 Mail:'}</span>
+                                  <span className="truncate">{b2b.canalRecomendado === 'WHATSAPP' ? b2b.plantillaWhatsapp : b2b.plantillaEmail}</span>
+                                </span>
+                              </div>
+                            );
+                          })()}
 
                           {/* Estado de Resolución y Nota Flotante */}
                           <div className="mt-1 flex items-center gap-1.5">
@@ -981,6 +1226,25 @@ export default function CrmPage() {
                         {/* Actions */}
                         <td className="py-3.5 px-4 text-right">
                           <div className="flex items-center justify-end gap-1.5">
+                            {/* Botón Lanzador Directo de Campaña B2B */}
+                            {(() => {
+                              const b2b = extractB2BLayer(c);
+                              if (!b2b) return null;
+                              return (
+                                <button
+                                  onClick={() => {
+                                    setQuickLaunchChannel(b2b.canalRecomendado.toLowerCase());
+                                    setQuickLaunchModalContact(c);
+                                  }}
+                                  className="px-2 py-1 rounded-lg text-white bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 font-black text-[10px] flex items-center gap-1 shadow-2xs transition"
+                                  title={`Lanzar campaña B2B (${b2b.name}) a este contacto`}
+                                >
+                                  <Rocket className="w-3 h-3" />
+                                  <span>Lanzar</span>
+                                </button>
+                              );
+                            })()}
+
                             <button
                               onClick={() => setShowDetailModal(c)}
                               className="p-1.5 rounded-lg text-gray-400 hover:text-black hover:bg-gray-100"
@@ -1268,6 +1532,63 @@ export default function CrmPage() {
                     </div>
                   </div>
 
+                  {/* Ficha Especial de Origen B2B Capas 1 al 5 */}
+                  {(() => {
+                    const b2b = extractB2BLayer(showDetailModal);
+                    if (!b2b) return null;
+                    return (
+                      <div className="p-3.5 bg-linear-to-br from-amber-50/90 via-orange-50/50 to-white rounded-2xl border border-amber-200/80 shadow-2xs space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center font-black text-xs shadow-2xs">
+                              {b2b.num}
+                            </div>
+                            <div>
+                              <p className="font-black text-gray-900 text-xs">{b2b.name}</p>
+                              <p className="text-[10px] text-amber-800 font-medium">{b2b.info.networks}</p>
+                            </div>
+                          </div>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${b2b.info.badgeClass}`}>
+                            {b2b.tag}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
+                          <div className="p-2 bg-white/90 rounded-xl border border-amber-100">
+                            <p className="text-[9px] font-black uppercase text-gray-400">Plantilla Email Asignada</p>
+                            <p className="text-[11px] font-bold text-gray-800 truncate" title={b2b.plantillaEmail}>
+                              📧 {b2b.plantillaEmail}
+                            </p>
+                          </div>
+                          <div className="p-2 bg-white/90 rounded-xl border border-amber-100">
+                            <p className="text-[9px] font-black uppercase text-gray-400">Plantilla WhatsApp Asignada</p>
+                            <p className="text-[11px] font-bold text-gray-800 truncate" title={b2b.plantillaWhatsapp}>
+                              💬 {b2b.plantillaWhatsapp}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1">
+                          <span className="text-[10px] text-gray-500 font-semibold">
+                            Canal recomendado: <strong className="text-gray-900">{b2b.canalRecomendado}</strong>
+                          </span>
+                          <button
+                            onClick={() => {
+                              const currentContact = showDetailModal;
+                              setShowDetailModal(null);
+                              setQuickLaunchChannel(b2b.canalRecomendado.toLowerCase());
+                              setQuickLaunchModalContact(currentContact);
+                            }}
+                            className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl flex items-center gap-1 shadow-2xs transition"
+                          >
+                            <Rocket className="w-3.5 h-3.5" />
+                            <span>Lanzar Campaña</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {showDetailModal.metadata_extra && (
                     <div className="p-3 bg-amber-50/60 border border-amber-200/50 rounded-2xl">
                       <p className="font-bold text-amber-900 text-[10px] uppercase mb-1">Notas / Info Extra:</p>
@@ -1382,6 +1703,191 @@ export default function CrmPage() {
               </div>
             </div>
           )}
+
+          {/* Modal Lanzador Directo de Campaña B2B a Contacto Individual */}
+          {quickLaunchModalContact && (() => {
+            const b2b = extractB2BLayer(quickLaunchModalContact);
+            const firstName = (quickLaunchModalContact.nombre || '').split(' ')[0] || 'Colega';
+            const cleanPhone = (quickLaunchModalContact.telefono || '').replace(/\D/g, '');
+            const targetTemplateName = quickLaunchChannel === 'whatsapp' ? b2b?.plantillaWhatsapp : b2b?.plantillaEmail;
+
+            // Mensajes demo adaptados al canal
+            const waDemoMessage = `Hola ${firstName}, ¿cómo estás? Te escribo por tu actividad en ${b2b?.office || 'el sector'}. En Colaboratium (Global Loan S.A. - Reg. BCRA Nº 40.015) desarrollamos soluciones para ${b2b?.info.shortName || 'profesionales'} con comisiones del 4% al 6% al calce. ¿Te gustaría coordinar una charla de 15 min?`;
+
+            return (
+              <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+                <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-gray-100 animate-in fade-in zoom-in-95 duration-200">
+                  {/* Header */}
+                  <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-sm">
+                        <Rocket className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-black text-base text-gray-900">
+                          Lanzar Campaña B2B • {b2b?.tag || 'Capa B2B'}
+                        </h3>
+                        <p className="text-[11px] text-gray-500">
+                          Envío directo con plantilla oficial asignada
+                        </p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setQuickLaunchModalContact(null)} 
+                      className="p-1 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-black transition"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Contact Preview Summary */}
+                  <div className="mt-4 p-3.5 bg-gray-50 rounded-2xl border border-gray-200/80 flex items-center justify-between">
+                    <div>
+                      <p className="font-black text-sm text-gray-900">{quickLaunchModalContact.nombre}</p>
+                      <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                        <span className="font-mono">{quickLaunchModalContact.telefono}</span>
+                        {quickLaunchModalContact.email && (
+                          <>
+                            <span>•</span>
+                            <span className="truncate max-w-[180px]">{quickLaunchModalContact.email}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    {b2b && (
+                      <span className={`px-2.5 py-1 rounded-xl text-xs font-black border ${b2b.info.badgeClass}`}>
+                        {b2b.name}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Channel Switcher */}
+                  <div className="mt-4">
+                    <label className="text-[10px] font-black uppercase text-gray-400 tracking-wider">
+                      Canal de Contacto
+                    </label>
+                    <div className="grid grid-cols-2 gap-2 mt-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setQuickLaunchChannel('whatsapp')}
+                        className={`p-3 rounded-2xl border flex items-center gap-2.5 transition text-left ${
+                          quickLaunchChannel === 'whatsapp'
+                            ? 'bg-emerald-50 border-emerald-500 text-emerald-900 ring-2 ring-emerald-500/20'
+                            : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold">
+                          <Phone className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="font-black text-xs">WhatsApp Directo</p>
+                          <p className="text-[10px] text-gray-500">Apertura inmediata</p>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setQuickLaunchChannel('email')}
+                        className={`p-3 rounded-2xl border flex items-center gap-2.5 transition text-left ${
+                          quickLaunchChannel === 'email'
+                            ? 'bg-indigo-50 border-indigo-500 text-indigo-900 ring-2 ring-indigo-500/20'
+                            : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="w-8 h-8 rounded-xl bg-indigo-500 text-white flex items-center justify-center font-bold">
+                          <Mail className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="font-black text-xs">Cold Email</p>
+                          <p className="text-[10px] text-gray-500">Vía Campañas Hub</p>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Template Info Card */}
+                  <div className="mt-3 p-3 bg-amber-50/70 rounded-2xl border border-amber-200/70">
+                    <p className="text-[10px] font-black uppercase text-amber-900 tracking-wider flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Plantilla Asignada por Capa</span>
+                    </p>
+                    <p className="text-xs font-bold text-gray-900 mt-0.5">
+                      {targetTemplateName || 'Plantilla General'}
+                    </p>
+                    <div className="mt-2 p-2.5 bg-white/90 rounded-xl border border-amber-200/60 text-[11px] text-gray-700 font-mono leading-relaxed max-h-32 overflow-y-auto">
+                      {waDemoMessage}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="mt-5 flex items-center justify-between gap-2 pt-3 border-t border-gray-100">
+                    <button
+                      type="button"
+                      onClick={() => setQuickLaunchModalContact(null)}
+                      className="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100"
+                    >
+                      Cancelar
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const contactToBridge = quickLaunchModalContact;
+                          setQuickLaunchModalContact(null);
+                          // Configurar el bridge en sessionStorage
+                          const bridgePayload = {
+                            source: 'crm_single',
+                            contactId: contactToBridge.id,
+                            contactName: contactToBridge.nombre,
+                            targetCapa: b2b?.code || 'CAPA_1_REMAX',
+                            channel: quickLaunchChannel,
+                            templateName: targetTemplateName,
+                            campaignName: `Envío B2B • ${contactToBridge.nombre} (${b2b?.tag || 'Capa'})`
+                          };
+                          sessionStorage.setItem('routh_b2b_campaign_bridge', JSON.stringify(bridgePayload));
+                          toast.success('Abriendo en Diseñador de Campañas...');
+                          router.push(`/dashboard/campaigns?source=b2b&capa=${b2b?.code || 'CAPA_1_REMAX'}&tab=${quickLaunchChannel}`);
+                        }}
+                        className="px-3.5 py-2 rounded-xl text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-800 transition flex items-center gap-1.5"
+                      >
+                        <Share2 className="w-3.5 h-3.5" />
+                        <span>Abrir en Diseñador</span>
+                      </button>
+
+                      {quickLaunchChannel === 'whatsapp' ? (
+                        <a
+                          href={`https://wa.me/${cleanPhone}?text=${encodeURIComponent(waDemoMessage)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={() => {
+                            toast.success(`Abriendo WhatsApp para ${quickLaunchModalContact.nombre}`);
+                            setQuickLaunchModalContact(null);
+                          }}
+                          className="px-4 py-2 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-md flex items-center gap-1.5 transition"
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                          <span>Enviar por WhatsApp</span>
+                        </a>
+                      ) : (
+                        <a
+                          href={`mailto:${quickLaunchModalContact.email || ''}?subject=${encodeURIComponent(targetTemplateName || 'Propuesta de Alianza Colaboratium')}&body=${encodeURIComponent(waDemoMessage)}`}
+                          onClick={() => {
+                            toast.success(`Abriendo cliente de correo para ${quickLaunchModalContact.nombre}`);
+                            setQuickLaunchModalContact(null);
+                          }}
+                          className="px-4 py-2 rounded-xl text-xs font-black bg-indigo-600 hover:bg-indigo-700 text-white shadow-md flex items-center gap-1.5 transition"
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                          <span>Abrir Correo</span>
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </Panel>
     </>

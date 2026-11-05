@@ -38,11 +38,117 @@ import {
   Square,
   Terminal,
   Cpu,
-  X
+  X,
+  Send,
+  Zap,
+  CheckSquare,
+  Radio,
+  Calendar,
+  Megaphone,
+  UserPlus,
+  ArrowRight,
+  Share2,
+  BookmarkCheck
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
+// Definición exhaustiva de las Capas 1 a 5 para Prospección y CRM
+export const CAPAS_CONFIG = [
+  {
+    id: 'CAPA_1_REMAX',
+    num: 1,
+    name: 'Capa 1: Franquicias Inmobiliarias',
+    shortName: 'Franquicias',
+    networks: 'RE/MAX, Century 21, Keller Williams',
+    badge: 'Franquicias',
+    color: 'from-amber-500 to-yellow-600',
+    borderColor: 'border-amber-500/40',
+    textColor: 'text-amber-300',
+    bgColor: 'bg-amber-500/10',
+    segmento: 'FRANQUICIA_INMOBILIARIA',
+    tag: 'CAPA_1_FRANQUICIAS',
+    templateEmailName: 'Prospección Fría: Agentes Inmobiliarios RE/MAX (Flujo 2 - Capa 1)',
+    templateWhatsappName: 'Prospección WhatsApp: Agentes Franquicias (Capa 1)',
+    templateLeaderEmailName: 'Prospección Fría: Broker / Martillero RE/MAX (Flujo 3)',
+    desc: 'Agentes con cartera activa para monetizar operaciones inmobiliarias con comisiones 4-6% al calce y créditos puente.'
+  },
+  {
+    id: 'CAPA_2_PADRONES_CORREDORES',
+    num: 2,
+    name: 'Capa 2: Corredores Matriculados Independientes',
+    shortName: 'Corredores Colegiados',
+    networks: 'Colegios Oficiales, CCi Santa Fe, CUCICBA, CMCPSI',
+    badge: 'Colegiados',
+    color: 'from-cyan-500 to-blue-600',
+    borderColor: 'border-cyan-500/40',
+    textColor: 'text-cyan-300',
+    bgColor: 'bg-cyan-500/10',
+    segmento: 'CORREDORES_MATRICULADOS',
+    tag: 'CAPA_2_CORREDORES',
+    templateEmailName: 'Prospección Fría: Corredores Matriculados (Capa 2)',
+    templateWhatsappName: 'Prospección WhatsApp: Corredores Matriculados (Capa 2)',
+    templateLeaderEmailName: 'Prospección Fría: Corredores Matriculados (Capa 2)',
+    desc: 'Martilleros y corredores para destrabar operaciones con mutuos puente con garantía real en 48 hs aprobados por IA.'
+  },
+  {
+    id: 'CAPA_3_PREVISIONALISTAS',
+    num: 3,
+    name: 'Capa 3: Abogados y Gestores Previsionales',
+    shortName: 'Previsionales',
+    networks: 'Estudios Jurídicos Previsionales, Gestorías ANSES',
+    badge: 'Previsionales',
+    color: 'from-purple-500 to-pink-600',
+    borderColor: 'border-purple-500/40',
+    textColor: 'text-purple-300',
+    bgColor: 'bg-purple-500/10',
+    segmento: 'ABOGADOS_PREVISIONALISTAS',
+    tag: 'CAPA_3_PREVISIONAL',
+    templateEmailName: 'Prospección Fría: Abogados y Gestores Previsionales (Capa 3)',
+    templateWhatsappName: 'Prospección WhatsApp: Previsionales (Capa 3)',
+    templateLeaderEmailName: 'Prospección Fría: Abogados y Gestores Previsionales (Capa 3)',
+    desc: 'Profesionales previsionales para préstamos a jubilados con cuota fija y cobranza bancarizada con comisiones directas.'
+  },
+  {
+    id: 'CAPA_4_DESARROLLADORES',
+    num: 4,
+    name: 'Capa 4: Desarrolladores Urbanos y Fideicomisos',
+    shortName: 'Desarrolladores',
+    networks: 'Constructoras, Loteos Urbanos, Fideicomisos al Costo',
+    badge: 'Desarrolladores',
+    color: 'from-orange-500 to-amber-600',
+    borderColor: 'border-orange-500/40',
+    textColor: 'text-orange-300',
+    bgColor: 'bg-orange-500/10',
+    segmento: 'DESARROLLADORES_URBANOS',
+    tag: 'CAPA_4_DESARROLLADORES',
+    templateEmailName: 'Prospección Fría: Desarrolladores Urbanos y Fideicomisos (Capa 4)',
+    templateWhatsappName: 'Prospección WhatsApp: Desarrolladores Urbanos (Capa 4)',
+    templateLeaderEmailName: 'Prospección Fría: Desarrolladores Urbanos y Fideicomisos (Capa 4)',
+    desc: 'Fondeo de pozo, financiamiento de obra y créditos puente con garantía prendaria o hipotecaria calificados por IA.'
+  },
+  {
+    id: 'CAPA_5_PAS',
+    num: 5,
+    name: 'Capa 5: Productores Asesores de Seguros (PAS)',
+    shortName: 'Seguros PAS',
+    networks: 'Matrícula Oficial SSN, Productores y Brokers de Seguros',
+    badge: 'Seguros PAS',
+    color: 'from-emerald-500 to-teal-600',
+    borderColor: 'border-emerald-500/40',
+    textColor: 'text-emerald-300',
+    bgColor: 'bg-emerald-500/10',
+    segmento: 'PRODUCTOR_SEGUROS_PAS',
+    tag: 'CAPA_5_SEGUROS_PAS',
+    templateEmailName: 'Prospección Fría: Productores Asesores de Seguros PAS (Capa 5)',
+    templateWhatsappName: 'Prospección WhatsApp: Productores Seguros PAS (Capa 5)',
+    templateLeaderEmailName: 'Prospección Fría: Productores Asesores de Seguros PAS (Capa 5)',
+    desc: 'Nueva unidad de préstamos con garantía y jubilados para su cartera de asegurados ganando 4-6% más comisiones residuales.'
+  }
+];
+
 export default function ProspectosB2BPage() {
+  const router = useRouter();
   const { user, isLoaded } = useUser();
   const [prospects, setProspects] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -108,9 +214,208 @@ export default function ProspectosB2BPage() {
     totalOffices: 215,
     percent: 0,
     extractedCount: 0,
-    etaStr: 'Calculando...',
-    logs: []
+    startTime: null,
+    recentLogs: []
   });
+
+  // Selección Múltiple de Prospectos
+  const [selectedProspectIds, setSelectedProspectIds] = useState(new Set());
+
+  // Modales de Campaña y CRM
+  const [showCampaignLauncherModal, setShowCampaignLauncherModal] = useState(false);
+  const [showCrmIncorporateModal, setShowCrmIncorporateModal] = useState(false);
+  const [launchingCampaign, setLaunchingCampaign] = useState(false);
+  const [incorporatingCrm, setIncorporatingCrm] = useState(false);
+  const [layersSummary, setLayersSummary] = useState([]);
+
+  // Configuración de Lanzador de Campaña B2B
+  const [campaignLauncherConfig, setCampaignLauncherConfig] = useState({
+    name: '',
+    channel: 'whatsapp', // 'whatsapp' | 'email'
+    targetCapa: 'AUTO', // 'AUTO' o CAPA_1..5
+    targetRole: 'ALL', // 'ALL' | 'ASESOR_POTENCIAL' | 'LIDER_BROKER_POTENCIAL'
+    filterHasPhone: false,
+    filterHasEmail: false,
+    selectedTemplateId: '',
+    customSubject: '',
+    customMessage: '',
+    messagesPerMinute: 15
+  });
+
+  // Configuración de Incorporación al CRM
+  const [crmIncorporateConfig, setCrmIncorporateConfig] = useState({
+    targetCapa: 'AUTO', // 'AUTO' o CAPA_1_REMAX ... CAPA_5_PAS
+    targetGrupo: 'AUTO'
+  });
+
+  // Manejo de Selección
+  const handleToggleSelectAll = () => {
+    if (prospects.length === 0) return;
+    const allSelectedOnPage = prospects.every(p => selectedProspectIds.has(p.id));
+    const next = new Set(selectedProspectIds);
+    if (allSelectedOnPage) {
+      prospects.forEach(p => next.delete(p.id));
+    } else {
+      prospects.forEach(p => next.add(p.id));
+    }
+    setSelectedProspectIds(next);
+  };
+
+  const handleToggleSelectOne = (id) => {
+    const next = new Set(selectedProspectIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedProspectIds(next);
+  };
+
+  // Cargar resumen de capas
+  const fetchLayersSummary = async () => {
+    try {
+      const res = await fetch(`${API_URL}/b2b-prospects/layers-summary?codigoEmpresa=KRZMJI`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+      const data = await res.json();
+      if (data.success && data.summary) {
+        setLayersSummary(data.summary);
+      }
+    } catch(e) {}
+  };
+
+  // Incorporar un único prospecto al CRM al instante
+  const handleSingleProspectIncorporate = async (p) => {
+    try {
+      toast.info(`Incorporando a ${p.first_name} ${p.last_name} al CRM...`);
+      const res = await fetch(`${API_URL}/b2b-prospects/sync-to-crm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+        body: JSON.stringify({
+          prospectIds: [p.id],
+          targetCapa: 'AUTO',
+          codigoEmpresa: 'KRZMJI'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`✓ ${p.first_name} ${p.last_name} incorporado a CRM con su Capa y plantilla asignada.`);
+        fetchKPIs();
+        fetchProspects();
+        fetchLayersSummary();
+      } else {
+        toast.error(data.message || 'Error al incorporar');
+      }
+    } catch (e) {
+      toast.error('Error de conexión al incorporar al CRM');
+    }
+  };
+
+  // Confirmar Incorporación Masiva a CRM
+  const handleConfirmIncorporateToCRM = async () => {
+    setIncorporatingCrm(true);
+    try {
+      const isSelectionMode = selectedProspectIds.size > 0;
+      const payload = {
+        prospectIds: isSelectionMode ? Array.from(selectedProspectIds) : null,
+        filters: !isSelectionMode ? {
+          layer: filterLayer,
+          segmento: filterSegmento,
+          role: filterRole,
+          status: filterStatus,
+          search: search
+        } : null,
+        targetCapa: crmIncorporateConfig.targetCapa,
+        codigoEmpresa: 'KRZMJI'
+      };
+
+      const res = await fetch(`${API_URL}/b2b-prospects/sync-to-crm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message);
+        setShowCrmIncorporateModal(false);
+        setSelectedProspectIds(new Set());
+        fetchKPIs();
+        fetchProspects();
+        fetchLayersSummary();
+      } else {
+        toast.error(data.message || 'Error en la incorporación masiva');
+      }
+    } catch (err) {
+      toast.error('Error de red al sincronizar con CRM');
+    } finally {
+      setIncorporatingCrm(false);
+    }
+  };
+
+  // Puente hacia el Diseñador Completo de Campañas
+  const handleOpenInCampaignsDesigner = () => {
+    try {
+      const bridgeData = {
+        source: 'b2b',
+        channel: campaignLauncherConfig.channel,
+        targetCapa: campaignLauncherConfig.targetCapa,
+        prospectIds: Array.from(selectedProspectIds),
+        contactsCount: selectedProspectIds.size > 0 ? selectedProspectIds.size : totalCount,
+        campaignName: campaignLauncherConfig.name || `Campaña B2B (${campaignLauncherConfig.channel.toUpperCase()})`,
+        templateId: campaignLauncherConfig.selectedTemplateId,
+        timestamp: Date.now()
+      };
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('routh_b2b_campaign_bridge', JSON.stringify(bridgeData));
+      }
+      setShowCampaignLauncherModal(false);
+      router.push(`/dashboard/campaigns?tab=${campaignLauncherConfig.channel === 'whatsapp' ? 'meta' : 'email'}&source=b2b&capa=${campaignLauncherConfig.targetCapa}`);
+    } catch (e) {
+      toast.error('Error al redirigir al diseñador de campañas');
+    }
+  };
+
+  // Despacho Directo de Campaña B2B
+  const handleDirectLaunchCampaign = async () => {
+    setLaunchingCampaign(true);
+    try {
+      const isSelectionMode = selectedProspectIds.size > 0;
+      const payload = {
+        prospectIds: isSelectionMode ? Array.from(selectedProspectIds) : null,
+        filters: !isSelectionMode ? {
+          layer: filterLayer,
+          segmento: filterSegmento,
+          role: filterRole,
+          status: filterStatus,
+          search: search
+        } : null,
+        canal: campaignLauncherConfig.channel,
+        targetCapa: campaignLauncherConfig.targetCapa,
+        plantillaId: campaignLauncherConfig.selectedTemplateId,
+        customSubject: campaignLauncherConfig.customSubject,
+        customContent: campaignLauncherConfig.customMessage,
+        campaignName: campaignLauncherConfig.name || `Campaña B2B • ${campaignLauncherConfig.channel.toUpperCase()} (${new Date().toLocaleDateString('es-AR')})`,
+        codigoEmpresa: 'KRZMJI'
+      };
+
+      const res = await fetch(`${API_URL}/b2b-prospects/launch-campaign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message);
+        setShowCampaignLauncherModal(false);
+        setSelectedProspectIds(new Set());
+        fetchKPIs();
+        fetchProspects();
+      } else {
+        toast.error(data.message || 'Error al lanzar campaña');
+      }
+    } catch (e) {
+      toast.error('Error de red al despachar campaña');
+    } finally {
+      setLaunchingCampaign(false);
+    }
+  };
 
   // Cargar KPIs
   const fetchKPIs = async () => {
@@ -611,6 +916,63 @@ Registro BCRA PNFC Nº 40.015
 Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Tus datos fueron relevados de tu perfil público profesional en el directorio de {{Office}}. Conforme al Art. 27 de la Ley 25.326, podés ejercer sin cargo tu derecho de acceso, retiro o bloqueo inmediato de nuestra base haciendo clic en [Darme de baja ({{5}})] o respondiendo con la palabra "BAJA".`
   };
 
+  const TEMPLATE_PREVISIONAL = {
+    title: 'Plantilla 3 • Abogados y Gestores Previsionales (Capa 3)',
+    subject: '[PUBLICIDAD] Mutuos con código de débito y financiamiento para clientes previsionales en {{City}}, {{First Name}} (BCRA Nº 40.015)',
+    body: `Hola {{First Name}}, ¿cómo estás?
+
+Te contacto por tu actividad profesional en asesoramiento previsional y jubilaciones en {{City}}. En Colaboratium (Global Loan S.A. — Plataforma registrada en el BCRA bajo el Nº 40.015) desarrollamos una línea de mutuos atomizados y préstamos a jubilados con cuota fija y cobranza bancarizada segura.
+
+Esta operatoria permite a los profesionales previsionales sumar una unidad de ingresos para su estudio, ofreciendo préstamos con tasa transparente y análisis de scoring en segundos:
+
+1. Préstamos a Jubilados y Pensionados: Créditos con cuota fija y débito seguro en cuenta bancaria.
+2. Inversión para Clientes con Sentencias o Cobros Retroactivos: Alternativa de renta bancarizada a través de BIND y Coinag sin comisiones de entrada ni salida.
+3. Comisiones del 4% al 6% directo para el profesional, con 3% cobrado de inmediato al desembolso del crédito.
+
+Este {{1}} a las {{2}} hs daremos una charla explicativa online de {{3}} exclusiva para el sector previsional.
+
+👉 Reservá tu cupo sin costo acá: {{4}}
+
+Te mando un cordial saludo,
+
+Lic. Damián Feuermann
+Presidente | Global Loan S.A. — Colaboratium
+Registro BCRA PNFC Nº 40.015
+Av. del Libertador 264, 1° Piso, Vicente López / Maipú 568, Piso 8°, CABA
+
+Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Enviado conforme a registros profesionales públicos en {{City}}. Solicitá baja inmediata en [este enlace ({{5}})] o respondiendo "BAJA".`
+  };
+
+  const TEMPLATE_DESARROLLADORES = {
+    title: 'Plantilla 4 • Desarrolladores Urbanos y Fideicomisos (Capa 4)',
+    subject: '[PUBLICIDAD] Fondeo ágil de pozo y créditos puente para desarrollos en {{City}}, {{First Name}} (BCRA Nº 40.015)',
+    body: `Hola {{First Name}}, ¿cómo estás?
+
+Te contacto como desarrollador / titular de proyectos constructivos en {{City}}. En Colaboratium (Global Loan S.A. — Primera plataforma Fintech de créditos entre particulares con Reg. BCRA Nº 40.015) estructuramos financiamiento de pozo y créditos puente con garantía real para loteos, edificios y fideicomisos al costo.
+
+Conectamos proyectos calificados directamente con una comunidad activa de inversores bancarizados (Banco BIND y Banco Coinag) que operan bajo CVU propio y contratos de mutuo digitales auditados por IA.
+
+Beneficios para tu desarrolladora:
+- Calce ágil de fondos para avance de obra sin depender de la burocracia bancaria tradicional.
+- Garantías reales adaptables (hipoteca en primer grado, cesión fiduciaria de boletos o prendas).
+- Opción de comercializar tus unidades como alternativa de inversión dentro de nuestra red nacional de asesores.
+
+Este {{1}} a las {{2}} hs brindaremos una sesión ejecutiva online de {{3}} para estructuradores de proyectos y desarrolladores.
+
+👉 Podés confirmar tu participación acá: {{4}}
+
+O bien respondeme este correo para coordinar una reunión privada en nuestras oficinas de Av. del Libertador 264, 1° Piso, Vicente López.
+
+Un cordial saludo,
+
+Lic. Damián Feuermann
+Presidente | Global Loan S.A. — Colaboratium
+Registro BCRA PNFC Nº 40.015
+Av. del Libertador 264, 1° Piso, Vicente López / Maipú 568, Piso 8°, CABA
+
+Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Relevado de registros públicos corporativos en {{City}}. Baja inmediata en [este link ({{5}})] o respondiendo "BAJA".`
+  };
+
   const TEMPLATE_A = TEMPLATE_FRANQUICIAS;
   const TEMPLATE_B = TEMPLATE_BROKER;
 
@@ -643,12 +1005,49 @@ Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Tus datos fueron relevados de tu 
 
             {/* Top Action Buttons */}
             <div className="flex flex-wrap items-center gap-2.5">
+              {/* Botón 1: Lanzador de Campaña B2B */}
+              <button
+                onClick={() => {
+                  setCampaignLauncherConfig(prev => ({
+                    ...prev,
+                    name: `Campaña B2B • ${new Date().toLocaleDateString('es-AR')}`,
+                    targetCapa: filterLayer !== 'ALL' ? filterLayer : 'AUTO'
+                  }));
+                  setShowCampaignLauncherModal(true);
+                }}
+                className="px-4 py-2.5 bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 hover:brightness-110 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-cyan-500/25 flex items-center gap-2 transition-all transform active:scale-95 ring-2 ring-cyan-300/70"
+                title="Lanzar campaña de WhatsApp o Email directamente desde B2B o abrir en Diseñador"
+              >
+                <Zap className="w-4 h-4 fill-current text-slate-950" />
+                <span>🚀 Lanzar Campaña B2B</span>
+                {selectedProspectIds.size > 0 && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-slate-950 text-cyan-300 text-[10px] font-mono font-bold">
+                    {selectedProspectIds.size}
+                  </span>
+                )}
+              </button>
+
+              {/* Botón 2: Incorporar a Agenda CRM (Capas 1 a 5) */}
+              <button
+                onClick={() => setShowCrmIncorporateModal(true)}
+                className="px-4 py-2.5 bg-gradient-to-r from-[#A28444] to-[#D4AF37] hover:brightness-110 text-black font-black text-xs rounded-xl shadow-lg shadow-[#A28444]/25 flex items-center gap-2 transition-all transform active:scale-95 ring-2 ring-[#D4AF37]/50"
+                title="Incorporar contactos B2B a la agenda CRM con origen de Capa 1 a 5 y plantilla correcta"
+              >
+                <Building2 className="w-4 h-4" />
+                <span>📥 Incorporar a CRM (Capas 1-5)</span>
+                {selectedProspectIds.size > 0 && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-black text-[#D4AF37] text-[10px] font-mono font-bold">
+                    {selectedProspectIds.size}
+                  </span>
+                )}
+              </button>
+
               <button
                 onClick={() => setShowGmailBatchModal(true)}
-                className="px-4 py-2.5 bg-gradient-to-r from-[#A28444] to-[#D4AF37] hover:brightness-110 text-black font-extrabold text-xs rounded-xl shadow-lg shadow-[#A28444]/20 flex items-center gap-2 transition-all transform active:scale-95"
+                className="px-3.5 py-2.5 bg-[#232121] hover:bg-[#2c2929] border border-[#A28444]/40 text-[#D4AF37] font-bold text-xs rounded-xl flex items-center gap-2 transition-all"
               >
                 <Download className="w-4 h-4" />
-                <span>Generar Lote Gmail (CSV)</span>
+                <span>Lote Gmail (CSV)</span>
               </button>
 
               <button
@@ -958,6 +1357,15 @@ Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Tus datos fueron relevados de tu 
               <table className="w-full text-left text-xs text-neutral-300">
                 <thead className="bg-[#141313] text-[10px] uppercase font-bold text-neutral-400 border-b border-white/10 tracking-wider">
                   <tr>
+                    <th className="py-3.5 px-3 text-center w-10">
+                      <input 
+                        type="checkbox"
+                        checked={prospects.length > 0 && prospects.every(p => selectedProspectIds.has(p.id))}
+                        onChange={handleToggleSelectAll}
+                        className="w-4 h-4 rounded bg-[#121111] border-white/20 text-[#D4AF37] focus:ring-[#A28444] cursor-pointer accent-[#D4AF37]"
+                        title="Seleccionar todos los de esta página"
+                      />
+                    </th>
                     <th className="py-3.5 px-4">Prospecto / Organización</th>
                     <th className="py-3.5 px-4">Clasificación / Flujo Bot</th>
                     <th className="py-3.5 px-4">Origen / Plantilla</th>
@@ -972,14 +1380,14 @@ Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Tus datos fueron relevados de tu 
                 <tbody className="divide-y divide-white/5">
                   {loading ? (
                     <tr>
-                      <td colSpan="9" className="py-12 text-center text-neutral-500">
+                      <td colSpan="10" className="py-12 text-center text-neutral-500">
                         <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#A28444]" />
                         <span>Cargando prospectos B2B...</span>
                       </td>
                     </tr>
                   ) : prospects.length === 0 ? (
                     <tr>
-                      <td colSpan="9" className="py-12 text-center text-neutral-500">
+                      <td colSpan="10" className="py-12 text-center text-neutral-500">
                         <Users className="w-8 h-8 mx-auto mb-2 opacity-40" />
                         <p className="font-semibold text-neutral-400">No se encontraron prospectos con los filtros seleccionados</p>
                         <p className="text-[11px] mt-1 text-neutral-600">Prueba ajustando los criterios de búsqueda o ejecuta el Scraper.</p>
@@ -990,9 +1398,21 @@ Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Tus datos fueron relevados de tu 
                       const isLeader = p.detected_role === 'LIDER_BROKER_POTENCIAL';
                       const isOptOut = p.campaign_status === 'OPT_OUT_BAJA';
                       const isConverted = p.campaign_status === 'CONVERTIDO_ASESOR';
+                      const isInCrm = p.campaign_status === 'CONVERTIDO_CRM';
+                      const isSelected = selectedProspectIds.has(p.id);
 
                       return (
-                        <tr key={p.id} className="hover:bg-white/[0.02] transition-colors group">
+                        <tr key={p.id} className={`hover:bg-white/[0.02] transition-colors group ${isSelected ? 'bg-[#A28444]/10' : ''}`}>
+                          {/* Checkbox individual */}
+                          <td className="py-3.5 px-3 text-center">
+                            <input 
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => handleToggleSelectOne(p.id)}
+                              className="w-4 h-4 rounded bg-[#121111] border-white/20 text-[#D4AF37] focus:ring-[#A28444] cursor-pointer accent-[#D4AF37]"
+                            />
+                          </td>
+
                           {/* Prospect Name & Office */}
                           <td className="py-3.5 px-4">
                             <div className="flex items-center gap-3">
@@ -1131,6 +1551,11 @@ Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Tus datos fueron relevados de tu 
                               <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-rose-500/10 text-rose-400 border border-rose-500/30">
                                 Baja Opt-Out
                               </span>
+                            ) : isInCrm ? (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1 w-fit shadow-sm">
+                                <BookmarkCheck className="w-2.5 h-2.5" />
+                                En CRM
+                              </span>
                             ) : isConverted ? (
                               <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                                 Convertido
@@ -1149,7 +1574,39 @@ Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Tus datos fueron relevados de tu 
                           {/* Actions */}
                           <td className="py-3.5 px-4 text-right">
                             <div className="flex items-center justify-end gap-1.5">
-                              {!isConverted && !isOptOut && (
+                              {/* Botón rápido Incorporar a CRM */}
+                              {!isInCrm && !isConverted && !isOptOut && (
+                                <button
+                                  onClick={() => handleSingleProspectIncorporate(p)}
+                                  className="px-2 py-1 bg-[#A28444]/15 hover:bg-[#A28444]/30 text-[#D4AF37] border border-[#A28444]/40 rounded-lg text-[10px] font-black flex items-center gap-1 transition-all"
+                                  title="Incorporar este contacto a la agenda CRM con origen de Capa 1-5"
+                                >
+                                  <Building2 className="w-3 h-3 text-[#D4AF37]" />
+                                  <span>+CRM</span>
+                                </button>
+                              )}
+
+                              {/* Botón rápido Lanzar Campaña */}
+                              {!isOptOut && (
+                                <button
+                                  onClick={() => {
+                                    setSelectedProspectIds(new Set([p.id]));
+                                    setCampaignLauncherConfig(prev => ({
+                                      ...prev,
+                                      targetCapa: p.source_layer || 'AUTO',
+                                      name: `Campaña B2B • ${p.first_name} ${p.last_name}`
+                                    }));
+                                    setShowCampaignLauncherModal(true);
+                                  }}
+                                  className="px-2 py-1 bg-cyan-500/15 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 rounded-lg text-[10px] font-black flex items-center gap-1 transition-all"
+                                  title="Lanzar campaña inmediata a este contacto"
+                                >
+                                  <Zap className="w-3 h-3 text-cyan-400 fill-current" />
+                                  <span>Lanzar</span>
+                                </button>
+                              )}
+
+                              {!isConverted && !isInCrm && !isOptOut && (
                                 <button
                                   onClick={() => handleConvertToAdvisor(p)}
                                   className="px-2 py-1 bg-[#232121] hover:bg-[#A28444]/20 hover:text-[#D4AF37] border border-white/10 hover:border-[#A28444]/40 rounded-lg text-[10px] font-bold transition-all"
@@ -1205,6 +1662,46 @@ Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Tus datos fueron relevados de tu 
               </div>
             </div>
           </div>
+
+          {/* Floating Selection Action Bar */}
+          {selectedProspectIds.size > 0 && (
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[#1b1a1a]/95 backdrop-blur-xl border-2 border-[#A28444] rounded-2xl px-6 py-3.5 shadow-2xl shadow-black/80 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#D4AF37] animate-pulse" />
+                <span className="text-xs font-black text-white">
+                  {selectedProspectIds.size} prospectos seleccionados
+                </span>
+              </div>
+              <div className="h-5 w-px bg-white/10" />
+              <button 
+                onClick={() => {
+                  setCampaignLauncherConfig(prev => ({
+                    ...prev,
+                    name: `Campaña B2B (${selectedProspectIds.size} seleccionados)`
+                  }));
+                  setShowCampaignLauncherModal(true);
+                }}
+                className="px-3.5 py-1.5 bg-gradient-to-r from-cyan-500 to-teal-500 hover:brightness-110 text-slate-950 font-black text-xs rounded-xl flex items-center gap-1.5 shadow-md transition-all active:scale-95"
+              >
+                <Zap className="w-3.5 h-3.5 fill-current" />
+                <span>Lanzar Campaña</span>
+              </button>
+              <button 
+                onClick={() => setShowCrmIncorporateModal(true)}
+                className="px-3.5 py-1.5 bg-gradient-to-r from-[#A28444] to-[#D4AF37] hover:brightness-110 text-black font-black text-xs rounded-xl flex items-center gap-1.5 shadow-md transition-all active:scale-95"
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>Incorporar a CRM (Capas 1-5)</span>
+              </button>
+              <button 
+                onClick={() => setSelectedProspectIds(new Set())}
+                className="p-1.5 hover:bg-white/10 text-neutral-400 hover:text-white rounded-lg transition-colors text-xs"
+                title="Deseleccionar todos"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
         </div>
 
@@ -1738,6 +2235,428 @@ Mart. Ana López, alopez@remax.com.ar, 342 15-5123456, RE/MAX Litoral, Santa Fe,
                   className="px-4 py-2 bg-[#232121] hover:bg-[#2c2929] text-neutral-300 font-bold text-xs rounded-xl"
                 >
                   Cerrar Ventana
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL 5: LANZADOR DE CAMPAÑAS B2B (WHATSAPP META / COLD EMAIL & VINCULACIÓN AL DISEÑADOR) */}
+        {showCampaignLauncherModal && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-[#181717] border-2 border-cyan-500/40 rounded-3xl max-w-4xl w-full p-6 shadow-2xl relative text-left max-h-[92vh] flex flex-col overflow-hidden">
+              <button
+                onClick={() => setShowCampaignLauncherModal(false)}
+                className="absolute top-5 right-5 p-1.5 rounded-full hover:bg-white/10 text-neutral-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* Modal Header */}
+              <div className="flex items-center gap-3.5 mb-5 pb-4 border-b border-white/10">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-teal-500/30 border border-cyan-400/50 flex items-center justify-center text-cyan-300 shadow-lg shadow-cyan-500/20 shrink-0">
+                  <Zap className="w-6 h-6 fill-current" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-black text-white">Lanzador de Campañas B2B & Prospección Inteligente</h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                      Capas 1 a 5
+                    </span>
+                  </div>
+                  <p className="text-xs text-neutral-400 mt-0.5">
+                    Vinculación directa desde el Motor B2B al lanzador de campañas omnicanal (WhatsApp Meta & Cold Email) con plantillas segmentadas por origen.
+                  </p>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <div className="flex-1 overflow-y-auto space-y-5 pr-1 text-xs">
+                
+                {/* 1. Selector de Canal de Disparo */}
+                <div>
+                  <label className="block text-[11px] uppercase font-bold text-neutral-400 mb-2">
+                    1. Seleccioná el Canal de Comunicación
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setCampaignLauncherConfig(prev => ({ ...prev, channel: 'whatsapp' }))}
+                      className={`p-3.5 rounded-2xl border text-left transition-all flex items-start gap-3 ${
+                        campaignLauncherConfig.channel === 'whatsapp'
+                          ? 'bg-emerald-500/15 border-emerald-500 text-white shadow-lg shadow-emerald-500/10'
+                          : 'bg-[#121111] border-white/10 text-neutral-400 hover:border-white/20 hover:text-white'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                        campaignLauncherConfig.channel === 'whatsapp' ? 'bg-emerald-500 text-black' : 'bg-neutral-800 text-neutral-400'
+                      }`}>
+                        <MessageSquare className="w-4 h-4 fill-current" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-black text-sm text-white">WhatsApp Bot & Meta Cloud</p>
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold uppercase bg-emerald-500/20 text-emerald-300">
+                            Alta Conversión (+549)
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-neutral-400 mt-0.5">
+                          Disparo interactivo con el Bot de Colaboratium (Flujo 2 Asesores / Flujo 3 Líderes) y cadencia humana.
+                        </p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setCampaignLauncherConfig(prev => ({ ...prev, channel: 'email' }))}
+                      className={`p-3.5 rounded-2xl border text-left transition-all flex items-start gap-3 ${
+                        campaignLauncherConfig.channel === 'email'
+                          ? 'bg-sky-500/15 border-sky-500 text-white shadow-lg shadow-sky-500/10'
+                          : 'bg-[#121111] border-white/10 text-neutral-400 hover:border-white/20 hover:text-white'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                        campaignLauncherConfig.channel === 'email' ? 'bg-sky-500 text-black' : 'bg-neutral-800 text-neutral-400'
+                      }`}>
+                        <Mail className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-black text-sm text-white">Cold Outreach Email</p>
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold uppercase bg-sky-500/20 text-sky-300">
+                            Throttling Anti-Spam
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-neutral-400 mt-0.5">
+                          Envío con Mail-Merge, enlace de baja Ley 25.326 y rotación de dominios para no quemar IPs.
+                        </p>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Resumen de Audiencia */}
+                <div className="p-3.5 bg-[#121111] border border-white/10 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-neutral-400 block mb-0.5">
+                      Audiencia a impactar:
+                    </span>
+                    <p className="text-sm font-black text-white flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
+                      {selectedProspectIds.size > 0 
+                        ? `${selectedProspectIds.size} prospectos seleccionados en la tabla`
+                        : `Audiencia completa con filtros actuales (${totalCount} prospectos B2B)`}
+                    </p>
+                    <p className="text-[11px] text-neutral-400 mt-0.5">
+                      {campaignLauncherConfig.channel === 'whatsapp' 
+                        ? `Se filtrarán únicamente los contactos con número WhatsApp E.164 normalizado.`
+                        : `Se enviará únicamente a direcciones corporativas válidas con dominio corporativo.`}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1.5 rounded-xl bg-neutral-800 border border-white/10 text-[11px] font-bold text-neutral-300">
+                      Capa actual: {filterLayer !== 'ALL' ? filterLayer.replace('CAPA_', 'Capa ') : 'Todas'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 3. Selector de Capa del 1 al 5 y Plantilla Sugerida */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-[11px] uppercase font-bold text-neutral-400">
+                      2. Identificación del Origen • Capas del 1 al 5
+                    </label>
+                    <span className="text-[10px] text-[#D4AF37] font-semibold">
+                      Selecciona una capa para fijar la plantilla correcta o deja en Auto
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                    {/* Tarjeta Auto */}
+                    <button
+                      type="button"
+                      onClick={() => setCampaignLauncherConfig(prev => ({ ...prev, targetCapa: 'AUTO' }))}
+                      className={`p-2.5 rounded-xl border text-center transition-all ${
+                        campaignLauncherConfig.targetCapa === 'AUTO'
+                          ? 'bg-[#A28444]/20 border-[#D4AF37] text-white shadow-md'
+                          : 'bg-[#121111] border-white/10 text-neutral-400 hover:border-white/20'
+                      }`}
+                    >
+                      <span className="text-[10px] font-black uppercase block text-[#D4AF37]">🌟 AUTO</span>
+                      <span className="text-[10px] font-bold block text-white truncate">Según Prospecto</span>
+                      <span className="text-[9px] text-neutral-500 block mt-0.5">Dinámica</span>
+                    </button>
+
+                    {/* Capas 1 a 5 */}
+                    {CAPAS_CONFIG.map(capa => {
+                      const isSelected = campaignLauncherConfig.targetCapa === capa.id;
+                      return (
+                        <button
+                          key={capa.id}
+                          type="button"
+                          onClick={() => setCampaignLauncherConfig(prev => ({ ...prev, targetCapa: capa.id }))}
+                          className={`p-2.5 rounded-xl border text-left transition-all ${
+                            isSelected
+                              ? `${capa.bgColor} ${capa.borderColor} text-white shadow-md ring-1 ${capa.borderColor}`
+                              : 'bg-[#121111] border-white/10 text-neutral-400 hover:border-white/20'
+                          }`}
+                        >
+                          <span className={`text-[10px] font-black uppercase block ${capa.textColor}`}>
+                            Capa {capa.num}
+                          </span>
+                          <span className="text-[11px] font-bold block text-white truncate">
+                            {capa.shortName}
+                          </span>
+                          <span className="text-[9px] text-neutral-500 block mt-0.5 truncate">
+                            {capa.badge}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 4. Previsualización de la Plantilla que se enviará */}
+                <div className="p-4 bg-[#121111] border border-white/10 rounded-2xl space-y-2.5">
+                  {(() => {
+                    const currentCapaKey = campaignLauncherConfig.targetCapa === 'AUTO' 
+                      ? (filterLayer !== 'ALL' ? filterLayer : 'CAPA_1_REMAX') 
+                      : campaignLauncherConfig.targetCapa;
+                    const matchedCapa = CAPAS_CONFIG.find(c => c.id === currentCapaKey) || CAPAS_CONFIG[0];
+                    const templateName = campaignLauncherConfig.channel === 'whatsapp' 
+                      ? matchedCapa.templateWhatsappName 
+                      : matchedCapa.templateEmailName;
+
+                    return (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${matchedCapa.bgColor} ${matchedCapa.textColor} border ${matchedCapa.borderColor}`}>
+                              Capa {matchedCapa.num}: {matchedCapa.badge}
+                            </span>
+                            <span className="text-white font-bold text-xs truncate max-w-md">
+                              {templateName}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-neutral-500 font-mono">
+                            Variables: {'{{First Name}}, {{Office}}, {{City}}'}
+                          </span>
+                        </div>
+
+                        <div className="p-3 bg-black/60 border border-white/5 rounded-xl font-mono text-[11px] text-neutral-300 whitespace-pre-wrap leading-relaxed max-h-44 overflow-y-auto">
+                          {campaignLauncherConfig.channel === 'whatsapp' ? (
+                            matchedCapa.num === 1 
+                              ? `Hola {{First Name}}, ¿cómo estás? Vi tu perfil público en {{Office}} ({{City}}). En Colaboratium (Global Loan S.A. - Reg. BCRA Nº 40.015) incorporamos agentes con cartera para monetizar operaciones inmobiliarias con comisiones del 4% al 6% al calce. Este {{1}} a las {{2}} hs brindamos un webinar de 40 min exclusivo. ¿Te gustaría sumarte o que coordinemos un café en nuestras oficinas de Av. del Libertador 264, Vicente López?`
+                              : matchedCapa.num === 2
+                              ? `Hola {{First Name}}, ¿cómo estás? Te escribo como Corredor Inmobiliario Matriculado en {{City}}. En Colaboratium (Global Loan S.A. - Reg. BCRA Nº 40.015) creamos un canal para martilleros que permite destrabar operaciones con créditos puente con garantía real en 48 hs aprobados por IA, y captar renta para vendedores al 4-6% de honorarios. Este {{1}} a las {{2}} hs explicamos el marco legal en un webinar de 40 min. ¿Te gustaría recibir el link de Google Meet?`
+                              : matchedCapa.num === 3
+                              ? `Hola {{First Name}}, ¿cómo estás? Te escribo por tu actividad previsional en {{City}}. En Colaboratium (Reg. BCRA Nº 40.015) habilitamos un canal para gestores y abogados previsionales con créditos a jubilados de cuota fija y comisiones del 4% al 6%. Este {{1}} a las {{2}} hs tenemos una sesión online de 40 min. ¿Te gustaría participar?`
+                              : matchedCapa.num === 4
+                              ? `Hola {{First Name}}, ¿cómo estás? Te escribo como desarrollador en {{City}}. En Colaboratium (Reg. BCRA Nº 40.015) brindamos financiamiento puente y fondeo para desarrollos y loteos con garantía real y aprobación ágil. Este {{1}} a las {{2}} hs daremos una presentación para desarrolladores. ¿Te paso el link de acceso a la sala?`
+                              : `Hola {{First Name}}, ¿cómo estás? Te escribo como Productor Asesor de Seguros (PAS) en {{City}}. En Colaboratium (Global Loan S.A. - Reg. BCRA Nº 40.015) creamos una alianza para que productores sumen colocación de créditos con garantía y préstamos a jubilados a su cartera, ganando entre el 4% y el 6% de comisión inmediata más residuales. Este {{1}} a las {{2}} hs tenemos un webinar de 40 min para PAS. ¿Te reservo un lugar?`
+                          ) : (
+                            matchedCapa.num === 1 ? TEMPLATE_FRANQUICIAS.body :
+                            matchedCapa.num === 2 ? TEMPLATE_CORREDORES.body :
+                            matchedCapa.num === 3 ? TEMPLATE_PREVISIONAL.body :
+                            matchedCapa.num === 4 ? TEMPLATE_DESARROLLADORES.body :
+                            TEMPLATE_SEGUROS.body
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+
+              </div>
+
+              {/* Modal Footer & Actions */}
+              <div className="mt-5 pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCampaignLauncherModal(false)}
+                  className="px-4 py-2.5 bg-[#232121] hover:bg-[#2c2929] text-neutral-300 font-bold text-xs rounded-xl transition-all"
+                >
+                  Cerrar
+                </button>
+
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {/* Opción 1: Abrir en Diseñador Completo de Campañas */}
+                  <button
+                    type="button"
+                    onClick={handleOpenInCampaignsDesigner}
+                    className="px-4 py-2.5 bg-[#232121] hover:bg-[#2c2929] border border-cyan-500/40 text-cyan-300 hover:text-white font-extrabold text-xs rounded-xl flex items-center gap-2 transition-all shadow-sm"
+                    title="Vincular audiencia y abrir en la solapa de Campañas con el diseñador completo"
+                  >
+                    <Share2 className="w-4 h-4 text-cyan-400" />
+                    <span>Abrir en Diseñador de Campañas</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+
+                  {/* Opción 2: Despachar Directamente */}
+                  <button
+                    type="button"
+                    disabled={launchingCampaign}
+                    onClick={handleDirectLaunchCampaign}
+                    className="px-5 py-2.5 bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 hover:brightness-110 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-cyan-500/30 flex items-center gap-2 transition-all transform active:scale-95 disabled:opacity-50"
+                  >
+                    {launchingCampaign ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Zap className="w-4 h-4 fill-current" />
+                    )}
+                    <span>{launchingCampaign ? 'Despachando Campaña...' : '⚡ Despachar Campaña Inmediata'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL 6: INCORPORAR A LA AGENDA CRM (CAPAS DEL 1 AL 5) */}
+        {showCrmIncorporateModal && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-[#1b1a1a] border-2 border-[#A28444]/60 rounded-3xl max-w-2xl w-full p-6 shadow-2xl relative text-left max-h-[92vh] flex flex-col overflow-hidden">
+              <button
+                onClick={() => setShowCrmIncorporateModal(false)}
+                className="absolute top-5 right-5 p-1.5 rounded-full hover:bg-white/10 text-neutral-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* Modal Header */}
+              <div className="flex items-center gap-3.5 mb-5 pb-4 border-b border-white/10">
+                <div className="w-12 h-12 rounded-2xl bg-[#A28444]/20 border border-[#A28444]/50 flex items-center justify-center text-[#D4AF37] shadow-lg shadow-[#A28444]/20 shrink-0">
+                  <Building2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-black text-white">Incorporar a la Agenda CRM</h3>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#A28444]/20 text-[#D4AF37] border border-[#A28444]/40">
+                      Capas 1 al 5
+                    </span>
+                  </div>
+                  <p className="text-xs text-neutral-400 mt-0.5">
+                    Ingresa los prospectos a la agenda oficial (contactos) con su origen, rol (Líder vs Asesor) y plantilla asignada para disparos inmediatos.
+                  </p>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <div className="flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
+                
+                {/* Audiencia */}
+                <div className="p-3.5 bg-[#121111] border border-white/10 rounded-2xl flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-neutral-400 block mb-0.5">
+                      Contactos a incorporar:
+                    </span>
+                    <p className="text-base font-black text-white">
+                      {selectedProspectIds.size > 0 
+                        ? `${selectedProspectIds.size} prospectos seleccionados` 
+                        : `${totalCount} prospectos bajo los filtros actuales`}
+                    </p>
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#A28444]/20 text-[#D4AF37] border border-[#A28444]/40">
+                    Grupo CRM: PROSPECTO ASESORES / LIDERES
+                  </span>
+                </div>
+
+                {/* Selector de Capa a Asignar */}
+                <div>
+                  <label className="block text-[11px] uppercase font-bold text-neutral-400 mb-2">
+                    Seleccioná la Capa Oficial de Origen (1 al 5):
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    
+                    {/* Auto */}
+                    <button
+                      type="button"
+                      onClick={() => setCrmIncorporateConfig(prev => ({ ...prev, targetCapa: 'AUTO' }))}
+                      className={`p-3 rounded-2xl border text-left transition-all ${
+                        crmIncorporateConfig.targetCapa === 'AUTO'
+                          ? 'bg-[#A28444]/20 border-[#D4AF37] text-white shadow'
+                          : 'bg-[#121111] border-white/10 text-neutral-400 hover:border-white/20 hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-black text-xs text-[#D4AF37]">🌟 Auto-Detectar Capa</span>
+                        <span className="text-[9px] uppercase font-bold text-neutral-500">Recomendado</span>
+                      </div>
+                      <p className="text-[11px] text-neutral-400 mt-1">
+                        Mantiene la capa de origen de cada prospecto (RE/MAX = Capa 1, Corredores = Capa 2, etc.)
+                      </p>
+                    </button>
+
+                    {/* Capas 1 a 5 */}
+                    {CAPAS_CONFIG.map(capa => {
+                      const isSelected = crmIncorporateConfig.targetCapa === capa.id;
+                      return (
+                        <button
+                          key={capa.id}
+                          type="button"
+                          onClick={() => setCrmIncorporateConfig(prev => ({ ...prev, targetCapa: capa.id }))}
+                          className={`p-3 rounded-2xl border text-left transition-all ${
+                            isSelected
+                              ? `${capa.bgColor} ${capa.borderColor} text-white shadow ring-1 ${capa.borderColor}`
+                              : 'bg-[#121111] border-white/10 text-neutral-400 hover:border-white/20 hover:text-white'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className={`font-black text-xs ${capa.textColor}`}>
+                              Capa {capa.num}: {capa.shortName}
+                            </span>
+                            <span className="text-[9px] uppercase font-mono text-neutral-500">{capa.tag}</span>
+                          </div>
+                          <p className="text-[11px] text-neutral-300 mt-1 truncate">
+                            {capa.desc}
+                          </p>
+                          <p className="text-[10px] text-neutral-500 mt-0.5 truncate">
+                            Redes: {capa.networks}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Lo que ocurrirá en el CRM */}
+                <div className="p-3.5 bg-black/60 border border-white/5 rounded-2xl text-[11px] text-neutral-300 space-y-1.5">
+                  <p className="font-bold text-[#D4AF37] flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#D4AF37]" />
+                    Atributos que se registrarán en la tabla de Contactos del CRM:
+                  </p>
+                  <ul className="list-disc pl-4 space-y-1 text-neutral-400">
+                    <li><strong>Identificador de Capa:</strong> <code>metadata_extra.capa_numero</code> (1 al 5) y tag de origen para filtros en el CRM.</li>
+                    <li><strong>Clasificación Jerárquica:</strong> Líderes/Brokers se asignan al grupo <code>LIDERES</code> con rol Líder; agentes a <code>PROSPECTO ASESORES</code>.</li>
+                    <li><strong>Plantilla Vinculada:</strong> Cada contacto queda rotulado con su plantilla sugerida (Email y WhatsApp) para no mezclar discursos.</li>
+                    <li><strong>Estandarización E.164:</strong> Teléfonos normalizados a +549... para disparos directos por WhatsApp Cloud API.</li>
+                  </ul>
+                </div>
+
+              </div>
+
+              {/* Modal Footer */}
+              <div className="mt-5 pt-4 border-t border-white/10 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCrmIncorporateModal(false)}
+                  className="px-4 py-2.5 bg-[#232121] hover:bg-[#2c2929] text-neutral-300 font-bold text-xs rounded-xl transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={incorporatingCrm}
+                  onClick={handleConfirmIncorporateToCRM}
+                  className="px-5 py-2.5 bg-gradient-to-r from-[#A28444] to-[#D4AF37] hover:brightness-110 text-black font-black text-xs rounded-xl shadow-lg shadow-[#A28444]/25 flex items-center gap-2 transition-all transform active:scale-95 disabled:opacity-50"
+                >
+                  {incorporatingCrm ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Building2 className="w-4 h-4" />
+                  )}
+                  <span>{incorporatingCrm ? 'Incorporando al CRM...' : 'Confirmar e Incorporar al CRM'}</span>
                 </button>
               </div>
             </div>

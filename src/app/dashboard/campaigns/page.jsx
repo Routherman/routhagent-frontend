@@ -409,6 +409,61 @@ export default function CampaignsPage() {
     return () => clearInterval(interval);
   }, [codigoEmpresa]);
 
+  // Detección y auto-configuración de vinculación desde la solapa B2B
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const bridgeRaw = sessionStorage.getItem('routh_b2b_campaign_bridge');
+    const isB2bSource = searchParams?.get('source') === 'b2b';
+
+    if (bridgeRaw || isB2bSource) {
+      try {
+        const bridge = bridgeRaw ? JSON.parse(bridgeRaw) : {};
+        sessionStorage.removeItem('routh_b2b_campaign_bridge');
+
+        const channel = bridge.channel || (searchParams?.get('tab') === 'email' ? 'email' : 'whatsapp');
+        const capa = bridge.targetCapa || searchParams?.get('capa') || 'CAPA_1_REMAX';
+
+        setActiveTab(channel === 'whatsapp' ? 'meta' : 'email');
+
+        const capaTemplateNames = {
+          'CAPA_1_REMAX': 'Prospección Fría: Agentes Inmobiliarios RE/MAX (Flujo 2 - Capa 1)',
+          'CAPA_2_PADRONES_CORREDORES': 'Prospección Fría: Corredores Matriculados (Capa 2)',
+          'CAPA_3_PREVISIONALISTAS': 'Prospección Fría: Abogados y Gestores Previsionales (Capa 3)',
+          'CAPA_4_DESARROLLADORES': 'Prospección Fría: Desarrolladores Urbanos y Fideicomisos (Capa 4)',
+          'CAPA_5_PAS': 'Prospección Fría: Productores Asesores de Seguros PAS (Capa 5)'
+        };
+
+        const targetTplName = capaTemplateNames[capa] || bridge.templateName;
+        const matchedTpl = plantillas.find(p => p.nombre === targetTplName || p.id === Number(bridge.templateId));
+
+        if (channel === 'whatsapp') {
+          setMetaForm(prev => ({
+            ...prev,
+            nombre: bridge.campaignName || `Campaña B2B WhatsApp • ${capa.replace('CAPA_', 'Capa ')}`,
+            targetGroup: 'PROSPECTO ASESORES',
+            customMessage: matchedTpl?.contenido || prev.customMessage,
+            plantillaId: matchedTpl?.id || prev.plantillaId
+          }));
+          setShowMetaModal(true);
+        } else {
+          setEmailForm(prev => ({
+            ...prev,
+            nombre: bridge.campaignName || `Campaña B2B Email • ${capa.replace('CAPA_', 'Capa ')}`,
+            asunto: matchedTpl?.asunto || 'Oportunidad de Alianza • Colaboratium',
+            targetGroup: 'PROSPECTO ASESORES',
+            htmlContent: matchedTpl?.contenido || prev.htmlContent,
+            plantillaId: matchedTpl?.id || prev.plantillaId
+          }));
+          setShowEmailModal(true);
+        }
+
+        toast.success(`🎯 Audiencia B2B vinculada con éxito. Capa y plantilla de ${capa.replace('CAPA_', 'Capa ')} configuradas.`);
+      } catch (e) {
+        console.error('Error procesando bridge B2B en Campaigns:', e);
+      }
+    }
+  }, [plantillas, crmContacts]);
+
   // Obtener URL completa y accesible para medios y estáticos
   const getMediaUrl = (url) => {
     if (!url) return '';
