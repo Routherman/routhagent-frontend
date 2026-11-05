@@ -150,7 +150,7 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
       id: 'comisiones',
       keywords: ['comision', 'comisiones', 'cobro', 'pago', 'honorarios', 'porcentaje', 'ganancia', 'liquidacion', 'cuanto gano'],
       title: '💼 Esquema de Comisiones & Cobro',
-      text: 'Las comisiones comerciales se liquidan quincenalmente contra factura B/C con acreditación inmediata en Banco BIND / Coinag. Contás con escala incremental del 3% al 6% según producción.'
+      text: 'Las comisiones comerciales se liquidan quincenalmente contra factura B/C con acreditación inmediata en Banco BIND / Coinag. Contás con un esquema de comisiones de alto rendimiento según producción.'
     },
     {
       id: 'webinar_meet',
@@ -232,6 +232,20 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
         <div>
           <div className="flex flex-wrap items-center gap-2.5">
             <h2 className="font-bold text-[15px] text-gray-900 dark:text-white">{contact?.name || 'Desconocido'} ({contact?.telefono || ''})</h2>
+            
+            {/* Badge Identificador de Línea WA_B vs WA_S */}
+            {contact?.linea_wa?.startsWith('WA_S') || contact?.canal === 'wasender' ? (
+              <span className="bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 text-[10px] px-2 py-0.5 rounded-md font-extrabold border border-purple-300 dark:border-purple-700/50 flex items-center gap-1 shadow-2xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>
+                <span>{contact.linea_wa || 'WA_S***5239'}</span>
+              </span>
+            ) : (
+              <span className="bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 text-[10px] px-2 py-0.5 rounded-md font-extrabold border border-emerald-300 dark:border-emerald-700/50 flex items-center gap-1 shadow-2xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span>WA_B</span>
+              </span>
+            )}
+
             {contact?.categoria && contact?.categoria !== 'general' && (
               <span className="bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-slate-300 text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
                 {contact.categoria}

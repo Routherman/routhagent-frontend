@@ -1712,7 +1712,7 @@ export default function CrmPage() {
             const targetTemplateName = quickLaunchChannel === 'whatsapp' ? b2b?.plantillaWhatsapp : b2b?.plantillaEmail;
 
             // Mensajes demo adaptados al canal
-            const waDemoMessage = `Hola ${firstName}, ¿cómo estás? Te escribo por tu actividad en ${b2b?.office || 'el sector'}. En Colaboratium (Global Loan S.A. - Reg. BCRA Nº 40.015) desarrollamos soluciones para ${b2b?.info.shortName || 'profesionales'} con comisiones del 4% al 6% al calce. ¿Te gustaría coordinar una charla de 15 min?`;
+            const waDemoMessage = `Hola ${firstName}, ¿cómo estás? Te escribo por tu actividad en ${b2b?.office || 'el sector'}. En Colaboratium (Global Loan S.A. - Reg. BCRA Nº 40.015) desarrollamos soluciones para ${b2b?.info.shortName || 'profesionales'} con comisiones de alto rendimiento al calce. ¿Te gustaría coordinar una charla de 15 min?`;
 
             return (
               <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">

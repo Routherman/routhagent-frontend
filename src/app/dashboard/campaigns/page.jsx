@@ -199,6 +199,7 @@ export default function CampaignsPage() {
   // Formulario Campaña Meta
   const [metaForm, setMetaForm] = useState({
     nombre: '',
+    canalLinea: 'WA_B', // 'WA_B' | 'WA_S***5239'
     plantillaId: '',
     targetGroup: 'TODOS',
     selectedContactIds: [],
@@ -920,6 +921,11 @@ export default function CampaignsPage() {
     e.preventDefault();
     if (!metaForm.nombre) {
       toast.error("Ingresa un nombre para la campaña");
+      return;
+    }
+
+    if (metaForm.canalLinea === 'WA_S***5239') {
+      toast.error("🔒 La línea WA_S***5239 se encuentra en Periodo de Prueba con salidas bloqueadas. Solo recibe mensajes y responde automáticamente a agentes RE/MAX. Para campañas masivas utilice la línea oficial WA_B.");
       return;
     }
 
@@ -2628,6 +2634,59 @@ export default function CampaignsPage() {
                   onChange={e => setMetaForm({ ...metaForm, nombre: e.target.value })}
                   className="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 text-gray-950 dark:text-white border border-gray-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 />
+              </div>
+
+              {/* Selector de Línea de WhatsApp: WA_B vs WA_S***5239 */}
+              <div>
+                <label className="block text-xs font-black uppercase text-gray-700 dark:text-slate-300 mb-1">
+                  Línea de WhatsApp
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setMetaForm({ ...metaForm, canalLinea: 'WA_B' })}
+                    className={`p-2.5 rounded-xl text-left border transition flex items-center justify-between ${
+                      metaForm.canalLinea === 'WA_B'
+                        ? 'bg-emerald-500/10 border-emerald-500 text-emerald-900 dark:text-emerald-300 font-extrabold ring-1 ring-emerald-500'
+                        : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-white/10 text-gray-600 dark:text-slate-400 hover:border-gray-300'
+                    }`}
+                  >
+                    <div>
+                      <span className="text-xs font-black block">WA_B</span>
+                      <span className="text-[10px] block opacity-80">WhatsApp Business Oficial</span>
+                    </div>
+                    <span className="text-[9px] bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40 px-1.5 py-0.5 rounded font-black">
+                      Oficial
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMetaForm({ ...metaForm, canalLinea: 'WA_S***5239' })}
+                    className={`p-2.5 rounded-xl text-left border transition flex items-center justify-between ${
+                      metaForm.canalLinea === 'WA_S***5239'
+                        ? 'bg-purple-500/10 border-purple-500 text-purple-900 dark:text-purple-300 font-extrabold ring-1 ring-purple-500'
+                        : 'bg-white dark:bg-slate-900 border-gray-200 dark:border-white/10 text-gray-600 dark:text-slate-400 hover:border-gray-300'
+                    }`}
+                  >
+                    <div>
+                      <span className="text-xs font-black block">WA_S***5239</span>
+                      <span className="text-[10px] block opacity-80">WASender API (Colab)</span>
+                    </div>
+                    <span className="text-[9px] bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-400/40 px-1.5 py-0.5 rounded font-black">
+                      Prueba
+                    </span>
+                  </button>
+                </div>
+
+                {metaForm.canalLinea === 'WA_S***5239' && (
+                  <div className="mt-2 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 text-[11px] text-amber-900 dark:text-amber-200 flex items-start gap-2 animate-in fade-in">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong>Modo Prueba Activo:</strong> La línea <strong>WA_S***5239</strong> tiene bloqueadas las salidas masivas. Opera exclusivamente para recibir consultas de pauta y responder automáticamente a agentes RE/MAX con su flujo bot.
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">

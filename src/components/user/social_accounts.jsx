@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { CheckCircle2, Plus, X, MessageCircle, Save, ExternalLink } from 'lucide-react';
+import { CheckCircle2, Plus, X, MessageCircle, Save, ExternalLink, Lock, Radio, Copy, Check, ShieldAlert } from 'lucide-react';
 import { API_URL } from '@/config/api';
 
 const TikTokIcon = ({ className }) => (
@@ -34,7 +34,7 @@ export default function SocialAccounts() {
   const [codigoEmpresa, setCodigoEmpresa] = useState(null);
   const [loadingData, setLoadingData] = useState(true);
 
-  // WhatsApp modal state
+  // WhatsApp Business modal state (WA_B)
   const [isWpModalOpen, setIsWpModalOpen] = useState(false);
   const [isWpSuccess, setIsWpSuccess] = useState(false);
   const [savingWp, setSavingWp] = useState(false);
@@ -44,13 +44,26 @@ export default function SocialAccounts() {
   const [phoneId, setPhoneId] = useState('');
   const [accessToken, setAccessToken] = useState('');
 
-  // Instagram modal state
+  // WASender API modal state (WA_S***5239)
+  const [isWasModalOpen, setIsWasModalOpen] = useState(false);
+  const [isWasSuccess, setIsWasSuccess] = useState(false);
+  const [savingWas, setSavingWas] = useState(false);
+  const [wasError, setWasError] = useState(null);
+  const [copiedWebhook, setCopiedWebhook] = useState(false);
+
+  const [wasSessionName, setWasSessionName] = useState('Colab');
+  const [wasPhoneNumber, setWasPhoneNumber] = useState('+54 11 7825 5239');
+  const [wasApiKey, setWasApiKey] = useState('');
+  const [wasWebhookSecret, setWasWebhookSecret] = useState('');
+  const [wasBlockOutgoing, setWasBlockOutgoing] = useState(true);
+
+  // Instagram modal state (Global Loan)
   const [isIgModalOpen, setIsIgModalOpen] = useState(false);
   const [isIgSuccess, setIsIgSuccess] = useState(false);
   const [savingIg, setSavingIg] = useState(false);
   const [igError, setIgError] = useState(null);
 
-  const [igUsername, setIgUsername] = useState('@colaboratium');
+  const [igUsername, setIgUsername] = useState('@globalloan');
   const [igPageId, setIgPageId] = useState('');
   const [igAccessToken, setIgAccessToken] = useState('');
 
@@ -79,8 +92,15 @@ export default function SocialAccounts() {
                 setPhoneId(cv.whatsapp.phone_id || '');
                 setAccessToken(cv.whatsapp.access_token || '');
             }
+            if (cv && cv.wasender) {
+                setWasSessionName(cv.wasender.session_name || 'Colab');
+                setWasPhoneNumber(cv.wasender.phone_number || '+54 11 7825 5239');
+                setWasApiKey(cv.wasender.api_key || '');
+                setWasWebhookSecret(cv.wasender.webhook_secret || '');
+                setWasBlockOutgoing(cv.wasender.block_outgoing ?? true);
+            }
             if (cv && cv.instagram) {
-                setIgUsername(cv.instagram.username || '@colaboratium');
+                setIgUsername(cv.instagram.username || '@globalloan');
                 setIgPageId(cv.instagram.meta_page_id || '');
                 setIgAccessToken(cv.instagram.access_token || '');
             }
@@ -96,6 +116,7 @@ export default function SocialAccounts() {
   }, [user]);
 
   let wpConnected = false;
+  let wasConnected = false;
   let igConnected = false;
   let currentCuentas = {};
   if (empresa && empresa.cuentas_vinculadas) {
@@ -107,30 +128,50 @@ export default function SocialAccounts() {
     if (currentCuentas.whatsapp && currentCuentas.whatsapp.access_token) {
         wpConnected = true;
     }
+    if (currentCuentas.wasender && (currentCuentas.wasender.connected || currentCuentas.wasender.phone_number)) {
+        wasConnected = true;
+    }
     if (currentCuentas.instagram && (currentCuentas.instagram.connected || currentCuentas.instagram.username)) {
         igConnected = true;
     }
   }
 
+  // Código visual de la línea WASender: WA_S***XXXX (últimos 4 dígitos)
+  const cleanWasPhone = (wasPhoneNumber || '5239').replace(/\D/g, '');
+  const wasLast4 = cleanWasPhone.length >= 4 ? cleanWasPhone.slice(-4) : '5239';
+  const wasLineCode = `WA_S***${wasLast4}`;
+
   const networks = [
     { 
       id: 'whatsapp', 
       name: 'WhatsApp Business', 
+      lineCode: 'WA_B',
       icon: MessageCircle, 
       color: 'text-green-600', 
       bg: 'bg-green-50', 
-      desc: 'Conecta tu API de WhatsApp Cloud de Meta para mensajes y bots', 
+      desc: 'Línea Oficial Meta Cloud API para campañas y flujos maestros de Colaboratium', 
       connected: wpConnected 
     },
     { 
+      id: 'wasender', 
+      name: 'WASender API', 
+      lineCode: wasLineCode,
+      icon: MessageCircle, 
+      color: 'text-emerald-600', 
+      bg: 'bg-emerald-50', 
+      desc: `Conexión QR / Sesión Colab (${wasPhoneNumber}) vinculada a Global Loan para agentes RE/MAX y publicidad en redes.`, 
+      connected: wasConnected,
+      badge: wasLineCode
+    },
+    { 
       id: 'instagram', 
-      name: 'Instagram (@colaboratium)', 
+      name: 'Instagram (@globalloan)', 
       icon: InstagramIcon, 
       color: 'text-pink-600', 
       bg: 'bg-pink-50', 
-      desc: 'Vincula la cuenta oficial @colaboratium vía Meta Graph API', 
+      desc: 'Cuenta oficial de Global Loan S.A. vía Meta Graph API para captar leads desde historias, DMs y reels', 
       connected: igConnected,
-      url: 'https://www.instagram.com/colaboratium/'
+      url: `https://www.instagram.com/${(igUsername || 'globalloan').replace('@', '')}/`
     },
     { id: 'tiktok', name: 'TikTok', icon: TikTokIcon, color: 'text-black', bg: 'bg-gray-100', desc: 'Gestiona tu presencia y mensajes en TikTok', connected: false },
     { id: 'x', name: 'X (Twitter)', icon: XIcon, color: 'text-black', bg: 'bg-gray-100', desc: 'Integra tus DMs y menciones de X', connected: false },
@@ -149,7 +190,8 @@ export default function SocialAccounts() {
         whatsapp: {
             webhook_token: webhookToken,
             phone_id: phoneId,
-            access_token: accessToken
+            access_token: accessToken,
+            line_code: 'WA_B'
         }
       };
 
@@ -175,6 +217,56 @@ export default function SocialAccounts() {
     }
   };
 
+  const handleSaveWasender = async (e) => {
+    e.preventDefault();
+    if (!codigoEmpresa) return;
+    setSavingWas(true);
+    setWasError(null);
+
+    try {
+      const cleanPhone = (wasPhoneNumber || '').replace(/\D/g, '');
+      const last4 = cleanPhone.length >= 4 ? cleanPhone.slice(-4) : '5239';
+      const updatedCuentas = {
+        ...currentCuentas,
+        wasender: {
+          session_name: wasSessionName || 'Colab',
+          phone_number: wasPhoneNumber,
+          phone_raw: cleanPhone,
+          phone_last4: last4,
+          line_code: `WA_S***${last4}`,
+          api_key: wasApiKey || 'wasender_live_token_globalloan',
+          webhook_url: `${API_URL}/wasender/webhook`,
+          webhook_secret: wasWebhookSecret || 'colab_webhook_secret_wasender',
+          connected: true,
+          connected_at: new Date().toISOString(),
+          status: 'connected',
+          assigned_flow: 'Flujo WA_S: Agentes RE/MAX y Pauta Redes',
+          block_outgoing: wasBlockOutgoing
+        }
+      };
+
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/social`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
+        body: JSON.stringify({ cuentasVinculadas: updatedCuentas })
+      });
+      if (res.ok) {
+        setIsWasSuccess(true);
+        setEmpresa({ ...empresa, cuentas_vinculadas: updatedCuentas });
+      } else {
+        const data = await res.json();
+        setWasError(data.error || 'Error al guardar configuración de WASender');
+      }
+    } catch (err) {
+      setWasError('Error de conexión con el servidor.');
+    } finally {
+      setSavingWas(false);
+    }
+  };
+
   const handleSaveInstagram = async (e) => {
     e.preventDefault();
     if (!codigoEmpresa) return;
@@ -187,9 +279,10 @@ export default function SocialAccounts() {
         ...currentCuentas,
         instagram: {
             username: cleanUsername,
-            account_id: 'colaboratium',
+            name: 'Global Loan S.A.',
+            account_id: 'globalloan',
             profile_url: `https://www.instagram.com/${cleanUsername.replace('@', '')}/`,
-            meta_page_id: igPageId || 'colaboratium_meta_page',
+            meta_page_id: igPageId || 'globalloan_meta_page',
             access_token: igAccessToken || undefined,
             connected: true,
             updated_at: new Date().toISOString()
@@ -228,9 +321,9 @@ export default function SocialAccounts() {
       {/* Header card */}
       <div className="bg-white rounded-[32px] p-8 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-gray-50">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2 tracking-tight">Cuentas Sociales & Redes</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2 tracking-tight">Cuentas Sociales & Canales de Mensajería</h2>
           <p className="text-gray-500 text-sm max-w-xl">
-            Vincula tus canales oficiales de Meta (WhatsApp Cloud API e Instagram @colaboratium) para centralizar la prospección, mensajes y métricas del CRM.
+            Gestiona tus líneas oficiales: <span className="font-bold text-gray-900">WA_B</span> (WhatsApp Business Meta), <span className="font-bold text-gray-900">{wasLineCode}</span> (WASender API vinculada a Global Loan) e <span className="font-bold text-gray-900">Instagram (@globalloan)</span>.
           </p>
         </div>
       </div>
@@ -241,8 +334,15 @@ export default function SocialAccounts() {
           <div key={network.id} className="bg-white rounded-[32px] p-8 shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow">
             
             <div className="flex items-center justify-between mb-8">
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${network.bg} ${network.color}`}>
-                <network.icon className="w-7 h-7" />
+              <div className="flex items-center gap-3">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${network.bg} ${network.color}`}>
+                  <network.icon className="w-7 h-7" />
+                </div>
+                {network.lineCode && (
+                  <span className="px-2.5 py-1 rounded-xl text-xs font-black bg-gray-950 text-white tracking-wider font-mono shadow-xs">
+                    {network.lineCode}
+                  </span>
+                )}
               </div>
 
               {network.connected ? (
@@ -272,6 +372,7 @@ export default function SocialAccounts() {
                 <button 
                   onClick={() => {
                     if (network.id === 'whatsapp') setIsWpModalOpen(true);
+                    if (network.id === 'wasender') setIsWasModalOpen(true);
                     if (network.id === 'instagram') setIsIgModalOpen(true);
                   }}
                   className="w-full py-3.5 rounded-2xl border-2 border-gray-100 text-gray-700 font-bold hover:bg-gray-50 transition-colors"
@@ -282,11 +383,14 @@ export default function SocialAccounts() {
                 <button 
                   onClick={() => {
                     if (network.id === 'whatsapp') setIsWpModalOpen(true);
+                    if (network.id === 'wasender') setIsWasModalOpen(true);
                     if (network.id === 'instagram') setIsIgModalOpen(true);
                   }}
                   className={`w-full py-3.5 rounded-2xl font-bold transition-colors ${
                     network.id === 'whatsapp' 
                       ? 'bg-green-50 text-green-700 hover:bg-green-100' 
+                      : network.id === 'wasender'
+                      ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
                       : network.id === 'instagram'
                       ? 'bg-pink-50 text-pink-700 hover:bg-pink-100'
                       : 'bg-[#E8F0FE] text-blue-700 hover:bg-[#D2E3FC]'
@@ -301,7 +405,7 @@ export default function SocialAccounts() {
         ))}
       </div>
 
-      {/* WhatsApp Modal */}
+      {/* WhatsApp Business Modal (WA_B) */}
       {isWpModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-[32px] p-8 w-full max-w-lg shadow-2xl relative animate-in zoom-in-95 duration-200">
@@ -318,11 +422,14 @@ export default function SocialAccounts() {
                     <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center text-green-600">
                         <MessageCircle className="w-6 h-6" />
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900">Vincular WhatsApp Business</h3>
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-900">Vincular WhatsApp Business</h3>
+                      <span className="text-xs font-mono font-black px-2 py-0.5 rounded bg-green-100 text-green-800">Línea Oficial: WA_B</span>
+                    </div>
                 </div>
                 
                 <p className="text-gray-500 text-sm mb-6 leading-relaxed">
-                  Ingresa las credenciales de tu API de WhatsApp Cloud (Meta para Desarrolladores) para conectar tu línea con la plataforma.
+                  Ingresa las credenciales de tu API de WhatsApp Cloud (Meta para Desarrolladores) para la línea oficial <strong className="text-gray-900">WA_B</strong>.
                 </p>
 
                 {wpError && <div className="mb-6 p-4 rounded-2xl bg-red-50 text-red-600 text-sm font-semibold border border-red-100">{wpError}</div>}
@@ -330,15 +437,15 @@ export default function SocialAccounts() {
                 <form onSubmit={handleSaveWhatsApp} className="space-y-5 mb-2">
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Webhook Token</label>
-                        <input required type="text" value={webhookToken} onChange={e => setWebhookToken(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all font-medium" placeholder="Token secreto para el Webhook" />
+                        <input required type="text" value={webhookToken} onChange={e => setWebhookToken(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all font-medium" placeholder="WASA132" />
                     </div>
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Phone ID</label>
-                        <input required type="text" value={phoneId} onChange={e => setPhoneId(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all font-medium" placeholder="Identificador del número de teléfono" />
+                        <input required type="text" value={phoneId} onChange={e => setPhoneId(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all font-medium" placeholder="1298699639985346" />
                     </div>
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Access Token</label>
-                        <input required type="text" value={accessToken} onChange={e => setAccessToken(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all font-medium" placeholder="Token de acceso (Permanente o temporal)" />
+                        <input required type="text" value={accessToken} onChange={e => setAccessToken(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all font-medium" placeholder="EAAe7..." />
                     </div>
                     
                     <div className="pt-4">
@@ -346,7 +453,7 @@ export default function SocialAccounts() {
                         disabled={savingWp}
                         className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
                         >
-                            {savingWp ? 'Conectando...' : 'Guardar y Conectar WhatsApp'}
+                            {savingWp ? 'Conectando...' : 'Guardar y Conectar WhatsApp (WA_B)'}
                         </button>
                     </div>
                 </form>
@@ -356,9 +463,9 @@ export default function SocialAccounts() {
                 <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mb-6">
                   <CheckCircle2 className="w-10 h-10 text-green-600" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">¡Conexión Exitosa!</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">¡Conexión Exitosa (WA_B)!</h3>
                 <p className="text-gray-500 text-sm mb-8 max-w-sm">
-                  Tus credenciales han sido guardadas. Ahora tu plataforma puede enviar y recibir mensajes de WhatsApp a través del bot.
+                  Línea WA_B enlazada a la plataforma para el motor de campañas y flujos.
                 </p>
                 <button 
                   onClick={() => { setIsWpModalOpen(false); setIsWpSuccess(false); }}
@@ -372,7 +479,133 @@ export default function SocialAccounts() {
         </div>
       )}
 
-      {/* Instagram Modal */}
+      {/* WASender API Modal (WA_S***5239) */}
+      {isWasModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-[32px] p-8 w-full max-w-lg shadow-2xl relative animate-in zoom-in-95 duration-200 max-h-[92vh] overflow-y-auto">
+            <button 
+              onClick={() => { setIsWasModalOpen(false); setIsWasSuccess(false); }}
+              className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            {!isWasSuccess ? (
+              <>
+                <div className="flex items-center gap-3 mb-6 pr-10">
+                    <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold">
+                        <Radio className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-900">Vincular WASender API</h3>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs font-mono font-black px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                          {wasLineCode}
+                        </span>
+                        <span className="text-[11px] text-gray-400 font-semibold">wasenderapi.com</span>
+                      </div>
+                    </div>
+                </div>
+                
+                <p className="text-gray-500 text-sm mb-4 leading-relaxed">
+                  Conexión multi-dispositivo vinculada a la cuenta de Global Loan (<strong className="text-gray-900">{wasPhoneNumber}</strong>) para prospectar agentes RE/MAX y recibir publicidad de redes.
+                </p>
+
+                {wasError && <div className="mb-6 p-4 rounded-2xl bg-red-50 text-red-600 text-sm font-semibold border border-red-100">{wasError}</div>}
+
+                <form onSubmit={handleSaveWasender} className="space-y-4 mb-2">
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1 pl-1">Nombre de la Sesión</label>
+                        <input required type="text" value={wasSessionName} onChange={e => setWasSessionName(e.target.value)} className="w-full px-5 py-3 rounded-2xl border border-gray-200 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-sm" placeholder="Colab" />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1 pl-1">Número de Teléfono Vinculado</label>
+                        <input required type="text" value={wasPhoneNumber} onChange={e => setWasPhoneNumber(e.target.value)} className="w-full px-5 py-3 rounded-2xl border border-gray-200 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none font-mono font-bold text-sm" placeholder="+54 11 7825 5239" />
+                        <p className="text-[11px] text-gray-400 pl-1 mt-1">Se identificará en todas las secciones como: <strong className="text-gray-900 font-mono">{wasLineCode}</strong></p>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1 pl-1">API Key / Token Bearer</label>
+                        <input type="password" value={wasApiKey} onChange={e => setWasApiKey(e.target.value)} className="w-full px-5 py-3 rounded-2xl border border-gray-200 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none font-mono text-sm" placeholder="wasender_api_token..." />
+                    </div>
+
+                    {/* Webhook Endpoint Informativo */}
+                    <div className="p-3.5 bg-gray-50 border border-gray-200/80 rounded-2xl">
+                        <label className="block text-[11px] font-black uppercase text-gray-500 mb-1">URL de Webhook para WASender Dashboard:</label>
+                        <div className="flex items-center gap-2">
+                            <input 
+                              readOnly 
+                              value={`https://routhagent.vercel.app/api/wasender/webhook`} 
+                              className="w-full px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-gray-700 text-xs font-mono font-bold" 
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText('https://routhagent.vercel.app/api/wasender/webhook');
+                                setCopiedWebhook(true);
+                                setTimeout(() => setCopiedWebhook(false), 2000);
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold shrink-0 flex items-center gap-1"
+                            >
+                              {copiedWebhook ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                              <span>{copiedWebhook ? 'Copiado' : 'Copiar'}</span>
+                            </button>
+                        </div>
+                        <p className="text-[10px] text-gray-400 mt-1">Ingresa esta URL en tu sesión de wasenderapi.com en el campo Webhook URL (POST).</p>
+                    </div>
+
+                    {/* Bloqueo de salida en periodo de prueba */}
+                    <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-2xl space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-black text-amber-950 flex items-center gap-1.5">
+                                <Lock className="w-4 h-4 text-amber-600" />
+                                <span>Modo de Prueba: Bloquear Comunicación Saliente</span>
+                            </span>
+                            <input 
+                                type="checkbox"
+                                checked={wasBlockOutgoing}
+                                onChange={e => setWasBlockOutgoing(e.target.checked)}
+                                className="w-4 h-4 accent-amber-600 cursor-pointer"
+                            />
+                        </div>
+                        <p className="text-[11px] text-amber-800 leading-relaxed font-medium">
+                            Con esta casilla activa, se bloquean todos los envíos salientes manuales o de campañas en <strong className="font-mono">{wasLineCode}</strong>. La línea solo recibe mensajes entrantes de publicidad y el bot responde automáticamente.
+                        </p>
+                    </div>
+                    
+                    <div className="pt-2">
+                        <button 
+                        disabled={savingWas}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-2xl transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                            {savingWas ? 'Guardando...' : `Guardar y Activar ${wasLineCode}`}
+                        </button>
+                    </div>
+                </form>
+              </>
+            ) : (
+              <div className="flex flex-col items-center text-center py-6">
+                <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6">
+                  <CheckCircle2 className="w-10 h-10 text-emerald-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">¡Línea {wasLineCode} Conectada!</h3>
+                <p className="text-gray-500 text-sm mb-8 max-w-sm">
+                  WASender API vinculada con éxito. Los mensajes entrantes en esta línea serán procesados por el flujo de agentes RE/MAX y publicidad.
+                </p>
+                <button 
+                  onClick={() => { setIsWasModalOpen(false); setIsWasSuccess(false); }}
+                  className="w-full bg-black hover:bg-gray-800 text-white font-bold py-4 rounded-2xl transition-colors shadow-sm"
+                >
+                  Continuar
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Instagram Modal (Global Loan) */}
       {isIgModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-[32px] p-8 w-full max-w-lg shadow-2xl relative animate-in zoom-in-95 duration-200">
@@ -391,12 +624,12 @@ export default function SocialAccounts() {
                     </div>
                     <div>
                       <h3 className="text-2xl font-bold text-gray-900">Vincular Instagram</h3>
-                      <p className="text-xs text-pink-600 font-bold">@colaboratium • Meta Graph API</p>
+                      <p className="text-xs text-pink-600 font-bold">@globalloan • Global Loan S.A.</p>
                     </div>
                 </div>
                 
                 <p className="text-gray-500 text-sm mb-6 leading-relaxed">
-                  Conecta la cuenta de Instagram de <strong className="text-gray-900">@colaboratium</strong> para captar leads desde historias, mensajes directos (DMs) y reels con la IA.
+                  Conecta la cuenta oficial de Instagram de <strong className="text-gray-900">Global Loan S.A.</strong> (<strong className="text-pink-600">{igUsername}</strong>) para canalizar leads de publicidad y redes hacia el CRM.
                 </p>
 
                 {igError && <div className="mb-6 p-4 rounded-2xl bg-red-50 text-red-600 text-sm font-semibold border border-red-100">{igError}</div>}
@@ -404,11 +637,11 @@ export default function SocialAccounts() {
                 <form onSubmit={handleSaveInstagram} className="space-y-5 mb-2">
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Usuario de Instagram</label>
-                        <input required type="text" value={igUsername} onChange={e => setIgUsername(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all font-medium" placeholder="@colaboratium" />
+                        <input required type="text" value={igUsername} onChange={e => setIgUsername(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all font-medium" placeholder="@globalloan" />
                     </div>
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Meta Facebook Page ID / Instagram Account ID</label>
-                        <input type="text" value={igPageId} onChange={e => setIgPageId(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all font-medium" placeholder="ID de la Página o Instagram Business" />
+                        <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Meta Facebook Page ID / Instagram Business Account ID</label>
+                        <input type="text" value={igPageId} onChange={e => setIgPageId(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all font-medium" placeholder="ID de la Página oficial de Global Loan" />
                     </div>
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Meta Access Token (Opcional si usa el de WhatsApp)</label>
@@ -420,7 +653,7 @@ export default function SocialAccounts() {
                           disabled={savingIg}
                           className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold py-4 rounded-2xl transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
                         >
-                            {savingIg ? 'Guardando...' : 'Conectar Instagram @colaboratium'}
+                            {savingIg ? 'Guardando...' : `Conectar Instagram ${igUsername}`}
                         </button>
                     </div>
                 </form>
@@ -432,7 +665,7 @@ export default function SocialAccounts() {
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">¡Instagram Conectado!</h3>
                 <p className="text-gray-500 text-sm mb-8 max-w-sm">
-                  La cuenta <strong className="text-gray-900">@colaboratium</strong> ha quedado registrada en Colaboratium.
+                  La cuenta oficial <strong className="text-gray-900">{igUsername}</strong> de Global Loan S.A. ha quedado vinculada exitosamente.
                 </p>
                 <button 
                   onClick={() => { setIsIgModalOpen(false); setIsIgSuccess(false); }}

@@ -55,7 +55,7 @@ const EMAIL_TEMPLATES = [
 https://meet.google.com/new
 
 En esta sesión de 40 minutos veremos:
-1. Esquema de comisiones (4%, 5% y 6%) y devengamiento inmediato al calce (3%).
+1. Esquema de comisiones de alto rendimiento y devengamiento inmediato al calce.
 2. Atribución de leads propios (Caso Carlos Gómez) vs leads de marketing (Caso Juan Ramírez).
 3. Operatoria No Custodial con soporte de Banco BIND y Coinag.
 4. Alta en consola y herramientas de prospección.

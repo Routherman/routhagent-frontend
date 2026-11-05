@@ -384,7 +384,7 @@ export default function FloatingCopilot() {
         <p style="font-size: 12px; color: #475569; line-height: 1.6;">
           • Sesión Virtual Oficial Google Meet: <code>meet.google.com/new</code>.<br>
           • Presencial Vicente López: Miércoles 14:30 hs.<br>
-          • Inscripción de Asesores: Devengamiento 3% al calce inmediato, esquema de comisiones al 4%, 5% y 6%.
+          • Inscripción de Asesores: Devengamiento inmediato al calce y esquema de comisiones de alto rendimiento.
         </p>
 
         <div class="footer">

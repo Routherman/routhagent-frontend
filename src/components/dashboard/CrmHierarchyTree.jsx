@@ -226,7 +226,8 @@ export default function CrmHierarchyTree({
                                 <p className="text-xs text-gray-400 italic">No hay asesores asignados a este líder aún.</p>
                               ) : (
                                 liderAsesores.map((asesor) => {
-                                  const asesorInversores = inversores.filter(i => i.asesor_id === asesor.id || i.lider_id === lider.id);
+                                  // Exclusividad estricta: Cada asesor solo visualiza los inversores que le pertenecen exclusivamente
+                                  const asesorInversores = inversores.filter(i => i.asesor_id === asesor.id && i.id !== asesor.id);
                                   const isAdvisorCollapsed = collapsedAdvisors[asesor.id];
 
                                   return (
@@ -354,6 +355,38 @@ export default function CrmHierarchyTree({
                                   );
                                 })
                               )}
+
+                              {/* Inversores directos del Líder (sin asesor asignado aún) */}
+                              {(() => {
+                                const directLiderInversores = inversores.filter(i => i.lider_id === lider.id && !i.asesor_id && i.id !== lider.id);
+                                if (directLiderInversores.length === 0 || !showInversoresBranch) return null;
+                                return (
+                                  <div className="mt-3 pt-3 border-t border-amber-200/50">
+                                    <div className="flex items-center gap-1.5 mb-2">
+                                      <span className="text-[10px] font-black uppercase text-amber-900 bg-amber-100/90 px-2 py-0.5 rounded-md border border-amber-200 flex items-center gap-1">
+                                        <DollarSign className="w-3 h-3 text-amber-600" />
+                                        Inversores Directos del Líder ({directLiderInversores.length})
+                                      </span>
+                                      <span className="text-[10px] text-gray-400 italic">Sin asesor asignado</span>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                      {directLiderInversores.map(inv => (
+                                        <div 
+                                          key={inv.id} 
+                                          onClick={() => onSelectContact?.(inv)} 
+                                          className="p-2 rounded-xl bg-amber-50/60 border border-amber-200/70 flex items-center justify-between text-xs cursor-pointer hover:bg-amber-100 transition shadow-2xs"
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            <span className="w-5 h-5 rounded-md bg-amber-200 text-amber-800 flex items-center justify-center font-bold text-[10px]">$</span>
+                                            <span className="font-bold text-gray-800">{inv.nombre}</span>
+                                          </div>
+                                          <span className="font-mono text-[11px] text-gray-500">{inv.telefono}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </div>
                           )}
                         </div>

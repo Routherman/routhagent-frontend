@@ -71,7 +71,7 @@ export const CAPAS_CONFIG = [
     templateEmailName: 'Prospección Fría: Agentes Inmobiliarios RE/MAX (Flujo 2 - Capa 1)',
     templateWhatsappName: 'Prospección WhatsApp: Agentes Franquicias (Capa 1)',
     templateLeaderEmailName: 'Prospección Fría: Broker / Martillero RE/MAX (Flujo 3)',
-    desc: 'Agentes con cartera activa para monetizar operaciones inmobiliarias con comisiones 4-6% al calce y créditos puente.'
+    desc: 'Agentes con cartera activa para monetizar operaciones inmobiliarias con comisiones de alto rendimiento al calce y créditos puente.'
   },
   {
     id: 'CAPA_2_PADRONES_CORREDORES',
@@ -143,7 +143,7 @@ export const CAPAS_CONFIG = [
     templateEmailName: 'Prospección Fría: Productores Asesores de Seguros PAS (Capa 5)',
     templateWhatsappName: 'Prospección WhatsApp: Productores Seguros PAS (Capa 5)',
     templateLeaderEmailName: 'Prospección Fría: Productores Asesores de Seguros PAS (Capa 5)',
-    desc: 'Nueva unidad de préstamos con garantía y jubilados para su cartera de asegurados ganando 4-6% más comisiones residuales.'
+    desc: 'Nueva unidad de préstamos con garantía y jubilados para su cartera de asegurados ganando comisiones de alto rendimiento más beneficios residuales.'
   }
 ];
 
@@ -232,6 +232,7 @@ export default function ProspectosB2BPage() {
   const [campaignLauncherConfig, setCampaignLauncherConfig] = useState({
     name: '',
     channel: 'whatsapp', // 'whatsapp' | 'email'
+    lineaWa: 'WA_B', // 'WA_B' | 'WA_S***5239'
     targetCapa: 'AUTO', // 'AUTO' o CAPA_1..5
     targetRole: 'ALL', // 'ALL' | 'ASESOR_POTENCIAL' | 'LIDER_BROKER_POTENCIAL'
     filterHasPhone: false,
@@ -374,6 +375,10 @@ export default function ProspectosB2BPage() {
 
   // Despacho Directo de Campaña B2B
   const handleDirectLaunchCampaign = async () => {
+    if (campaignLauncherConfig.channel === 'whatsapp' && campaignLauncherConfig.lineaWa === 'WA_S***5239') {
+      toast.error("🔒 La línea WA_S***5239 se encuentra en Periodo de Prueba con salidas bloqueadas. Solo recibe mensajes y responde automáticamente a agentes RE/MAX. Para campañas masivas utilice la línea oficial WA_B.");
+      return;
+    }
     setLaunchingCampaign(true);
     try {
       const isSelectionMode = selectedProspectIds.size > 0;
@@ -807,9 +812,9 @@ Sabemos que en la operatoria de franquicias hablás todas las semanas con client
 ¿Cómo funciona la alianza para vos y para tu cliente?
 
 1. Para tu cliente inversor (Costo 0%): Invierte desde una plataforma 100% bancarizada (Banco BIND y Banco Coinag) operando desde su propio CVU, financiando créditos atomizados calificados por Inteligencia Artificial (validando BCRA, Renaper, Nosis, Veraz y UIF). Al inversor jamás se le cobra comisión ni gasto administrativo.
-2. Para vos como Asesor (Comisiones directas del 4% al 6%): Por cada inversor que vincules con tu link propio, cobrás 4% (3 meses), 5% (6 meses) y 6% (12 meses) sobre capital colocado, cobrando un 3% inmediato al calce del crédito y el resto con las cuotas, más el 100% de comisión en cada reinversión futura de tu cliente.
+2. Para vos como Asesor: Comisiones de alto rendimiento sobre capital colocado, con cobro inmediato al calce de la operación y el 100% de beneficio en cada reinversión futura de tu cliente.
 
-Este {{1}} a las {{2}} hs brindaremos una reunión informativa online de {{3}} exclusiva para agentes y brokers de redes, donde mostramos la consola en vivo y la escala de comisiones.
+Este {{1}} a las {{2}} hs brindaremos una reunión informativa online de {{3}} exclusiva para agentes y brokers de redes, donde mostramos la consola en vivo y el esquema de comisiones de alto rendimiento.
 
 👉 Podés reservar tu lugar sin costo acá: {{4}}
 
@@ -838,7 +843,7 @@ Sabemos que uno de los mayores frenos en la operatoria inmobiliaria son las oper
 
 1. Créditos Puente y Mutuos con Garantía Real: Financiación ágil en 48 hs aprobada por motor de IA, permitiendo destrabar reservas y boletos de compraventa para clientes calificados.
 2. Destino para Clientes Vendedores con Liquidez: Si tu cliente acaba de vender y busca renta en pesos 100% bancarizada (vía Banco BIND y Banco Coinag con CVU propio), invierte sin comisiones ni cargos administrativos financiando carteras atomizadas de bajo riesgo.
-3. Honorarios y Comisiones para Vos: Percibís entre el 4% y el 6% de honorarios directos sobre el capital colocado, cobrando un 3% inmediato al calce de la operación y el saldo en cuotas, más el 100% en reinversiones futuras.
+3. Honorarios y Comisiones para Vos: Percibís comisiones de alto rendimiento directas sobre el capital colocado, cobrando de forma inmediata al calce de la operación, más el 100% en reinversiones futuras.
 
 Este {{1}} a las {{2}} hs brindaremos una sesión online de {{3}} exclusiva para Corredores Matriculados donde mostramos cómo estructurar los mutuos puente y el marco legal regulatorio.
 
@@ -870,7 +875,7 @@ Como PAS, ya contás con la confianza y el conocimiento financiero de tus asegur
 3. Inversión en Créditos con Rendimiento Superior al Plazo Fijo: Para asegurados con excedentes de liquidez en cuenta bancaria, con respaldo bancario vía Banco BIND y Coinag.
 
 Tus Beneficios como Productor:
-- Comisiones de entre el 4% y el 6% sobre el desembolso total del crédito (cobrando un 3% inmediato al calce).
+- Comisiones de alto rendimiento sobre el desembolso total del crédito (con cobro inmediato al calce).
 - Ingresos residuales mes a mes y 100% de comisión sobre cada renovación de crédito.
 - Operatoria 100% digital desde tu consola propia: el análisis de scoring crediticio (Veraz, Nosis, BCRA y UIF) lo realiza nuestra Inteligencia Artificial en segundos.
 
@@ -897,7 +902,7 @@ Te contacto como Broker / Responsable de {{Office}} porque en Colaboratium (Glob
 
 Sabemos que ya liderás un equipo de agentes que trabajan bajo el modelo de contrato independiente. Nuestra propuesta te permite sumar una unidad de ingresos recurrentes para tu oficina, sin ningún costo para los clientes inversores de tu cartera:
 
-Consola Jerárquica Propia (consola.colaboratium.com.ar): Dás de alta a los agentes de tu equipo bajo tu propio nodo. Ellos cobran entre el 4% y el 6% de comisión por ofrecer alternativas de inversión en pesos (100% bancarizadas vía BIND/Coinag y filtradas por IA) a sus clientes con liquidez.
+Consola Jerárquica Propia (consola.colaboratium.com.ar): Dás de alta a los agentes de tu equipo bajo tu propio nodo. Ellos cobran comisiones de alto rendimiento por ofrecer alternativas de inversión en pesos (100% bancarizadas vía BIND/Coinag y filtradas por IA) a sus clientes con liquidez.
 
 10% de Overriding para vos como Líder: Percibís un 10% adicional sobre la bolsa total de comisiones que generen todos los agentes de tu equipo (sin descontárselo a ellos).
 
@@ -927,7 +932,7 @@ Esta operatoria permite a los profesionales previsionales sumar una unidad de in
 
 1. Préstamos a Jubilados y Pensionados: Créditos con cuota fija y débito seguro en cuenta bancaria.
 2. Inversión para Clientes con Sentencias o Cobros Retroactivos: Alternativa de renta bancarizada a través de BIND y Coinag sin comisiones de entrada ni salida.
-3. Comisiones del 4% al 6% directo para el profesional, con 3% cobrado de inmediato al desembolso del crédito.
+3. Comisiones de alto rendimiento directas para el profesional, con cobro inmediato al desembolso del crédito.
 
 Este {{1}} a las {{2}} hs daremos una charla explicativa online de {{3}} exclusiva para el sector previsional.
 
@@ -1248,7 +1253,7 @@ Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Relevado de registros públicos c
               </div>
               <p className="text-2xl font-black text-indigo-400 font-mono">{kpis.advisors_count}</p>
               <div className="mt-1 text-[10px] text-neutral-500">
-                Flujo 2: Comisiones 4-6%
+                Flujo 2: Comisiones de alto rendimiento
               </div>
             </div>
 
@@ -2306,6 +2311,61 @@ Mart. Ana López, alopez@remax.com.ar, 342 15-5123456, RE/MAX Litoral, Santa Fe,
                       </div>
                     </button>
 
+                    {/* Selector de Línea WhatsApp en Launcher */}
+                    {campaignLauncherConfig.channel === 'whatsapp' && (
+                      <div className="col-span-2 p-3 bg-[#121111] border border-white/10 rounded-2xl">
+                        <label className="text-[10px] font-black uppercase text-neutral-400 block mb-2">
+                          Línea de WhatsApp para el Envío
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setCampaignLauncherConfig(prev => ({ ...prev, lineaWa: 'WA_B' }))}
+                            className={`p-2.5 rounded-xl border text-left transition flex items-center justify-between ${
+                              campaignLauncherConfig.lineaWa === 'WA_B'
+                                ? 'bg-emerald-500/15 border-emerald-500 text-white font-extrabold ring-1 ring-emerald-500'
+                                : 'bg-[#1b1a1a] border-white/10 text-neutral-400 hover:border-white/20'
+                            }`}
+                          >
+                            <div>
+                              <span className="text-xs font-black block text-emerald-300">WA_B</span>
+                              <span className="text-[10px] text-neutral-400 block">WhatsApp Business Oficial</span>
+                            </div>
+                            <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-black border border-emerald-500/30">
+                              Oficial
+                            </span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setCampaignLauncherConfig(prev => ({ ...prev, lineaWa: 'WA_S***5239' }))}
+                            className={`p-2.5 rounded-xl border text-left transition flex items-center justify-between ${
+                              campaignLauncherConfig.lineaWa === 'WA_S***5239'
+                                ? 'bg-purple-500/15 border-purple-500 text-white font-extrabold ring-1 ring-purple-500'
+                                : 'bg-[#1b1a1a] border-white/10 text-neutral-400 hover:border-white/20'
+                            }`}
+                          >
+                            <div>
+                              <span className="text-xs font-black block text-purple-300">WA_S***5239</span>
+                              <span className="text-[10px] text-neutral-400 block">WASender API (Colab)</span>
+                            </div>
+                            <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-black border border-amber-500/30">
+                              Prueba
+                            </span>
+                          </button>
+                        </div>
+
+                        {campaignLauncherConfig.lineaWa === 'WA_S***5239' && (
+                          <div className="mt-2.5 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-300 flex items-start gap-2">
+                            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                            <div>
+                              <strong>Línea en Modo Prueba:</strong> <strong>WA_S***5239</strong> tiene bloqueadas las campañas salientes por seguridad. Está configurada exclusivamente para responder al flujo bot cuando ingresan mensajes desde anuncios o agentes RE/MAX.
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <button
                       type="button"
                       onClick={() => setCampaignLauncherConfig(prev => ({ ...prev, channel: 'email' }))}
@@ -2447,14 +2507,14 @@ Mart. Ana López, alopez@remax.com.ar, 342 15-5123456, RE/MAX Litoral, Santa Fe,
                         <div className="p-3 bg-black/60 border border-white/5 rounded-xl font-mono text-[11px] text-neutral-300 whitespace-pre-wrap leading-relaxed max-h-44 overflow-y-auto">
                           {campaignLauncherConfig.channel === 'whatsapp' ? (
                             matchedCapa.num === 1 
-                              ? `Hola {{First Name}}, ¿cómo estás? Vi tu perfil público en {{Office}} ({{City}}). En Colaboratium (Global Loan S.A. - Reg. BCRA Nº 40.015) incorporamos agentes con cartera para monetizar operaciones inmobiliarias con comisiones del 4% al 6% al calce. Este {{1}} a las {{2}} hs brindamos un webinar de 40 min exclusivo. ¿Te gustaría sumarte o que coordinemos un café en nuestras oficinas de Av. del Libertador 264, Vicente López?`
+                              ? `Hola {{First Name}}, ¿cómo estás? Vi tu perfil público en {{Office}} ({{City}}). En Colaboratium (Global Loan S.A. - Reg. BCRA Nº 40.015) incorporamos agentes con cartera para monetizar operaciones inmobiliarias con comisiones de alto rendimiento al calce. Este {{1}} a las {{2}} hs brindamos un webinar de 40 min exclusivo. ¿Te gustaría sumarte o que coordinemos un café en nuestras oficinas de Av. del Libertador 264, Vicente López?`
                               : matchedCapa.num === 2
-                              ? `Hola {{First Name}}, ¿cómo estás? Te escribo como Corredor Inmobiliario Matriculado en {{City}}. En Colaboratium (Global Loan S.A. - Reg. BCRA Nº 40.015) creamos un canal para martilleros que permite destrabar operaciones con créditos puente con garantía real en 48 hs aprobados por IA, y captar renta para vendedores al 4-6% de honorarios. Este {{1}} a las {{2}} hs explicamos el marco legal en un webinar de 40 min. ¿Te gustaría recibir el link de Google Meet?`
+                              ? `Hola {{First Name}}, ¿cómo estás? Te escribo como Corredor Inmobiliario Matriculado en {{City}}. En Colaboratium (Global Loan S.A. - Reg. BCRA Nº 40.015) creamos un canal para martilleros que permite destrabar operaciones con créditos puente con garantía real en 48 hs aprobados por IA, y captar renta para vendedores con comisiones de alto rendimiento. Este {{1}} a las {{2}} hs explicamos el marco legal en un webinar de 40 min. ¿Te gustaría recibir el link de Google Meet?`
                               : matchedCapa.num === 3
-                              ? `Hola {{First Name}}, ¿cómo estás? Te escribo por tu actividad previsional en {{City}}. En Colaboratium (Reg. BCRA Nº 40.015) habilitamos un canal para gestores y abogados previsionales con créditos a jubilados de cuota fija y comisiones del 4% al 6%. Este {{1}} a las {{2}} hs tenemos una sesión online de 40 min. ¿Te gustaría participar?`
+                              ? `Hola {{First Name}}, ¿cómo estás? Te escribo por tu actividad previsional en {{City}}. En Colaboratium (Reg. BCRA Nº 40.015) habilitamos un canal para gestores y abogados previsionales con créditos a jubilados de cuota fija y comisiones de alto rendimiento. Este {{1}} a las {{2}} hs tenemos una sesión online de 40 min. ¿Te gustaría participar?`
                               : matchedCapa.num === 4
                               ? `Hola {{First Name}}, ¿cómo estás? Te escribo como desarrollador en {{City}}. En Colaboratium (Reg. BCRA Nº 40.015) brindamos financiamiento puente y fondeo para desarrollos y loteos con garantía real y aprobación ágil. Este {{1}} a las {{2}} hs daremos una presentación para desarrolladores. ¿Te paso el link de acceso a la sala?`
-                              : `Hola {{First Name}}, ¿cómo estás? Te escribo como Productor Asesor de Seguros (PAS) en {{City}}. En Colaboratium (Global Loan S.A. - Reg. BCRA Nº 40.015) creamos una alianza para que productores sumen colocación de créditos con garantía y préstamos a jubilados a su cartera, ganando entre el 4% y el 6% de comisión inmediata más residuales. Este {{1}} a las {{2}} hs tenemos un webinar de 40 min para PAS. ¿Te reservo un lugar?`
+                              : `Hola {{First Name}}, ¿cómo estás? Te escribo como Productor Asesor de Seguros (PAS) en {{City}}. En Colaboratium (Global Loan S.A. - Reg. BCRA Nº 40.015) creamos una alianza para que productores sumen colocación de créditos con garantía y préstamos a jubilados a su cartera, ganando comisiones de alto rendimiento inmediatas más residuales. Este {{1}} a las {{2}} hs tenemos un webinar de 40 min para PAS. ¿Te reservo un lugar?`
                           ) : (
                             matchedCapa.num === 1 ? TEMPLATE_FRANQUICIAS.body :
                             matchedCapa.num === 2 ? TEMPLATE_CORREDORES.body :

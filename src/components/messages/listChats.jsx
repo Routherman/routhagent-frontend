@@ -292,6 +292,19 @@ export default function ListChats({
                       </span>
                     )}
 
+                    {/* Badge de Línea: WA_B vs WA_S***XXXX */}
+                    {c.linea_wa?.startsWith('WA_S') || c.canal === 'wasender' ? (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 border border-purple-200 text-[9px] font-black tracking-tight" title="Línea WASender API (Pruebas / Ads)">
+                        <span className="w-1 h-1 rounded-full bg-purple-600 animate-pulse"></span>
+                        <span>{c.linea_wa || 'WA_S***5239'}</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-black tracking-tight" title="Línea WhatsApp Business Oficial">
+                        <span className="w-1 h-1 rounded-full bg-emerald-600"></span>
+                        <span>WA_B</span>
+                      </span>
+                    )}
+
                     {/* Chip de Resumen IA si fue derivado */}
                     {c.resumen_necesidad && (
                       <span 
