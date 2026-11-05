@@ -799,35 +799,28 @@ export default function ProspectosB2BPage() {
 
   const totalPages = Math.ceil(totalCount / limit) || 1;
 
-  // Plantillas Cold Email Textos Diferenciadas por Segmento (Corridas 1 al 3)
+  // Plantilla Única Oficial para Cold Mail B2B (Directiva: Solo esta plantilla para Mail)
   const TEMPLATE_FRANQUICIAS = {
-    title: 'Plantilla 1 • Franquicias Inmobiliarias (RE/MAX, Century 21)',
-    subject: '[PUBLICIDAD] Alianza para monetizar propiedades y cartera en {{Office}}, {{First Name}} (BCRA Nº 40.015)',
+    title: 'Prospección Fría: Agentes Inmobiliarios RE/MAX (Flujo 2 - Capa 1)',
+    subject: 'Colaboratium P2P comunicado de Alianza para tu cartera de clientes en {{Office}}, {{First Name}} (BCRA Nº 40.015)',
     body: `Hola {{First Name}}, ¿cómo estás?
 
-Vi tu perfil público en el equipo de {{Office}} en {{City}} y te escribo porque en Colaboratium (Global Loan S.A. — Registro BCRA Nº 40.015) estamos incorporando agentes de redes inmobiliarias con cartera activa a nuestra Red de Asesores Independientes.
+Vi tu perfil público en el equipo de {{Office}} en {{City}} y te escribo porque en Colaboratium (registro BCRA Nº 40.015) estamos incorporando agentes inmobiliarios con cartera activa a nuestra Red de Asesores Independientes.
 
-Sabemos que en la operatoria de franquicias hablás todas las semanas con clientes que acaban de vender y tienen excedentes de liquidez, o bien propietarios con propiedades estancadas que necesitan un crédito puente con garantía hipotecaria/prendaria al 10% de la bolsa para cerrar operaciones.
+Sabemos que en la operatoria inmobiliaria hablás todas las semanas con clientes que acaban de vender, que están esperando cerrar una operación o que tienen excedentes de liquidez y buscan una renta superadora al plazo fijo tradicional sin inmovilizar su capital a largo plazo.
 
 ¿Cómo funciona la alianza para vos y para tu cliente?
 
-1. Para tu cliente inversor (Costo 0%): Invierte desde una plataforma 100% bancarizada (Banco BIND y Banco Coinag) operando desde su propio CVU, financiando créditos atomizados calificados por Inteligencia Artificial (validando BCRA, Renaper, Nosis, Veraz y UIF). Al inversor jamás se le cobra comisión ni gasto administrativo.
-2. Para vos como Asesor: Comisiones de alto rendimiento sobre capital colocado, con cobro inmediato al calce de la operación y el 100% de beneficio en cada reinversión futura de tu cliente.
+Para tu cliente inversor (Costo 0%): Invierte desde una plataforma 100% bancarizada (Banco BIND y Banco Coinag) operando desde su propio CVU, financiando créditos atomizados calificados por IA. Al inversor jamás se le cobra comisión ni gasto administrativo.
 
-Este {{1}} a las {{2}} hs brindaremos una reunión informativa online de {{3}} exclusiva para agentes y brokers de redes, donde mostramos la consola en vivo y el esquema de comisiones de alto rendimiento.
+Para vos como Asesor: Percibís Comisiones de alto rendimiento sobre capital colocado, cobrando un % inmediato al calce del crédito y el resto con las cuotas, más el 100% de comisión en cada reinversión futura de tu cliente.
 
-👉 Podés reservar tu lugar sin costo acá: {{4}}
+Este {{1}} a las {{2}} hs brindamos una reunión informativa online de {{3}} exclusiva para agentes y brokers de redes.
 
-Si preferís conocer nuestras oficinas personalmente, estamos en Av. del Libertador 264, 1° Piso Contrafrente, Vicente López (respondeme este correo y coordinamos un café de 15 minutos).
+👉 Podés reservar tu lugar: {{4}}
 
-Te mando un cordial saludo,
 
-Lic. Damián Feuermann
-Presidente | Global Loan S.A. — Colaboratium
-Registro BCRA PNFC Nº 40.015 (Verificable en bcra.gob.ar)
-Av. del Libertador 264, 1° Piso, Vicente López / Maipú 568, Piso 8°, CABA
-
-Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Correo profesional obtenido del directorio público de tu red en {{City}}. Tenés derecho de acceso y baja inmediata haciendo clic en [este enlace ({{5}})] o respondiendo "BAJA".`
+Aviso Legal (Ley 25.326 y Disp. DNPDP 4/2009): Datos de contacto comercial del directorio público de {{Office}} en {{City}}. Baja inmediata en [este enlace ({{5}})] o respondiendo "BAJA".`
   };
 
   const TEMPLATE_CORREDORES = {

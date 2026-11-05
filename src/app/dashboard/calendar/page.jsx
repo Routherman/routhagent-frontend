@@ -96,6 +96,81 @@ export default function CalendarPage() {
   const [sendingLink, setSendingLink] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
+  // Estados para Control Manual de Asistencia y Nota de Participación
+  const [attendanceNoteModalSub, setAttendanceNoteModalSub] = useState(null);
+  const [attendanceNoteText, setAttendanceNoteText] = useState("");
+  const [attendanceStatusChoice, setAttendanceStatusChoice] = useState("PENDIENTE");
+  const [savingAttendance, setSavingAttendance] = useState(false);
+
+  // Función para registrar asistencia manual y nota
+  const handleUpdateAttendance = async (contactId, asistencia, nota = "") => {
+    try {
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/calendar/subscribers/${contactId}/attendance`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true"
+        },
+        body: JSON.stringify({
+          asistencia,
+          nota: (nota || "").trim(),
+          usuarioNombre: userName || "Administrador"
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(
+          asistencia === 'ASISTIO'
+            ? "¡Marcado como ASISTIÓ con éxito!"
+            : asistencia === 'NO_ASISTIO'
+            ? "Marcado como NO ASISTIÓ"
+            : "Estado de asistencia actualizado"
+        );
+        // Actualización reactiva inmediata en la lista de turnos
+        setSlots(prev => prev.map(slot => ({
+          ...slot,
+          subscribers: (slot.subscribers || []).map(sub => 
+            sub.id === contactId ? { ...sub, asistencia, nota_asistencia: (nota || "").trim() } : sub
+          )
+        })));
+        // Actualización si el perfil del inscripto está abierto
+        setSubscriberProfile(prev => {
+          if (!prev || !prev.contacto || prev.contacto.id !== contactId) return prev;
+          return {
+            ...prev,
+            contacto: {
+              ...prev.contacto,
+              asistencia,
+              nota_asistencia: (nota || "").trim()
+            }
+          };
+        });
+      } else {
+        toast.error(data.error || "No se pudo actualizar la asistencia");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error de conexión al guardar asistencia");
+    }
+  };
+
+  const openAttendanceNoteModal = (sub) => {
+    setAttendanceNoteModalSub(sub);
+    setAttendanceStatusChoice(sub.asistencia || "ASISTIO");
+    setAttendanceNoteText(sub.nota_asistencia || "");
+  };
+
+  const handleSaveAttendanceNoteModal = async () => {
+    if (!attendanceNoteModalSub) return;
+    setSavingAttendance(true);
+    try {
+      await handleUpdateAttendance(attendanceNoteModalSub.id, attendanceStatusChoice, attendanceNoteText);
+      setAttendanceNoteModalSub(null);
+    } finally {
+      setSavingAttendance(false);
+    }
+  };
+
   // 1. Obtener código de empresa y permisos de usuario
   useEffect(() => {
     if (isLoaded && user) {
@@ -664,28 +739,112 @@ export default function CalendarPage() {
                                 s.subscribers.map((sub) => (
                                   <div
                                     key={sub.id}
-                                    onClick={() => loadSubscriberDetail(sub.id)}
-                                    className="p-2.5 rounded-2xl bg-white hover:bg-indigo-50/70 border border-gray-200/80 hover:border-indigo-300 transition-all cursor-pointer flex items-center justify-between gap-2 shadow-2xs group"
+                                    className="p-3 rounded-2xl bg-white hover:bg-slate-50/80 border border-gray-200/90 hover:border-indigo-300 transition-all shadow-2xs group"
                                   >
-                                    <div className="flex items-center gap-2.5 min-w-0">
-                                      <div className="w-7 h-7 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
-                                        {(sub.nombre || "A")[0].toUpperCase()}
+                                    <div
+                                      onClick={() => loadSubscriberDetail(sub.id)}
+                                      className="flex items-center justify-between gap-2 cursor-pointer"
+                                    >
+                                      <div className="flex items-center gap-2.5 min-w-0">
+                                        <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
+                                          {(sub.nombre || "A")[0].toUpperCase()}
+                                        </div>
+                                        <div className="min-w-0">
+                                          <p className="text-xs font-extrabold text-gray-900 group-hover:text-indigo-600 transition truncate">
+                                            {sub.nombre}
+                                          </p>
+                                          <p className="text-[10px] text-gray-500 truncate">
+                                            {sub.email || sub.telefono}
+                                          </p>
+                                        </div>
                                       </div>
-                                      <div className="min-w-0">
-                                        <p className="text-xs font-extrabold text-gray-900 group-hover:text-indigo-600 transition truncate">
-                                          {sub.nombre}
-                                        </p>
-                                        <p className="text-[10px] text-gray-500 truncate">
-                                          {sub.email || sub.telefono}
-                                        </p>
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-blue-100 text-blue-800 uppercase">
+                                          {sub.canal || "WhatsApp"}
+                                        </span>
+
+                                        {sub.asistencia === 'ASISTIO' ? (
+                                          <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                                            <Check className="w-3 h-3 text-emerald-600" />
+                                            <span>Asistió</span>
+                                          </span>
+                                        ) : sub.asistencia === 'NO_ASISTIO' ? (
+                                          <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1">
+                                            <X className="w-3 h-3 text-rose-600" />
+                                            <span>No Asistió</span>
+                                          </span>
+                                        ) : (
+                                          <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
+                                            <span>⏳ Pendiente</span>
+                                          </span>
+                                        )}
+                                        <ArrowRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition" />
                                       </div>
                                     </div>
-                                    <div className="flex items-center gap-1 shrink-0">
-                                      <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-blue-100 text-blue-800 uppercase">
-                                        {sub.canal || "WhatsApp"}
-                                      </span>
-                                      <ArrowRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition" />
+
+                                    {/* Barra de Control Rápido de Asistencia y Notas */}
+                                    <div className="mt-2.5 pt-2 border-t border-gray-100 flex items-center justify-between gap-1.5 flex-wrap">
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-[10px] font-bold text-gray-500 mr-1">Marcar:</span>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleUpdateAttendance(sub.id, 'ASISTIO', sub.nota_asistencia);
+                                          }}
+                                          className={`px-2 py-0.5 rounded text-[10px] font-bold transition flex items-center gap-1 ${
+                                            sub.asistencia === 'ASISTIO'
+                                              ? 'bg-emerald-600 text-white shadow-xs'
+                                              : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                          }`}
+                                          title="Marcar como presente"
+                                        >
+                                          <Check className="w-2.5 h-2.5" />
+                                          <span>Asistió</span>
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleUpdateAttendance(sub.id, 'NO_ASISTIO', sub.nota_asistencia);
+                                          }}
+                                          className={`px-2 py-0.5 rounded text-[10px] font-bold transition flex items-center gap-1 ${
+                                            sub.asistencia === 'NO_ASISTIO'
+                                              ? 'bg-rose-600 text-white shadow-xs'
+                                              : 'bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200'
+                                          }`}
+                                          title="Marcar como ausente"
+                                        >
+                                          <X className="w-2.5 h-2.5" />
+                                          <span>No asistió</span>
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openAttendanceNoteModal(sub);
+                                          }}
+                                          className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition flex items-center gap-1"
+                                          title="Agregar o editar nota sobre la participación"
+                                        >
+                                          <FileText className="w-2.5 h-2.5" />
+                                          <span>{sub.nota_asistencia ? 'Editar nota' : '+ Nota'}</span>
+                                        </button>
+                                      </div>
                                     </div>
+
+                                    {/* Muestra de la Nota de Participación si existe */}
+                                    {sub.nota_asistencia && (
+                                      <div className="mt-2 p-2 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-700 flex items-start gap-1.5">
+                                        <MessageSquare className="w-3.5 h-3.5 text-indigo-500 shrink-0 mt-0.5" />
+                                        <div className="min-w-0">
+                                          <span className="font-bold text-gray-900 block text-[10px]">Nota de Participación:</span>
+                                          <span className="italic">{sub.nota_asistencia}</span>
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 ))
                               )}
@@ -877,6 +1036,112 @@ export default function CalendarPage() {
                             <span className="text-xs font-extrabold text-gray-900 dark:text-white">
                               {subscriberProfile.contacto.banco || "BIND / Coinag"}
                             </span>
+                          </div>
+                        </div>
+
+                        {/* Control de Asistencia & Nota de Participación */}
+                        <div className="p-4 rounded-2xl bg-white dark:bg-[#0e1628] border-2 border-indigo-200 dark:border-indigo-500/40 shadow-xs space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
+                                <UserCheck className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <h4 className="text-xs font-black uppercase tracking-wider text-gray-900 dark:text-white">
+                                  Asistencia a la Capacitación
+                                </h4>
+                                <p className="text-[10px] text-gray-500">
+                                  Registro manual de presencia y observaciones
+                                </p>
+                              </div>
+                            </div>
+
+                            {subscriberProfile.contacto?.asistencia === 'ASISTIO' ? (
+                              <span className="px-2.5 py-1 rounded-lg text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>ASISTIÓ</span>
+                              </span>
+                            ) : subscriberProfile.contacto?.asistencia === 'NO_ASISTIO' ? (
+                              <span className="px-2.5 py-1 rounded-lg text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1">
+                                <X className="w-3.5 h-3.5 text-rose-600" />
+                                <span>NO ASISTIÓ</span>
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-1 rounded-lg text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
+                                <span>⏳ PENDIENTE</span>
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Botones de Selección Rápida */}
+                          <div className="grid grid-cols-3 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateAttendance(subscriberProfile.contacto.id, 'ASISTIO', subscriberProfile.contacto.nota_asistencia)}
+                              className={`py-2 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1 transition ${
+                                subscriberProfile.contacto?.asistencia === 'ASISTIO'
+                                  ? 'bg-emerald-600 text-white shadow-sm'
+                                  : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200'
+                              }`}
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Asistió</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateAttendance(subscriberProfile.contacto.id, 'NO_ASISTIO', subscriberProfile.contacto.nota_asistencia)}
+                              className={`py-2 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1 transition ${
+                                subscriberProfile.contacto?.asistencia === 'NO_ASISTIO'
+                                  ? 'bg-rose-600 text-white shadow-sm'
+                                  : 'bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200'
+                              }`}
+                            >
+                              <X className="w-3.5 h-3.5" />
+                              <span>No Asistió</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateAttendance(subscriberProfile.contacto.id, 'PENDIENTE', subscriberProfile.contacto.nota_asistencia)}
+                              className={`py-2 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1 transition ${
+                                !subscriberProfile.contacto?.asistencia || subscriberProfile.contacto?.asistencia === 'PENDIENTE'
+                                  ? 'bg-amber-500 text-white shadow-sm'
+                                  : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200'
+                              }`}
+                            >
+                              <span>⏳ Pendiente</span>
+                            </button>
+                          </div>
+
+                          {/* Nota sobre la Participación */}
+                          <div className="space-y-1.5 pt-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
+                                Nota sobre la Participación:
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => openAttendanceNoteModal({
+                                  id: subscriberProfile.contacto.id,
+                                  nombre: subscriberProfile.contacto.nombre,
+                                  asistencia: subscriberProfile.contacto.asistencia,
+                                  nota_asistencia: subscriberProfile.contacto.nota_asistencia
+                                })}
+                                className="text-[11px] text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 font-extrabold underline flex items-center gap-1"
+                              >
+                                <FileText className="w-3 h-3" />
+                                <span>{subscriberProfile.contacto?.nota_asistencia ? 'Modificar nota' : '+ Agregar nota'}</span>
+                              </button>
+                            </div>
+
+                            <div className="p-3 bg-gray-50 dark:bg-black/20 rounded-xl border border-gray-200 dark:border-white/10 text-xs text-gray-700 dark:text-gray-300 min-h-[50px] flex items-center">
+                              {subscriberProfile.contacto?.nota_asistencia ? (
+                                <p className="italic leading-relaxed whitespace-pre-wrap">{subscriberProfile.contacto.nota_asistencia}</p>
+                              ) : (
+                                <p className="text-gray-400 italic text-[11px]">Sin observaciones sobre la participación aún. Haz clic en "+ Agregar nota" para ingresar detalles del encuentro.</p>
+                              )}
+                            </div>
                           </div>
                         </div>
 
@@ -1537,6 +1802,130 @@ export default function CalendarPage() {
                           <span>
                             Enviar Enlace por Email a {selectedSlotForSendLink.subscribers?.filter(s => s.email && s.email.includes('@')).length || 0} Inscriptos
                           </span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal para Registrar Nota de Participación y Asistencia */}
+          {attendanceNoteModalSub && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+              <div className="bg-white dark:bg-[#111827] rounded-3xl w-full max-w-lg border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="p-5 border-b border-gray-100 dark:border-white/10 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-md shadow-indigo-600/20">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black text-gray-900 dark:text-white">
+                        Asistencia y Nota de Participación
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        {attendanceNoteModalSub.nombre} ({attendanceNoteModalSub.email || attendanceNoteModalSub.telefono})
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setAttendanceNoteModalSub(null)}
+                    className="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 text-gray-400 hover:text-gray-600 flex items-center justify-center transition"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="p-6 space-y-4">
+                  {/* Selector de Asistencia */}
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 block mb-2">
+                      Estado de Asistencia
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setAttendanceStatusChoice("ASISTIO")}
+                        className={`py-2.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition ${
+                          attendanceStatusChoice === "ASISTIO"
+                            ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20"
+                            : "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200"
+                        }`}
+                      >
+                        <Check className="w-4 h-4" />
+                        <span>Asistió</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setAttendanceStatusChoice("NO_ASISTIO")}
+                        className={`py-2.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition ${
+                          attendanceStatusChoice === "NO_ASISTIO"
+                            ? "bg-rose-600 text-white shadow-md shadow-rose-600/20"
+                            : "bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200"
+                        }`}
+                      >
+                        <X className="w-4 h-4" />
+                        <span>No asistió</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setAttendanceStatusChoice("PENDIENTE")}
+                        className={`py-2.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition ${
+                          attendanceStatusChoice === "PENDIENTE"
+                            ? "bg-amber-500 text-white shadow-md shadow-amber-500/20"
+                            : "bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200"
+                        }`}
+                      >
+                        <span>⏳ Pendiente</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Textarea para la Nota sobre la Participación */}
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 block mb-2">
+                      Nota sobre la Participación (Interés, consultas, feedback comercial)
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={attendanceNoteText}
+                      onChange={(e) => setAttendanceNoteText(e.target.value)}
+                      placeholder="Ej: Mostró mucho interés en la comisión por reinversión, tiene cartera de clientes en Núñez y Vicente López. Solicita reunión presencial de seguimiento..."
+                      className="w-full p-3.5 rounded-2xl bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition"
+                    />
+                    <p className="text-[10px] text-gray-400 mt-1">
+                      Esta nota queda guardada en el perfil del contacto y visible para todo el equipo en el CRM y en el Calendario.
+                    </p>
+                  </div>
+
+                  {/* Acciones */}
+                  <div className="pt-3 border-t border-gray-100 dark:border-white/10 flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      disabled={savingAttendance}
+                      onClick={() => setAttendanceNoteModalSub(null)}
+                      className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10 transition"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      disabled={savingAttendance}
+                      onClick={handleSaveAttendanceNoteModal}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-black shadow-lg shadow-indigo-600/25 active:scale-95 transition"
+                    >
+                      {savingAttendance ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Guardando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>Guardar Asistencia y Nota</span>
                         </>
                       )}
                     </button>

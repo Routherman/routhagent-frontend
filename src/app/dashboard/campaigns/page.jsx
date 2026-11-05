@@ -1216,24 +1216,15 @@ export default function CampaignsPage() {
     };
 
     // Auto-asignación inteligente de plantillas B2B y Regla de Oro (0 adjuntos)
-    if (newGrp === 'B2B_ASESORES') {
-      const tplAsesores = plantillas.find(p => p.id === 9 || p.nombre?.toLowerCase().includes('agentes inmobiliarios') || p.nombre?.toLowerCase().includes('flujo 2'));
-      if (tplAsesores) {
-        updatedForm.plantillaId = tplAsesores.id;
-        updatedForm.asunto = tplAsesores.asunto || emailForm.asunto;
-        updatedForm.htmlContent = tplAsesores.contenido;
+    if (newGrp === 'B2B_ASESORES' || newGrp === 'B2B_LIDERES' || newGrp === 'B2B_TODOS') {
+      const tplOficial = plantillas.find(p => p.id === 11 || p.id === 9 || p.nombre?.toLowerCase().includes('flujo 2 - capa 1') || p.nombre?.toLowerCase().includes('agentes inmobiliarios'));
+      if (tplOficial) {
+        updatedForm.plantillaId = tplOficial.id;
+        updatedForm.asunto = tplOficial.asunto || emailForm.asunto;
+        updatedForm.htmlContent = tplOficial.contenido;
       }
       updatedForm.selectedMedia = []; // Regla de Oro: 0 adjuntos en B2B
-      toast.info(`🏢 Modo B2B Asesores activo: Plantilla Asesores (Flujo 2) asignada (${grpContacts.length} destinatarios, 0 adjuntos).`);
-    } else if (newGrp === 'B2B_LIDERES') {
-      const tplLideres = plantillas.find(p => p.id === 10 || p.nombre?.toLowerCase().includes('broker') || p.nombre?.toLowerCase().includes('flujo 3'));
-      if (tplLideres) {
-        updatedForm.plantillaId = tplLideres.id;
-        updatedForm.asunto = tplLideres.asunto || emailForm.asunto;
-        updatedForm.htmlContent = tplLideres.contenido;
-      }
-      updatedForm.selectedMedia = []; // Regla de Oro: 0 adjuntos en B2B
-      toast.info(`👑 Modo B2B Líderes activo: Plantilla Brokers (Flujo 3) asignada (${grpContacts.length} destinatarios, 0 adjuntos).`);
+      toast.info(`🏢 Plantilla Única Oficial B2B asignada: Prospección Fría RE/MAX (${grpContacts.length} destinatarios, 0 adjuntos).`);
     }
 
     setEmailForm(updatedForm);
@@ -1247,33 +1238,20 @@ export default function CampaignsPage() {
       return;
     }
 
-    const isB2BAsesores = sel.id === 9 || sel.nombre?.toLowerCase().includes('agentes inmobiliarios') || sel.nombre?.toLowerCase().includes('flujo 2');
-    const isB2BLideres = sel.id === 10 || sel.nombre?.toLowerCase().includes('broker') || sel.nombre?.toLowerCase().includes('flujo 3');
+    const isB2B = sel.id === 11 || sel.id === 9 || sel.nombre?.toLowerCase().includes('re/max') || sel.nombre?.toLowerCase().includes('flujo 2');
 
-    if (isB2BAsesores) {
-      const grpContacts = b2bProspectsFormatted.filter(c => c.grupo === 'B2B_ASESORES');
+    if (isB2B) {
+      const grpContacts = b2bProspectsFormatted;
       setEmailForm(prev => ({
         ...prev,
         plantillaId: sel.id,
         asunto: sel.asunto || prev.asunto,
         htmlContent: sel.contenido,
-        targetGroup: 'B2B_ASESORES',
+        targetGroup: 'B2B_TODOS',
         selectedContactIds: grpContacts.map(c => c.id),
         selectedMedia: [] // Regla de Oro: 0 adjuntos
       }));
-      toast.info(`🏢 Plantilla B2B Asesores: Segmentados automáticamente ${grpContacts.length} agentes RE/MAX (0 adjuntos).`);
-    } else if (isB2BLideres) {
-      const grpContacts = b2bProspectsFormatted.filter(c => c.grupo === 'B2B_LIDERES');
-      setEmailForm(prev => ({
-        ...prev,
-        plantillaId: sel.id,
-        asunto: sel.asunto || prev.asunto,
-        htmlContent: sel.contenido,
-        targetGroup: 'B2B_LIDERES',
-        selectedContactIds: grpContacts.map(c => c.id),
-        selectedMedia: [] // Regla de Oro: 0 adjuntos
-      }));
-      toast.info(`👑 Plantilla B2B Líderes: Segmentados automáticamente ${grpContacts.length} brokers RE/MAX (0 adjuntos).`);
+      toast.info(`🏢 Plantilla B2B RE/MAX: Segmentados automáticamente ${grpContacts.length} contactos (0 adjuntos).`);
     } else {
       setEmailForm(prev => ({
         ...prev,
