@@ -759,8 +759,12 @@ export default function CalendarPage() {
                                         </div>
                                       </div>
                                       <div className="flex items-center gap-1.5 shrink-0">
-                                        <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-blue-100 text-blue-800 uppercase">
-                                          {sub.canal || "WhatsApp"}
+                                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${
+                                          (sub.canal || '').toLowerCase().includes('email')
+                                            ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                            : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                        }`}>
+                                          {(sub.canal || '').toLowerCase().includes('email') ? '✉️ EMAIL' : '📱 WHATSAPP'}
                                         </span>
 
                                         {sub.asistencia === 'ASISTIO' ? (
