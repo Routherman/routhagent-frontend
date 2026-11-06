@@ -1607,7 +1607,14 @@ export default function CampaignsPage() {
               >
                 <Mail className="w-4 h-4" />
                 <span>Mails (Gmail)</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-bold">{emailCampaigns.length}</span>
+                {emailCampaigns.some(c => c.estado === 'en_progreso') ? (
+                  <span className="flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500 text-white font-black animate-pulse">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                    <span>EN VIVO ({emailCampaigns.find(c => c.estado === 'en_progreso')?.enviados || 0})</span>
+                  </span>
+                ) : (
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-bold">{emailCampaigns.length}</span>
+                )}
               </button>
 
               <button
@@ -1637,6 +1644,47 @@ export default function CampaignsPage() {
               </button>
             </div>
           </div>
+
+          {/* Banner de Monitoreo Global en Vivo si hay campaña activa */}
+          {campaigns.filter(c => c.estado === 'en_progreso').map(c => {
+            const total = c.total_contactos || 1;
+            const enviados = c.enviados || 0;
+            const pct = Math.min(100, Math.round((enviados / total) * 100));
+            return (
+              <div 
+                key={c.id} 
+                onClick={() => handleTabChange(c.tipo === 'email' ? 'email' : 'meta')}
+                className="mb-5 p-4 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-2xl shadow-lg border-2 border-emerald-400/60 cursor-pointer hover:border-emerald-300 transition-all group"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2.5">
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    </span>
+                    <h4 className="text-xs font-black uppercase tracking-wider text-emerald-300 flex items-center gap-2">
+                      DESPACHO ACTIVO EN VIVO: <span className="text-white font-extrabold">{c.nombre}</span>
+                    </h4>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-mono font-bold bg-white/20 px-2.5 py-0.5 rounded-full">
+                      {enviados} de {total} ({pct}%) • Ritmo Humano Anti-Baneo
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-300 group-hover:underline flex items-center gap-1">
+                      Ver en Solapa Mails →
+                    </span>
+                  </div>
+                </div>
+                <div className="w-full bg-white/20 h-2 rounded-full overflow-hidden mb-2">
+                  <div className="bg-emerald-400 h-full rounded-full transition-all duration-500 ease-out" style={{ width: `${pct}%` }} />
+                </div>
+                <div className="flex items-center gap-2 text-xs font-mono text-blue-200 truncate">
+                  <Clock className="w-3.5 h-3.5 shrink-0 text-emerald-300" />
+                  <span className="truncate">{c.ultimo_log || 'Despachando emails a ritmo seguro para evitar bloqueos...'}</span>
+                </div>
+              </div>
+            );
+          })}
 
           {/* Banner Directo: Motor B2B & Crawler Playwright Stealth */}
           <div className="mb-5 p-4 bg-gradient-to-r from-[#0a1824] via-[#0f2536] to-[#08151f] border-2 border-cyan-500/50 rounded-2xl shadow-lg shadow-cyan-950/40 flex flex-col md:flex-row items-center justify-between gap-4">
