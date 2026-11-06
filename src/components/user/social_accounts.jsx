@@ -514,6 +514,17 @@ export default function SocialAccounts() {
                 {wasError && <div className="mb-6 p-4 rounded-2xl bg-red-50 text-red-600 text-sm font-semibold border border-red-100">{wasError}</div>}
 
                 <form onSubmit={handleSaveWasender} className="space-y-4 mb-2">
+                    <div className="p-3.5 bg-emerald-50/70 border border-emerald-100 rounded-2xl text-xs text-emerald-950 leading-relaxed">
+                        <strong className="font-bold flex items-center gap-1.5 text-emerald-800 mb-1">
+                          📱 Pasos para conectar en wasenderapi.com:
+                        </strong>
+                        <ol className="list-decimal pl-4 space-y-1 text-emerald-900">
+                          <li>En la sesión <strong>Colab</strong>, presiona el botón <strong>"Link with QR"</strong> en el recuadro de la derecha.</li>
+                          <li>Desde el WhatsApp de tu celular (<strong>{wasPhoneNumber}</strong>), ve a <em>Dispositivos vinculados &gt; Vincular un dispositivo</em> y escanea el código.</li>
+                          <li>Al vincularse, el recuadro <em>Credentials Locked</em> se desbloquea mostrando tu <strong>API Key</strong>.</li>
+                        </ol>
+                    </div>
+
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-1 pl-1">Nombre de la Sesión</label>
                         <input required type="text" value={wasSessionName} onChange={e => setWasSessionName(e.target.value)} className="w-full px-5 py-3 rounded-2xl border border-gray-200 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-sm" placeholder="Colab" />
@@ -634,24 +645,39 @@ export default function SocialAccounts() {
 
                 {igError && <div className="mb-6 p-4 rounded-2xl bg-red-50 text-red-600 text-sm font-semibold border border-red-100">{igError}</div>}
 
-                <form onSubmit={handleSaveInstagram} className="space-y-5 mb-2">
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Usuario de Instagram</label>
-                        <input required type="text" value={igUsername} onChange={e => setIgUsername(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all font-medium" placeholder="@colaboratium" />
+                <form onSubmit={handleSaveInstagram} className="space-y-4 mb-2">
+                    <div className="p-3.5 bg-pink-50/70 border border-pink-100 rounded-2xl text-xs text-pink-900 leading-relaxed">
+                        <strong className="font-bold flex items-center gap-1.5 text-pink-700 mb-1">
+                          💡 Conexión Inmediata:
+                        </strong>
+                        Solo necesitas confirmar el <strong>Usuario de Instagram</strong> y presionar el botón de abajo. Los campos de <em>Page ID</em> y <em>Token</em> son <strong>opcionales</strong> (solo requeridos si deseas que el Bot de IA responda automáticamente los mensajes directos/DMs mediante Meta for Developers).
                     </div>
+
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Meta Facebook Page ID / Instagram Business Account ID</label>
-                        <input type="text" value={igPageId} onChange={e => setIgPageId(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all font-medium" placeholder="ID de la Página oficial de Global Loan" />
+                        <label className="block text-sm font-bold text-gray-800 mb-1.5 pl-1">Usuario de Instagram Oficial</label>
+                        <input required type="text" value={igUsername} onChange={e => setIgUsername(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all font-medium" placeholder="@colaboratium o @globalloan" />
                     </div>
+
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Meta Access Token (Opcional si usa el de WhatsApp)</label>
-                        <input type="text" value={igAccessToken} onChange={e => setIgAccessToken(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all font-medium" placeholder="Token con permisos instagram_manage_messages" />
+                        <div className="flex items-center justify-between mb-1.5 pl-1">
+                          <label className="text-xs font-semibold text-gray-600">Facebook Page ID / Instagram ID</label>
+                          <span className="text-[10px] font-bold text-gray-400 uppercase bg-gray-100 px-2 py-0.5 rounded-full">Opcional</span>
+                        </div>
+                        <input type="text" value={igPageId} onChange={e => setIgPageId(e.target.value)} className="w-full px-5 py-3 rounded-2xl border border-gray-200 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-xs font-mono" placeholder="Ej: 102938475610293 (Meta Business Suite)" />
+                    </div>
+
+                    <div>
+                        <div className="flex items-center justify-between mb-1.5 pl-1">
+                          <label className="text-xs font-semibold text-gray-600">Meta Access Token para DMs</label>
+                          <span className="text-[10px] font-bold text-gray-400 uppercase bg-gray-100 px-2 py-0.5 rounded-full">Opcional</span>
+                        </div>
+                        <input type="password" value={igAccessToken} onChange={e => setIgAccessToken(e.target.value)} className="w-full px-5 py-3 rounded-2xl border border-gray-200 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all text-xs font-mono" placeholder="Token Meta Developers (instagram_manage_messages)" />
                     </div>
                     
-                    <div className="pt-4">
+                    <div className="pt-2">
                         <button 
                           disabled={savingIg}
-                          className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold py-4 rounded-2xl transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                          className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold py-4 rounded-2xl transition-all shadow-md shadow-pink-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                             {savingIg ? 'Guardando...' : `Conectar Instagram ${igUsername}`}
                         </button>
