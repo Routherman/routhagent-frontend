@@ -1594,7 +1594,7 @@ export default function CampaignsPage() {
         <Header />
         <div 
           ref={scrollContainerRef}
-          className="flex-1 flex flex-col w-full bg-white dark:bg-[#070b14] rounded-[32px] p-6 md:p-8 shadow-sm overflow-y-auto text-gray-950 dark:text-white font-sans transition-colors min-h-0"
+          className="flex-1 flex flex-col w-full px-6 md:px-8 pb-14 overflow-y-auto min-h-0 text-gray-950 dark:text-white font-sans transition-colors scroll-smooth"
         >
           
           {/* Header & Tabs de Navegación Principal */}

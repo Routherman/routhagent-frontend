@@ -56,7 +56,7 @@ export default function Header() {
   }, [user]);
 
   return (
-    <header className="flex items-center justify-between pt-8 pb-4 px-8 relative bg-transparent text-gray-900 dark:text-white transition-colors">
+    <header className="flex items-center justify-between pt-8 pb-4 px-8 relative bg-transparent text-gray-900 dark:text-white transition-colors shrink-0">
       <h1 className="text-[28px] font-bold text-gray-900 dark:text-white tracking-tight">Routh Agent</h1>
 
       <div className="flex items-center gap-3">
