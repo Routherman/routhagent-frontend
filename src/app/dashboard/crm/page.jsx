@@ -1155,15 +1155,28 @@ export default function CrmPage() {
 
                         {/* Phone & WA */}
                         <td className="py-3.5 px-4 font-mono font-bold text-gray-800">
-                          <a 
-                            href={`https://wa.me/${(c.telefono || '').replace(/\D/g, '')}`} 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1.5 text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-xl"
-                          >
-                            <Phone className="w-3.5 h-3.5" />
-                            {c.telefono}
-                          </a>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <a 
+                              href={`https://wa.me/${(c.telefono || '').replace(/\D/g, '')}`} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-xl"
+                            >
+                              <Phone className="w-3.5 h-3.5" />
+                              {c.telefono}
+                            </a>
+                            {c.linea_wa?.startsWith('WA_S') || c.canal === 'wasender' ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-200 text-[9px] font-black tracking-tight" title="Línea WASender API (Pruebas / Ads)">
+                                <span className="w-1 h-1 rounded-full bg-purple-600 animate-pulse"></span>
+                                <span>{c.linea_wa || 'WA_S***5239'}</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 text-[9px] font-black tracking-tight" title="Línea WhatsApp Business Oficial">
+                                <span className="w-1 h-1 rounded-full bg-emerald-600"></span>
+                                <span>WA_B</span>
+                              </span>
+                            )}
+                          </div>
                         </td>
 
                         {/* Banking details */}
@@ -1492,7 +1505,18 @@ export default function CrmPage() {
                     </div>
                     <div>
                       <h3 className="font-extrabold text-base text-gray-900">{showDetailModal.nombre}</h3>
-                      <p className="text-xs text-gray-400 font-mono">{showDetailModal.telefono}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <p className="text-xs text-gray-400 font-mono">{showDetailModal.telefono}</p>
+                        {showDetailModal.linea_wa?.startsWith('WA_S') || showDetailModal.canal === 'wasender' ? (
+                          <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 text-[9px] font-black border border-purple-200">
+                            {showDetailModal.linea_wa || 'WA_S***5239'}
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[9px] font-black border border-emerald-200">
+                            WA_B
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <button onClick={() => setShowDetailModal(null)} className="p-1 rounded-xl hover:bg-gray-100 text-gray-400">

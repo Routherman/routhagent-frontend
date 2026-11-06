@@ -517,6 +517,19 @@ export default function MassivePanel({ contacts = [], onCancel, codigoEmpresa, o
 
               <div className="space-y-6 max-w-xl mx-auto">
                 <div className="bg-white dark:bg-[#0e1628] rounded-[24px] p-6 shadow-sm border border-transparent dark:border-white/10">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block font-semibold text-gray-900 dark:text-white">Canal de Salida</label>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 text-xs font-black">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      WA_B • WhatsApp Business Oficial (Meta API)
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">
+                    Los envíos masivos utilizan la línea oficial WA_B verificada con plantillas aprobadas. (La línea WA_S***5239 está en modo pruebas para bots de RE/MAX y redes).
+                  </p>
+                </div>
+
+                <div className="bg-white dark:bg-[#0e1628] rounded-[24px] p-6 shadow-sm border border-transparent dark:border-white/10">
                   <label className="block font-semibold text-gray-900 dark:text-white mb-2">Nombre de la Campaña</label>
                   <input 
                     type="text"
