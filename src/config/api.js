@@ -1,4 +1,4 @@
-const defaultBackend = 'https://descending-mailto-children-sunrise.trycloudflare.com';
+const defaultBackend = 'https://teaching-jade-treaty-defeat.trycloudflare.com';
 let rawUrl = (process.env.NEXT_PUBLIC_API_URL || defaultBackend).trim().replace(/\/+$/, '');
 if (rawUrl.includes('ngrok')) {
   rawUrl = defaultBackend;
