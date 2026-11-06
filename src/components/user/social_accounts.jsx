@@ -63,7 +63,7 @@ export default function SocialAccounts() {
   const [savingIg, setSavingIg] = useState(false);
   const [igError, setIgError] = useState(null);
 
-  const [igUsername, setIgUsername] = useState('@globalloan');
+  const [igUsername, setIgUsername] = useState('@colaboratium');
   const [igPageId, setIgPageId] = useState('');
   const [igAccessToken, setIgAccessToken] = useState('');
 
@@ -100,7 +100,7 @@ export default function SocialAccounts() {
                 setWasBlockOutgoing(cv.wasender.block_outgoing ?? true);
             }
             if (cv && cv.instagram) {
-                setIgUsername(cv.instagram.username || '@globalloan');
+                setIgUsername(cv.instagram.username || cv.instagram.handle || '@colaboratium');
                 setIgPageId(cv.instagram.meta_page_id || '');
                 setIgAccessToken(cv.instagram.access_token || '');
             }
@@ -165,13 +165,13 @@ export default function SocialAccounts() {
     },
     { 
       id: 'instagram', 
-      name: 'Instagram (@globalloan)', 
+      name: 'Instagram (@colaboratium)', 
       icon: InstagramIcon, 
       color: 'text-pink-600', 
       bg: 'bg-pink-50', 
-      desc: 'Cuenta oficial de Global Loan S.A. vía Meta Graph API para captar leads desde historias, DMs y reels', 
+      desc: 'Cuenta oficial de Colaboratium vía Meta Graph API para captar leads desde historias, DMs y reels', 
       connected: igConnected,
-      url: `https://www.instagram.com/${(igUsername || 'globalloan').replace('@', '')}/`
+      url: `https://www.instagram.com/${(igUsername || 'colaboratium').replace('@', '')}/`
     },
     { id: 'tiktok', name: 'TikTok', icon: TikTokIcon, color: 'text-black', bg: 'bg-gray-100', desc: 'Gestiona tu presencia y mensajes en TikTok', connected: false },
     { id: 'x', name: 'X (Twitter)', icon: XIcon, color: 'text-black', bg: 'bg-gray-100', desc: 'Integra tus DMs y menciones de X', connected: false },
@@ -323,7 +323,7 @@ export default function SocialAccounts() {
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2 tracking-tight">Cuentas Sociales & Canales de Mensajería</h2>
           <p className="text-gray-500 text-sm max-w-xl">
-            Gestiona tus líneas oficiales: <span className="font-bold text-gray-900">WA_B</span> (WhatsApp Business Meta), <span className="font-bold text-gray-900">{wasLineCode}</span> (WASender API vinculada a Global Loan) e <span className="font-bold text-gray-900">Instagram (@globalloan)</span>.
+            Gestiona tus líneas oficiales: <span className="font-bold text-gray-900">WA_B</span> (WhatsApp Business Meta), <span className="font-bold text-gray-900">{wasLineCode}</span> (WASender API vinculada a Global Loan) e <span className="font-bold text-gray-900">Instagram (@colaboratium)</span>.
           </p>
         </div>
       </div>
@@ -637,7 +637,7 @@ export default function SocialAccounts() {
                 <form onSubmit={handleSaveInstagram} className="space-y-5 mb-2">
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Usuario de Instagram</label>
-                        <input required type="text" value={igUsername} onChange={e => setIgUsername(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all font-medium" placeholder="@globalloan" />
+                        <input required type="text" value={igUsername} onChange={e => setIgUsername(e.target.value)} className="w-full px-5 py-3.5 rounded-2xl border border-gray-200 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all font-medium" placeholder="@colaboratium" />
                     </div>
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2 pl-1">Meta Facebook Page ID / Instagram Business Account ID</label>
