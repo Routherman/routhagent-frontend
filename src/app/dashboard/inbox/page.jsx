@@ -753,6 +753,15 @@ export default function InboxPage() {
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 border border-transparent dark:border-slate-700">
                           Rol: {contactProfile.contacto.rol_asignado || "General"}
                         </span>
+                        {contactProfile.contacto.linea_wa?.startsWith('WA_S') || contactProfile.contacto.canal === 'wasender' ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 font-mono" title="Línea WASender API (Pruebas / Ads)">
+                            {contactProfile.contacto.linea_wa || 'WA_S***5239'}
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 font-mono" title="Línea Oficial WhatsApp Business">
+                            WA_B
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-gray-500 dark:text-slate-400 font-mono mt-0.5">
                         {contactProfile.contacto.telefono} • {contactProfile.contacto.email || "Sin email"}

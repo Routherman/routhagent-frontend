@@ -59,6 +59,8 @@ export default function MessagesPanel() {
         resumen_necesidad: c.resumen_necesidad || null,
         lider_id: c.lider_id || null,
         asesor_id: c.asesor_id || null,
+        linea_wa: c.linea_wa || null,
+        canal: c.canal || null,
         avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(c.nombre || 'Usuario')}`,
         time: c.last_message_time ? new Date(c.last_message_time).toLocaleDateString('es-AR') : new Date(c.creado_en).toLocaleDateString('es-AR'),
         lastMessageTime: c.last_message_time ? new Date(c.last_message_time) : new Date(c.creado_en),

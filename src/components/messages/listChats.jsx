@@ -233,6 +233,15 @@ export default function ListChats({
                           {c.categoria}
                         </span>
                       )}
+                      {c.linea_wa?.startsWith('WA_S') || c.canal === 'wasender' ? (
+                        <span className="text-[9px] px-1.5 py-0.2 rounded-md font-black bg-purple-100 text-purple-700 border border-purple-200 shrink-0 font-mono tracking-tight" title="Línea WASender API (Pruebas / Ads)">
+                          {c.linea_wa || 'WA_S***5239'}
+                        </span>
+                      ) : (
+                        <span className="text-[9px] px-1.5 py-0.2 rounded-md font-black bg-emerald-100 text-emerald-700 border border-emerald-200 shrink-0 font-mono tracking-tight" title="Línea Oficial WhatsApp Business">
+                          WA_B
+                        </span>
+                      )}
                     </div>
                     <span className="text-[10px] font-medium text-gray-400 whitespace-nowrap ml-1 shrink-0">
                       {c.time || ''}
