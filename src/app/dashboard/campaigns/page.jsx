@@ -1552,6 +1552,31 @@ export default function CampaignsPage() {
     }
   };
 
+  // Pausar Campaña Activa Manualmente
+  const handlePauseCampaign = async (campaignId) => {
+    setActionLoadingId(campaignId);
+    try {
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/campanas/${campaignId}/pausar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message);
+        fetchAllData();
+      } else {
+        toast.error(data.error || "No se pudo pausar la campaña");
+      }
+    } catch (e) {
+      toast.error("Error pausando la campaña");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   // Variables para Modal de Previsualización Multimedia
   const previewFullUrl = previewMedia ? getMediaUrl(previewMedia.archivo_url) : '';
   const isPreviewPdf = previewMedia && (previewMedia.rubro === 'pdf' || previewMedia.mimetype === 'application/pdf' || previewMedia.nombre.toLowerCase().endsWith('.pdf'));
@@ -2128,6 +2153,51 @@ export default function CampaignsPage() {
                 </div>
               </div>
 
+              {/* Monitor en Tiempo Real de Campañas Pausadas por Límite Diario Gmail (550-5.4.5) */}
+              {emailCampaigns.filter(c => c.estado === 'pausada_limite').map(pausedCamp => {
+                const total = pausedCamp.total_contactos || 1;
+                const enviados = pausedCamp.enviados || 0;
+                const pct = Math.min(100, Math.round((enviados / total) * 100));
+                return (
+                  <div key={pausedCamp.id} className="p-4 bg-gradient-to-r from-amber-950 via-orange-950 to-slate-900 text-white rounded-2xl shadow-md border border-amber-500/50 animate-in fade-in">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-amber-400 animate-pulse"></span>
+                        <h4 className="text-xs font-black uppercase tracking-wider text-amber-200">
+                          ⏸️ En Pausa Segura por Límite Diario Gmail (550-5.4.5): <span className="text-white font-extrabold">{pausedCamp.nombre}</span>
+                        </h4>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-mono font-bold bg-amber-500/20 border border-amber-400/40 text-amber-200 px-2.5 py-0.5 rounded-full">
+                          {enviados} de {total} ({pct}%) • Auto-Reinicio Activo (cada 15m)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleResumeCampaign(pausedCamp.id)}
+                          disabled={resumingCampaignId === pausedCamp.id}
+                          className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-[10px] font-black uppercase tracking-wider transition flex items-center gap-1 disabled:opacity-50"
+                        >
+                          <Play className="w-2.5 h-2.5 fill-current" />
+                          <span>{resumingCampaignId === pausedCamp.id ? 'Probando...' : 'Probar Ahora'}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="w-full bg-white/15 h-2.5 rounded-full overflow-hidden mb-2">
+                      <div
+                        className="bg-amber-400 h-full rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs font-mono text-amber-200/90 truncate">
+                      <Clock className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                      <span className="truncate">{pausedCamp.ultimo_log || 'Monitoreando cuota SMTP de Gmail cada 15 minutos para reanudar automáticamente...'}</span>
+                    </div>
+                  </div>
+                );
+              })}
+
               {/* Monitor en Tiempo Real de Campaña Activa */}
               {emailCampaigns.filter(c => c.estado === 'en_progreso').map(activeCamp => {
                 const total = activeCamp.total_contactos || 1;
@@ -2258,11 +2328,56 @@ export default function CampaignsPage() {
                                   <span className="w-2 h-2 rounded-full bg-amber-600"></span>
                                   <span>En Progreso ({camp.enviados || 0}/{camp.total_contactos})</span>
                                 </span>
+                                <div className="flex items-center gap-1 mt-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handlePauseCampaign(camp.id)}
+                                    disabled={actionLoadingId === camp.id}
+                                    className="px-2 py-0.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider shadow-xs transition flex items-center gap-1 disabled:opacity-50"
+                                  >
+                                    <X className="w-2.5 h-2.5" />
+                                    <span>Pausar</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleResumeCampaign(camp.id)}
+                                    disabled={resumingCampaignId === camp.id}
+                                    className="px-2 py-0.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider shadow-xs transition flex items-center gap-1 disabled:opacity-50"
+                                  >
+                                    <Play className="w-2.5 h-2.5 fill-current" />
+                                    <span>{resumingCampaignId === camp.id ? 'Reanudando...' : 'Reanudar'}</span>
+                                  </button>
+                                </div>
+                              </div>
+                            ) : camp.estado === 'pausada_limite' ? (
+                              <div className="flex flex-col gap-1 items-start">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-orange-100 dark:bg-orange-500/20 text-orange-900 dark:text-orange-300 border border-orange-300 dark:border-orange-500/40">
+                                  <Clock className="w-3 h-3 text-orange-600 dark:text-orange-400" />
+                                  <span>⏸️ Límite Diario Gmail ({camp.enviados || 0}/{camp.total_contactos})</span>
+                                </span>
+                                <span className="text-[10px] font-mono text-orange-700 dark:text-orange-300 font-bold">
+                                  🔄 Auto-reinicio activo (cada 15m)
+                                </span>
                                 <button
                                   type="button"
                                   onClick={() => handleResumeCampaign(camp.id)}
                                   disabled={resumingCampaignId === camp.id}
-                                  className="mt-1 px-2.5 py-0.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider shadow-xs transition flex items-center gap-1 disabled:opacity-50"
+                                  className="mt-0.5 px-2.5 py-0.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider shadow-xs transition flex items-center gap-1 disabled:opacity-50"
+                                >
+                                  <Play className="w-2.5 h-2.5 fill-current" />
+                                  <span>{resumingCampaignId === camp.id ? 'Probando...' : 'Probar / Reanudar'}</span>
+                                </button>
+                              </div>
+                            ) : camp.estado === 'pausada' ? (
+                              <div className="flex flex-col gap-1 items-start">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-600">
+                                  <span>⏸️ Pausada ({camp.enviados || 0}/{camp.total_contactos})</span>
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleResumeCampaign(camp.id)}
+                                  disabled={resumingCampaignId === camp.id}
+                                  className="mt-0.5 px-2.5 py-0.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider shadow-xs transition flex items-center gap-1 disabled:opacity-50"
                                 >
                                   <Play className="w-2.5 h-2.5 fill-current" />
                                   <span>{resumingCampaignId === camp.id ? 'Reanudando...' : 'Reanudar Envío'}</span>
