@@ -54,6 +54,7 @@ export default function CampaignsPage() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') || 'meta';
 
+  const scrollContainerRef = useRef(null);
   const [codigoEmpresa, setCodigoEmpresa] = useState('KRZMJI');
   const [activeTab, setActiveTab] = useState(initialTab); // 'meta', 'email', 'media', 'templates'
   const [metricViewMode, setMetricViewMode] = useState('todas'); // 'todas' | 'whatsapp' | 'email'
@@ -478,6 +479,9 @@ export default function CampaignsPage() {
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     router.replace(`/dashboard/campaigns?tab=${tab}`);
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   // Filtrado de Medios por Rubro
@@ -1588,7 +1592,10 @@ export default function CampaignsPage() {
       <Sidebar />
       <Panel>
         <Header />
-        <div className="flex flex-col h-full w-full bg-white dark:bg-[#070b14] rounded-[32px] p-6 md:p-8 shadow-sm overflow-hidden text-gray-950 dark:text-white font-sans transition-colors">
+        <div 
+          ref={scrollContainerRef}
+          className="flex-1 flex flex-col w-full bg-white dark:bg-[#070b14] rounded-[32px] p-6 md:p-8 shadow-sm overflow-y-auto text-gray-950 dark:text-white font-sans transition-colors min-h-0"
+        >
           
           {/* Header & Tabs de Navegación Principal */}
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-5 border-b border-gray-100 dark:border-white/10 pb-5">
@@ -1885,7 +1892,7 @@ export default function CampaignsPage() {
           {/* VISTA 1: META WHATSAPP                                    */}
           {/* ========================================================= */}
           {activeTab === 'meta' && (
-            <div className="flex-1 flex flex-col overflow-hidden space-y-5 animate-in fade-in duration-200">
+            <div className="flex flex-col space-y-5 animate-in fade-in duration-200 pb-12">
               
               {/* Tarjetas de Métricas Omnicanal & Ponderación de Entregabilidad */}
               {renderMetricsOverview()}
@@ -1930,7 +1937,7 @@ export default function CampaignsPage() {
               </div>
 
               {/* Tabla de Campañas WhatsApp */}
-              <div className="flex-1 overflow-auto border border-gray-100 dark:border-white/10 rounded-2xl">
+              <div className="overflow-x-auto border border-gray-100 dark:border-white/10 rounded-2xl shadow-2xs">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-gray-50/80 dark:bg-slate-900/60 border-b border-gray-200 dark:border-white/10 text-[11px] uppercase tracking-wider text-gray-500 dark:text-slate-400 font-extrabold">
@@ -2046,7 +2053,7 @@ export default function CampaignsPage() {
           {/* VISTA 2: MAILS (GMAIL)                                    */}
           {/* ========================================================= */}
           {activeTab === 'email' && (
-            <div className="flex-1 flex flex-col overflow-hidden space-y-5 animate-in fade-in duration-200">
+            <div className="flex flex-col space-y-5 animate-in fade-in duration-200 pb-12">
               
               {/* Tarjetas de Métricas Omnicanal & Ponderación de Entregabilidad */}
               {renderMetricsOverview()}
@@ -2235,7 +2242,7 @@ export default function CampaignsPage() {
               })}
 
               {/* Tabla de Campañas Email */}
-              <div className="flex-1 overflow-auto border border-gray-100 dark:border-white/10 rounded-2xl">
+              <div className="overflow-x-auto border border-gray-100 dark:border-white/10 rounded-2xl shadow-2xs">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-gray-50/80 dark:bg-slate-900/60 border-b border-gray-200 dark:border-white/10 text-[11px] uppercase tracking-wider text-gray-500 dark:text-slate-400 font-extrabold">
@@ -2422,7 +2429,7 @@ export default function CampaignsPage() {
           {/* VISTA 3: BIBLIOTECA DE MEDIOS (MEDIA HUB INSPIRADO EN C:\SaaSIA) */}
           {/* ========================================================= */}
           {activeTab === 'media' && (
-            <div className="flex-1 flex flex-col overflow-hidden space-y-4 animate-in fade-in duration-200">
+            <div className="flex flex-col space-y-4 animate-in fade-in duration-200 pb-12">
               
               {/* Barra de Filtros por Rubro & Subida */}
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-gray-50 dark:bg-[#0c1424] p-4 rounded-2xl border border-gray-200 dark:border-white/10">
@@ -2497,7 +2504,7 @@ export default function CampaignsPage() {
               </div>
 
               {/* Grid de Medios por Rubro */}
-              <div className="flex-1 overflow-y-auto pr-1">
+              <div className="w-full pr-1">
                 {filteredMedios.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-64 text-gray-400 dark:text-slate-500">
                     <FolderOpen className="w-12 h-12 mb-2 text-gray-300 dark:text-slate-600" />
@@ -2624,7 +2631,7 @@ export default function CampaignsPage() {
           {/* VISTA 4: EDITORES DE PLANTILLAS                           */}
           {/* ========================================================= */}
           {activeTab === 'templates' && (
-            <div className="flex-1 flex flex-col overflow-hidden space-y-4 animate-in fade-in duration-200">
+            <div className="flex flex-col space-y-4 animate-in fade-in duration-200 pb-12">
               
               {/* Barra superior de Plantillas */}
               <div className="flex justify-between items-center bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-500/30 p-4 rounded-2xl">
@@ -2653,7 +2660,7 @@ export default function CampaignsPage() {
               </div>
 
               {/* Grid de Plantillas */}
-              <div className="flex-1 overflow-y-auto pr-1">
+              <div className="w-full pr-1">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {plantillas.map((plan) => {
                     const isWhatsApp = plan.tipo === 'whatsapp';
