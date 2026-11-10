@@ -15,7 +15,12 @@ export default function MessagesPanel() {
   const [contacts, setContacts] = useState([]);
   const [messages, setMessages] = useState([]);
   const [activeContact, setActiveContact] = useState(null);
-  const [codigoEmpresa, setCodigoEmpresa] = useState(null);
+  const [codigoEmpresa, setCodigoEmpresa] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('codigoEmpresa') || 'KRZMJI';
+    }
+    return 'KRZMJI';
+  });
   const [loading, setLoading] = useState(true);
 
   const [currentUserData, setCurrentUserData] = useState(null);
@@ -26,9 +31,12 @@ export default function MessagesPanel() {
       fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } })
         .then(res => res.json())
         .then(data => {
-          if (data.codigo_empresa) {
+          if (data && data.codigo_empresa) {
             setCodigoEmpresa(data.codigo_empresa);
             setCurrentUserData(data);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('codigoEmpresa', data.codigo_empresa);
+            }
           }
         })
         .catch(err => console.error("Error fetching user data:", err));
@@ -37,10 +45,11 @@ export default function MessagesPanel() {
 
   // 2. Poll contacts for this enterprise (solo con mensajes reales intercambiados)
   const fetchContacts = async () => {
-    if (!codigoEmpresa || !user?.id) return;
+    const targetEmpresa = codigoEmpresa || (typeof window !== 'undefined' ? localStorage.getItem('codigoEmpresa') : null) || 'KRZMJI';
     try {
+      const clerkParam = user?.id ? `clerkId=${encodeURIComponent(user.id)}&` : '';
       const roleParam = currentUserData?.rol_nombre ? `&role=${encodeURIComponent(currentUserData.rol_nombre)}&user_id=${currentUserData.id}` : '';
-      const res = await fetch(`${API_URL}/contacts/${codigoEmpresa}?clerkId=${user.id}${roleParam}&onlyWithMessages=true`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+      const res = await fetch(`${API_URL}/contacts/${targetEmpresa}?${clerkParam}onlyWithMessages=true${roleParam}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
       const data = await res.json();
       
       // Formatear datos para el frontend
@@ -74,20 +83,26 @@ export default function MessagesPanel() {
         const updatedActive = formatted.find(c => c.id === activeContact.id);
         if (updatedActive) setActiveContact(updatedActive);
       }
-      if (loading) setLoading(false);
     } catch (err) {
       console.error('Error fetching contacts:', err);
-      if (loading) setLoading(false);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!codigoEmpresa || !user?.id) return;
-
     fetchContacts();
     const intervalId = setInterval(fetchContacts, 3000);
-    return () => clearInterval(intervalId);
-  }, [codigoEmpresa, user?.id]);
+    // Timeout failsafe para evitar que se quede cargando infinitamente bajo ninguna circunstancia
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 2500);
+
+    return () => {
+      clearInterval(intervalId);
+      clearTimeout(safetyTimer);
+    };
+  }, [codigoEmpresa, user?.id, currentUserData?.rol_nombre]);
 
   // 3. Poll messages for active contact
   useEffect(() => {
@@ -209,7 +224,7 @@ export default function MessagesPanel() {
     }
   };
 
-  if (!isLoaded || loading) {
+  if (loading && contacts.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center h-full bg-white dark:bg-[#070b14] rounded-[32px]">
         <div className="w-8 h-8 border-4 border-gray-200 dark:border-white/20 border-t-[#c2dce0] dark:border-t-sky-400 rounded-full animate-spin mb-4"></div>

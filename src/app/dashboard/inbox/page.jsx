@@ -123,7 +123,12 @@ Equipo Colaboratium`
 
 export default function InboxPage() {
   const { user, isLoaded } = useUser();
-  const [codigoEmpresa, setCodigoEmpresa] = useState(null);
+  const [codigoEmpresa, setCodigoEmpresa] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("codigoEmpresa") || "KRZMJI";
+    }
+    return "KRZMJI";
+  });
 
   const [emails, setEmails] = useState([]);
   const [inboxStats, setInboxStats] = useState({ total: 0, unseen: 0 });
@@ -154,7 +159,12 @@ export default function InboxPage() {
       fetch(`${API_URL}/users/me/${user.id}`, { headers: { "ngrok-skip-browser-warning": "true" } })
         .then((res) => res.json())
         .then((data) => {
-          if (data.codigo_empresa) setCodigoEmpresa(data.codigo_empresa);
+          if (data && data.codigo_empresa) {
+            setCodigoEmpresa(data.codigo_empresa);
+            if (typeof window !== "undefined") {
+              localStorage.setItem("codigoEmpresa", data.codigo_empresa);
+            }
+          }
         })
         .catch((err) => console.error(err));
     }
@@ -162,10 +172,10 @@ export default function InboxPage() {
 
   // 2. Cargar lista de correos
   const fetchEmails = async () => {
-    if (!codigoEmpresa) return;
+    const targetEmpresa = codigoEmpresa || "KRZMJI";
     try {
       setLoadingList(true);
-      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/inbox?limit=40`, {
+      const res = await fetch(`${API_URL}/empresas/${targetEmpresa}/inbox?limit=40`, {
         headers: { "ngrok-skip-browser-warning": "true" }
       });
       const data = await res.json();
@@ -191,6 +201,10 @@ export default function InboxPage() {
 
   useEffect(() => {
     fetchEmails();
+    const safetyTimer = setTimeout(() => {
+      setLoadingList(false);
+    }, 3000);
+    return () => clearTimeout(safetyTimer);
   }, [codigoEmpresa]);
 
   // 3. Cargar detalle de un correo y su perfil de contacto asociado
