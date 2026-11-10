@@ -91,15 +91,9 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
     scrollToBottom();
   }, [messages]);
 
-  const isWasenderLine = Boolean(contact?.linea_wa?.startsWith('WA_S') || contact?.canal === 'wasender');
-
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (isWasenderLine) {
-        toast.warning('La línea WA_S***5239 está en periodo de prueba con salida bloqueada. El bot responde automáticamente.');
-        return;
-      }
       if (inputValue.trim()) {
         onSendMessage(inputValue);
         setInputValue('');
@@ -505,26 +499,12 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
       </div>
 
       {/* Input Area */}
-      {isWasenderLine && (
-        <div className="mx-6 mb-3 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-800 dark:text-amber-200 flex items-center justify-between shadow-2xs">
-          <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-black text-[10px] tracking-wide border border-purple-200 dark:border-purple-700/50">
-              {contact.linea_wa || 'WA_S***5239'}
-            </span>
-            <span>
-              <strong>Línea en Modo de Prueba:</strong> Salidas manuales bloqueadas por seguridad. El bot responde de forma autónoma con el flujo de pauta y bienvenida.
-            </span>
-          </div>
-        </div>
-      )}
-
       {isWithin24Hours || messages.length === 0 ? (
-        <div className={`p-4 mx-6 mb-6 bg-white dark:bg-[#0d1322] border rounded-[20px] shadow-sm flex flex-col gap-3 ${isWasenderLine ? 'border-amber-300/50 dark:border-amber-500/30 opacity-90' : 'border-gray-200 dark:border-white/10'}`}>
+        <div className="p-4 mx-6 mb-6 bg-white dark:bg-[#0d1322] border rounded-[20px] shadow-sm flex flex-col gap-3 border-gray-200 dark:border-white/10">
            <input 
               type="text" 
-              disabled={isWasenderLine}
-              placeholder={isWasenderLine ? "Salida bloqueada en modo de prueba (Línea WA_S***5239). El bot gestiona las respuestas." : "Enter to send, Shift + Enter to add new line"} 
-              className={`w-full outline-none text-[14px] bg-transparent ${isWasenderLine ? 'text-gray-400 dark:text-slate-500 cursor-not-allowed italic' : 'text-gray-700 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500'}`}
+              placeholder="Enter to send, Shift + Enter to add new line" 
+              className="w-full outline-none text-[14px] bg-transparent text-gray-700 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}

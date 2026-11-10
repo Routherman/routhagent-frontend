@@ -94,10 +94,10 @@ export default function SocialAccounts() {
             }
             if (cv && cv.wasender) {
                 setWasSessionName(cv.wasender.session_name || 'Colab');
-                setWasPhoneNumber(cv.wasender.phone_number || '+54 11 7825 5239');
+                setWasPhoneNumber(cv.wasender.phone_number || '+54 9 11 2473 5062');
                 setWasApiKey(cv.wasender.api_key || '');
                 setWasWebhookSecret(cv.wasender.webhook_secret || '');
-                setWasBlockOutgoing(cv.wasender.block_outgoing ?? true);
+                setWasBlockOutgoing(cv.wasender.block_outgoing ?? false);
             }
             if (cv && cv.instagram) {
                 setIgUsername(cv.instagram.username || cv.instagram.handle || '@colaboratium');

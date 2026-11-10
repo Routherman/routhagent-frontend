@@ -8,7 +8,8 @@ if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' |
   }
 }
 
-if (rawUrl.includes('ngrok')) {
+// Si la URL apunta a ngrok o a cualquier túnel de trycloudflare que no sea el túnel activo actual, usar defaultBackend
+if (rawUrl.includes('ngrok') || (rawUrl.includes('trycloudflare.com') && !rawUrl.includes('webcams-upload-occupation-beginner'))) {
   rawUrl = defaultBackend;
 }
 
