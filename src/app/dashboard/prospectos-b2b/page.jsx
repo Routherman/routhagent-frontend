@@ -189,8 +189,8 @@ export default function ProspectosB2BPage() {
     webinarDate: 'Lunes 3 de Noviembre',
     webinarTime: '10:00',
     webinarTitle: 'Reunión Informativa Red de Asesores Independientes',
-    bookingLink: 'https://consola.colaboratium.com.ar/reservar',
-    optOutBaseUrl: 'https://consola.colaboratium.com.ar/b2b/baja',
+    bookingLink: 'https://colaboratium.com.ar/reservar',
+    optOutBaseUrl: 'https://colaboratium.com.ar/baja',
     syncToAgenda: true
   });
   const [generatingBatch, setGeneratingBatch] = useState(false);
@@ -895,7 +895,7 @@ Te contacto como Broker / Responsable de {{Office}} porque en Colaboratium (Glob
 
 Sabemos que ya liderás un equipo de agentes que trabajan bajo el modelo de contrato independiente. Nuestra propuesta te permite sumar una unidad de ingresos recurrentes para tu oficina, sin ningún costo para los clientes inversores de tu cartera:
 
-Consola Jerárquica Propia (consola.colaboratium.com.ar): Dás de alta a los agentes de tu equipo bajo tu propio nodo. Ellos cobran comisiones de alto rendimiento por ofrecer alternativas de inversión en pesos (100% bancarizadas vía BIND/Coinag y filtradas por IA) a sus clientes con liquidez.
+Plataforma Principal (https://colaboratium.com.ar/): Dás de alta a los agentes de tu equipo bajo tu propio nodo. Ellos cobran comisiones de alto rendimiento por ofrecer alternativas de inversión en pesos (100% bancarizadas vía BIND/Coinag y filtradas por IA) a sus clientes con liquidez.
 
 10% de Overriding para vos como Líder: Percibís un 10% adicional sobre la bolsa total de comisiones que generen todos los agentes de tu equipo (sin descontárselo a ellos).
 

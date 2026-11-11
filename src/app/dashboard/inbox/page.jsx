@@ -96,7 +96,7 @@ Puntos clave de nuestra plataforma:
 3. TASAS VARIABLES DE MERCADO: Tasa promedio estimada entre el 75% y 105% TNA según plazo (3, 6 o 12 meses) y perfil de riesgo.
 4. ATOMIZACIÓN Y SCORING IA: Nuestro motor de IA aprueba solo entre el 5% y 15% de solicitudes y fracciona tu capital en 20+ microcréditos distintos.
 
-Podés ingresar a la consola para registrar tu usuario: https://consola.colaboratium.com.ar
+Podés ingresar a la plataforma principal para registrar tu usuario: https://colaboratium.com.ar/
 
 Quedamos a tu entera disposición.
 Equipo Colaboratium`
