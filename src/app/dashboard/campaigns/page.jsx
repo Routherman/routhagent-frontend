@@ -498,41 +498,37 @@ export default function CampaignsPage() {
   const metaCampaigns = campaigns.filter(c => (c.tipo || 'whatsapp') === 'whatsapp');
   const emailCampaigns = campaigns.filter(c => c.tipo === 'email');
 
-  // 1. Canal WhatsApp Meta
-  const rawMetaEnviados = metaCampaigns.reduce((acc, c) => acc + (Number(c.enviados) || 0), 0);
-  const metaEnviados = rawMetaEnviados > 0 ? rawMetaEnviados : 799;
-  const rawMetaRespondidos = metaCampaigns.reduce((acc, c) => acc + (Number(c.respondidos) || 0), 0);
-  const metaRespondidos = rawMetaRespondidos > 0 ? rawMetaRespondidos : 639;
-  const metaTasaRespuesta = metaEnviados > 0 ? Math.round((metaRespondidos / metaEnviados) * 100) : 80;
+  // 1. Canal WhatsApp Meta (métricas reales desde DB)
+  const metaEnviados = metaCampaigns.reduce((acc, c) => acc + (Number(c.enviados) || 0), 0);
+  const metaRespondidos = metaCampaigns.reduce((acc, c) => acc + (Number(c.respondidos) || 0), 0);
+  const metaTasaRespuesta = metaEnviados > 0 ? Math.round((metaRespondidos / metaEnviados) * 100) : 0;
 
-  // Ponderación de entregas WhatsApp: deducir plantillas rechazadas en Meta Cloud API y números fijos/sin WhatsApp (~3.5%)
-  const metaRechazadosMeta = Math.max(28, Math.round(metaEnviados * 0.035));
+  // Ponderación de entregas WhatsApp: estimar plantillas rechazadas / fijos sin WhatsApp (~3.5%) solo cuando hay envíos
+  const metaRechazadosMeta = metaEnviados > 0 ? Math.round(metaEnviados * 0.035) : 0;
   const metaEntregadosNetos = Math.max(0, metaEnviados - metaRechazadosMeta);
-  const metaTasaEntrega = metaEnviados > 0 ? (Math.round((metaEntregadosNetos / metaEnviados) * 1000) / 10) : 96.5;
+  const metaTasaEntrega = metaEnviados > 0 ? (Math.round((metaEntregadosNetos / metaEnviados) * 1000) / 10) : 0;
   const metaEntregados = metaEntregadosNetos;
 
-  // 2. Canal Email Gmail
-  const rawEmailEnviados = emailCampaigns.reduce((acc, c) => acc + (Number(c.enviados) || 0), 0);
-  const emailEnviados = rawEmailEnviados > 0 ? rawEmailEnviados : 611;
-  const rawEmailRespondidos = emailCampaigns.reduce((acc, c) => acc + (Number(c.respondidos) || 0), 0);
-  const emailRespondidos = rawEmailRespondidos > 0 ? rawEmailRespondidos : 103;
-  const emailTasaRespuesta = emailEnviados > 0 ? Math.round((emailRespondidos / emailEnviados) * 100) : 17;
+  // 2. Canal Email (métricas reales desde DB + inboxService)
+  const emailEnviados = emailCampaigns.reduce((acc, c) => acc + (Number(c.enviados) || 0), 0);
+  const emailRespondidos = emailCampaigns.reduce((acc, c) => acc + (Number(c.respondidos) || 0), 0);
+  const emailTasaRespuesta = emailEnviados > 0 ? Math.round((emailRespondidos / emailEnviados) * 100) : 0;
 
-  // Ponderación de entregas Email: deducir mails devueltos (bounces / Mailer-Daemon) y rechazados por servidores SMTP (~4.2%)
-  const emailMailsDevueltos = Math.max(26, Math.round(emailEnviados * 0.042));
+  // Ponderación de entregas Email: estimar mails devueltos / rebotes (~4.2%) solo cuando hay envíos
+  const emailMailsDevueltos = emailEnviados > 0 ? Math.round(emailEnviados * 0.042) : 0;
   const emailEntregadosNetos = Math.max(0, emailEnviados - emailMailsDevueltos);
-  const emailTasaEntrega = emailEnviados > 0 ? (Math.round((emailEntregadosNetos / emailEnviados) * 1000) / 10) : 95.7;
+  const emailTasaEntrega = emailEnviados > 0 ? (Math.round((emailEntregadosNetos / emailEnviados) * 1000) / 10) : 0;
   const emailEntregados = emailEntregadosNetos;
 
-  // 3. Consolidado Omnicanal (Todas las Campañas - Ponderado)
-  const totalCampanasAll = campaigns.length > 0 ? campaigns.length : (metaCampaigns.length + emailCampaigns.length || 16);
-  const totalEnviadosAll = metaEnviados + emailEnviados; // 1.410 envíos disparados
-  const totalDesviosAll = metaRechazadosMeta + emailMailsDevueltos; // 54 desvíos (28 Meta + 26 Mails devueltos)
-  const totalEntregadosNetosAll = metaEntregadosNetos + emailEntregadosNetos; // 1.356 entregas efectivas netas
-  const tasaExitoPonderada = totalEnviadosAll > 0 ? (Math.round((totalEntregadosNetosAll / totalEnviadosAll) * 1000) / 10) : 96.2; // 96.2%
-  const tasaDesviosPonderada = totalEnviadosAll > 0 ? (Math.round((totalDesviosAll / totalEnviadosAll) * 1000) / 10) : 3.8; // 3.8%
-  const totalRespondidosAll = metaRespondidos + emailRespondidos; // 742 interacciones
-  const tasaRespuestaGlobal = totalEnviadosAll > 0 ? (Math.round((totalRespondidosAll / totalEnviadosAll) * 1000) / 10) : 52.6; // 52.6%
+  // 3. Consolidado Omnicanal (Todas las Campañas - Real DB)
+  const totalCampanasAll = campaigns.length;
+  const totalEnviadosAll = metaEnviados + emailEnviados;
+  const totalDesviosAll = metaRechazadosMeta + emailMailsDevueltos;
+  const totalEntregadosNetosAll = metaEntregadosNetos + emailEntregadosNetos;
+  const tasaExitoPonderada = totalEnviadosAll > 0 ? (Math.round((totalEntregadosNetosAll / totalEnviadosAll) * 1000) / 10) : 0;
+  const tasaDesviosPonderada = totalEnviadosAll > 0 ? (Math.round((totalDesviosAll / totalEnviadosAll) * 1000) / 10) : 0;
+  const totalRespondidosAll = metaRespondidos + emailRespondidos;
+  const tasaRespuestaGlobal = totalEnviadosAll > 0 ? (Math.round((totalRespondidosAll / totalEnviadosAll) * 1000) / 10) : 0;
 
   // Componente Reutilizable: Render de Métricas Ponderadas con Selector de Vistas
   const renderMetricsOverview = () => {
