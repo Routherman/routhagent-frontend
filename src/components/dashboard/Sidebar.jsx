@@ -7,29 +7,16 @@ import { useTheme } from '@/context/ThemeContext';
 import { useUser, SignOutButton, SignInButton } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import { 
-  LayoutGrid, 
-  MessageSquare, 
-  Ticket, 
-  Users, 
-  Cpu, 
-  BarChart3, 
-  Zap, 
-  GitFork, 
   Settings, 
   LogIn,
   LogOut,
   ChevronRight,
   ShieldCheck,
-  Mail,
-  Calendar,
-  FolderOpen,
   ChevronDown,
-  Layers,
-  Building2,
-  ExternalLink,
-  GraduationCap
+  Layers
 } from 'lucide-react';
 import { API_URL } from '@/config/api';
+import { getSidebarSections, isSectionVisible } from '@/config/secciones';
 
 // Global variable to persist known handoffs across Sidebar remounts during navigation
 let globalHandoffs = new Set();
@@ -154,66 +141,49 @@ export default function Sidebar() {
     };
   }, [isLoaded, user]);
 
-  // Sub-items que van en la sección colapsable solicitada:
-  // {equipo y roles + router multi ia + biblioteca de medios + automatizacion + flujos}
-  const rawOpsItems = [
-    { label: 'Equipo & Roles', href: '/dashboard/roles', icon: ShieldCheck, permission: 'view_roles' },
-    { label: 'Router Multi-IA', href: '/dashboard/models', icon: Cpu, permission: 'view_models' },
-    { label: 'Biblioteca de Medios', href: '/dashboard/campaigns?tab=media', icon: FolderOpen, permission: 'view_media' },
-    { label: 'Automatización', href: '/dashboard/automation', icon: Zap, permission: 'view_automation' },
-    { label: 'Flujos Bot', href: '/dashboard/flows', icon: GitFork, permission: 'view_flows' },
-  ];
+  const rawOpsItems = getSidebarSections('ops').map(sec => ({
+    ...sec,
+    label: sec.sidebarLabel || sec.label,
+    permission: `view_${sec.id}`,
+  }));
 
-  const rawMainItems = [
-    { label: 'Dashboard', href: '/dashboard', icon: LayoutGrid, exact: true, permission: 'view_dashboard' },
-    { label: 'Mensajes', href: '/dashboard/messages', icon: MessageSquare, count: chatsAttentionCount, badge: hasHandoffs, permission: 'view_messages' },
-    { label: 'Inbox Correo', href: '/dashboard/inbox', icon: Mail, permission: 'view_inbox' },
-    { label: 'Calendario & Meet', href: '/dashboard/calendar', icon: Calendar, permission: 'view_calendar' },
-    { label: 'Tickets Helpdesk', href: '/dashboard/tickets', icon: Ticket, count: pendingTicketsCount, permission: 'view_tickets' },
-    { label: 'Agenda CRM', href: '/dashboard/crm', icon: Users, permission: 'view_crm' },
-    { label: 'Campañas (Meta & Mail)', href: '/dashboard/campaigns', icon: BarChart3, permission: 'view_campaigns' },
-    { label: 'Prospectos B2B (Crawler)', href: '/dashboard/prospectos-b2b', icon: Building2, badgeText: 'CRAWLER VIVO', permission: 'view_prospectos_b2b' },
-    { label: 'Academia', href: '/dashboard/academia', icon: GraduationCap, permission: 'view_academia' },
-  ];
+  const rawMainItems = getSidebarSections('main').map(sec => {
+    const base = {
+      ...sec,
+      label: sec.sidebarLabel || sec.label,
+      permission: `view_${sec.id}`,
+    };
+    if (sec.id === 'messages') {
+      return { ...base, count: chatsAttentionCount, badge: hasHandoffs };
+    }
+    if (sec.id === 'tickets') {
+      return { ...base, count: pendingTicketsCount };
+    }
+    return base;
+  });
 
-  const rawConfigItem = { label: 'Configuración', href: '/dashboard/user', icon: Settings, permission: 'view_settings' };
+  const rawConfigSec = getSidebarSections('config')[0];
+  const rawConfigItem = rawConfigSec
+    ? { ...rawConfigSec, label: rawConfigSec.sidebarLabel || rawConfigSec.label, permission: `view_${rawConfigSec.id}` }
+    : { id: 'settings', label: 'Configuración', href: '/dashboard/user', icon: Settings, permission: 'view_settings' };
 
   // Detectar si alguna ruta interna del grupo colapsable está activa
-  const isOpsActive = [
-    '/dashboard/roles',
-    '/dashboard/models',
-    '/dashboard/automation',
-    '/dashboard/flows'
-  ].some(route => pathname.startsWith(route)) || (pathname.startsWith('/dashboard/campaigns') && pathname.includes('tab=media'));
-
-  const [isOpsOpen, setIsOpsOpen] = useState(isOpsActive);
-
-  useEffect(() => {
-    if (isOpsActive) {
-      setIsOpsOpen(true);
+  const isOpsActive = rawOpsItems.some(item => {
+    if (item.href.includes('?')) {
+      const [basePath, query] = item.href.split('?');
+      return pathname.startsWith(basePath) && pathname.includes(query);
     }
-  }, [isOpsActive]);
+    return pathname.startsWith(item.href);
+  });
+
+  const [manualOpsOpen, setManualOpsOpen] = useState(null);
+  const isOpsOpen = manualOpsOpen ?? isOpsActive;
+  const setIsOpsOpen = (val) => setManualOpsOpen(val);
 
   // Master, Main, Admin y creadores de empresa ven todo. Otros roles ven según privilegios explícitos.
   const isSuperAdmin = !userRole || ['master', 'main', 'admin', 'gerencia', 'director'].includes(userRole);
   
-  const filterPerm = (item) => {
-    if (isSuperAdmin) return true;
-    if (!userPrivs) return true;
-    if (item.permission === 'view_prospectos_b2b') {
-      if (userPrivs.view_prospectos_b2b !== undefined) return Boolean(userPrivs.view_prospectos_b2b);
-      return userPrivs.view_crm !== false;
-    }
-    if (item.permission === 'view_media') {
-      if (userPrivs.view_media !== undefined) return Boolean(userPrivs.view_media);
-      return userPrivs.view_campaigns !== false;
-    }
-    if (item.permission === 'view_automation') {
-      if (userPrivs.view_automation !== undefined) return Boolean(userPrivs.view_automation);
-      return userPrivs.view_flows !== false;
-    }
-    return userPrivs[item.permission] !== false;
-  };
+  const filterPerm = (item) => isSectionVisible(userPrivs, item, { isSuper: isSuperAdmin });
 
   const mainNavItems = rawMainItems.filter(filterPerm);
   const opsNavItems = rawOpsItems.filter(filterPerm);

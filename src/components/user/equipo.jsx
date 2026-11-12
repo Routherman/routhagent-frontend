@@ -12,7 +12,7 @@ import {
     ShieldCheck, 
     Activity, 
     Calendar, 
-    Video, 
+    Video,
     Ticket, 
     UserPlus, 
     RefreshCw, 
@@ -20,185 +20,13 @@ import {
     Lock,
     Eye,
     Zap,
-    LayoutGrid,
-    MessageSquare,
-    Building2,
-    BarChart3,
-    FolderOpen,
-    Cpu,
-    GitFork,
-    Settings,
-    FileText,
-    GraduationCap
+    LayoutGrid
 } from 'lucide-react';
 import { API_URL } from '@/config/api';
 import { toast } from 'sonner';
+import { SECCIONES_SISTEMA, getDefaultPrivs, isSectionVisible } from '@/config/secciones';
 
-/**
- * Catálogo maestro de todas las secciones del sistema Colaboratium / Routh Agent
- */
-export const SECCIONES_SISTEMA = [
-    {
-        id: 'dashboard',
-        label: 'Dashboard / Métricas',
-        desc: 'Panel principal de estadísticas, ranking de puntos y KPIs en vivo.',
-        icon: LayoutGrid,
-        badge: 'General',
-        badgeColor: 'bg-gray-100 text-gray-700 border-gray-200',
-        canCrud: false, // Panel de estadísticas solo lectura
-    },
-    {
-        id: 'messages',
-        label: 'Chats & Conversaciones',
-        desc: 'Bandeja en vivo WhatsApp, handoff IA y respuestas a clientes.',
-        icon: MessageSquare,
-        badge: 'WhatsApp',
-        badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-        canCrud: true,
-    },
-    {
-        id: 'inbox',
-        label: 'Bandeja de Entrada (Gmail)',
-        desc: 'Lectura y despacho de correos electrónicos sincronizados con Google.',
-        icon: Mail,
-        badge: 'Email',
-        badgeColor: 'bg-rose-100 text-rose-800 border-rose-200',
-        canCrud: true,
-    },
-    {
-        id: 'calendar',
-        label: 'Calendario & Google Meet',
-        desc: 'Agenda comercial, turnos de Meet, webinars de inducción y eventos.',
-        icon: Calendar,
-        badge: 'Reuniones',
-        badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
-        canCrud: true,
-    },
-    {
-        id: 'tickets',
-        label: 'Tickets Helpdesk',
-        desc: 'Mesa de soporte, solicitudes internas, autorizaciones y trazabilidad.',
-        icon: Ticket,
-        badge: 'Soporte',
-        badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
-        canCrud: true,
-    },
-    {
-        id: 'crm',
-        label: 'Agenda CRM (Contactos & Asesores)',
-        desc: 'Fichas de clientes, inversores, asesores, jerarquías y datos bancarios.',
-        icon: Users,
-        badge: 'Comercial',
-        badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-        canCrud: true,
-    },
-    {
-        id: 'prospectos_b2b',
-        label: 'Prospectos B2B (Crawler Playwright)',
-        desc: 'Scraping autónomo de corredores inmobiliarios, filtros y prospección masiva.',
-        icon: Building2,
-        badge: 'CRAWLER VIVO',
-        badgeColor: 'bg-cyan-100 text-cyan-800 border-cyan-200',
-        canCrud: true,
-    },
-    {
-        id: 'academia',
-        label: 'Academia & Capacitación',
-        desc: 'Cursos internos, clases con seguimiento real, prácticas y tablero de equipo.',
-        icon: GraduationCap,
-        badge: 'Formación',
-        badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-        canCrud: false,
-    },
-    {
-        id: 'campaigns',
-        label: 'Campañas Masivas (Meta & Email)',
-        desc: 'Envíos masivos por WhatsApp Cloud API y correos con plantillas oficiales.',
-        icon: BarChart3,
-        badge: 'Marketing',
-        badgeColor: 'bg-pink-100 text-pink-800 border-pink-200',
-        canCrud: true,
-    },
-    {
-        id: 'media',
-        label: 'Biblioteca de Medios',
-        desc: 'Subida, visualización y gestión de archivos, imágenes y catálogos PDF.',
-        icon: FolderOpen,
-        badge: 'Archivos',
-        badgeColor: 'bg-violet-100 text-violet-800 border-violet-200',
-        canCrud: true,
-    },
-    {
-        id: 'models',
-        label: 'Router Multi-IA',
-        desc: 'Modelos de lenguaje (Ollama, Groq, Cerebras, OpenRouter) y fallbacks.',
-        icon: Cpu,
-        badge: 'Inteligencia',
-        badgeColor: 'bg-teal-100 text-teal-800 border-teal-200',
-        canCrud: true,
-    },
-    {
-        id: 'automation',
-        label: 'Automatización & Skills',
-        desc: 'Disparadores automáticos, reglas de negocio y automatismos de sistema.',
-        icon: Zap,
-        badge: 'Reglas',
-        badgeColor: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-        canCrud: true,
-    },
-    {
-        id: 'flows',
-        label: 'Flujos del Bot',
-        desc: 'Diseñador visual de árboles conversacionales y nodos de respuesta.',
-        icon: GitFork,
-        badge: 'Bot Engine',
-        badgeColor: 'bg-orange-100 text-orange-800 border-orange-200',
-        canCrud: true,
-    },
-    {
-        id: 'roles',
-        label: 'Equipo & Roles',
-        desc: 'Administración de usuarios de la empresa, creación y edición de roles.',
-        icon: ShieldCheck,
-        badge: 'Seguridad',
-        badgeColor: 'bg-purple-100 text-purple-800 border-purple-200',
-        canCrud: true,
-    },
-    {
-        id: 'settings',
-        label: 'Configuración de Empresa & Perfil',
-        desc: 'Datos institucionales, vinculación de Meta Cloud API y credenciales.',
-        icon: Settings,
-        badge: 'Ajustes',
-        badgeColor: 'bg-slate-100 text-slate-800 border-slate-200',
-        canCrud: true,
-    }
-];
-
-export const getDefaultPrivs = (isSuper = false) => {
-    const privs = {};
-    SECCIONES_SISTEMA.forEach(sec => {
-        privs[`view_${sec.id}`] = isSuper ? true : ['dashboard', 'messages', 'inbox', 'calendar', 'tickets', 'crm', 'prospectos_b2b'].includes(sec.id);
-        if (sec.canCrud) {
-            privs[`create_${sec.id}`] = isSuper ? true : ['messages', 'crm', 'tickets', 'calendar', 'prospectos_b2b'].includes(sec.id);
-            privs[`edit_${sec.id}`] = isSuper ? true : ['messages', 'crm', 'tickets', 'calendar', 'prospectos_b2b'].includes(sec.id);
-            privs[`delete_${sec.id}`] = isSuper ? true : false;
-        }
-    });
-    // Flags heredados y operativos para compatibilidad
-    privs.manage_calendar_webinar = isSuper;
-    privs.manage_calendar_meet = isSuper;
-    privs.manage_calendar_events = isSuper;
-    privs.manage_contacts = isSuper;
-    privs.manage_tickets = isSuper;
-    privs.can_manage_users = isSuper;
-    privs.can_manage_roles = isSuper;
-    privs.can_manage_social = isSuper;
-    privs.can_edit_company = isSuper;
-    privs.can_access_support_chats = true;
-    privs.can_access_sales_chats = true;
-    return privs;
-};
+export { SECCIONES_SISTEMA, getDefaultPrivs };
 
 export default function Equipo({ userData, privilegios }) {
     const [usuarios, setUsuarios] = useState([]);
@@ -391,15 +219,7 @@ export default function Equipo({ userData, privilegios }) {
 
             SECCIONES_SISTEMA.forEach(sec => {
                 const vKey = `view_${sec.id}`;
-                if (privs[vKey] !== undefined) {
-                    merged[vKey] = Boolean(privs[vKey]);
-                } else if (sec.id === 'prospectos_b2b') {
-                    merged[vKey] = privs.view_crm !== undefined ? Boolean(privs.view_crm) : false;
-                } else if (sec.id === 'media') {
-                    merged[vKey] = privs.view_campaigns !== undefined ? Boolean(privs.view_campaigns) : false;
-                } else if (sec.id === 'automation') {
-                    merged[vKey] = privs.view_flows !== undefined ? Boolean(privs.view_flows) : false;
-                }
+                merged[vKey] = isSectionVisible(privs, sec, { isSystem: Boolean(role.is_system) });
 
                 if (sec.canCrud) {
                     const cKey = `create_${sec.id}`;
@@ -750,12 +570,9 @@ export default function Equipo({ userData, privilegios }) {
                                 const isSuper = ['master', 'main'].includes(rol.nombre.toLowerCase());
 
                                 // Secciones visibles autorizadas
-                                const allowedSections = SECCIONES_SISTEMA.filter(sec => {
-                                    if (isSuper) return true;
-                                    if (privs[`view_${sec.id}`] !== undefined) return Boolean(privs[`view_${sec.id}`]);
-                                    if (sec.id === 'prospectos_b2b') return Boolean(privs.view_crm ?? true);
-                                    return ['dashboard', 'messages', 'inbox', 'calendar', 'tickets', 'crm'].includes(sec.id);
-                                });
+                                const allowedSections = SECCIONES_SISTEMA.filter(sec =>
+                                    isSectionVisible(privs, sec, { isSuper, isSystem: Boolean(rol.is_system) })
+                                );
 
                                 // Conteo de permisos CRUD activos
                                 const crudPermissionsCount = SECCIONES_SISTEMA.filter(sec => sec.canCrud).reduce((acc, sec) => {
@@ -852,7 +669,7 @@ export default function Equipo({ userData, privilegios }) {
                                                 <div className="flex flex-wrap gap-1">
                                                     {isSuper ? (
                                                         <span className="px-2 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-black rounded-md">
-                                                            Acceso Total a las 14 Secciones
+                                                            Acceso Total a las {SECCIONES_SISTEMA.length} Secciones
                                                         </span>
                                                     ) : allowedSections.length === 0 ? (
                                                         <span className="text-[11px] text-gray-400 italic">Sin secciones asignadas</span>

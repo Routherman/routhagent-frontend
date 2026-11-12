@@ -7,3 +7,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Reglas de Arquitectura del Proyecto (Routh Agent)
+- Siempre que se agregue una nueva sección o módulo al sistema/dashboard, debe registrarse en [secciones.js](src/config/secciones.js) (`SECCIONES_SISTEMA`) para que aparezca automáticamente en el Sidebar y en **1. Matriz de Permisos por Sección** como opción seleccionable para **Mostrar** (`view_<id>`).
+
