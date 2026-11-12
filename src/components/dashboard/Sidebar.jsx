@@ -25,7 +25,8 @@ import {
   ChevronDown,
   Layers,
   Building2,
-  ExternalLink
+  ExternalLink,
+  GraduationCap
 } from 'lucide-react';
 import { API_URL } from '@/config/api';
 
@@ -165,12 +166,13 @@ export default function Sidebar() {
   const rawMainItems = [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutGrid, exact: true, permission: 'view_dashboard' },
     { label: 'Mensajes', href: '/dashboard/messages', icon: MessageSquare, count: chatsAttentionCount, badge: hasHandoffs, permission: 'view_messages' },
-    { label: 'Inbox Gmail', href: '/dashboard/inbox', icon: Mail, permission: 'view_inbox' },
+    { label: 'Inbox Correo', href: '/dashboard/inbox', icon: Mail, permission: 'view_inbox' },
     { label: 'Calendario & Meet', href: '/dashboard/calendar', icon: Calendar, permission: 'view_calendar' },
     { label: 'Tickets Helpdesk', href: '/dashboard/tickets', icon: Ticket, count: pendingTicketsCount, permission: 'view_tickets' },
     { label: 'Agenda CRM', href: '/dashboard/crm', icon: Users, permission: 'view_crm' },
     { label: 'Campañas (Meta & Mail)', href: '/dashboard/campaigns', icon: BarChart3, permission: 'view_campaigns' },
     { label: 'Prospectos B2B (Crawler)', href: '/dashboard/prospectos-b2b', icon: Building2, badgeText: 'CRAWLER VIVO', permission: 'view_prospectos_b2b' },
+    { label: 'Academia', href: '/dashboard/academia', icon: GraduationCap, permission: 'view_academia' },
   ];
 
   const rawConfigItem = { label: 'Configuración', href: '/dashboard/user', icon: Settings, permission: 'view_settings' };

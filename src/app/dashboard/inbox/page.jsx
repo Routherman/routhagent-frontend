@@ -132,7 +132,7 @@ export default function InboxPage() {
 
   const [emails, setEmails] = useState([]);
   const [inboxStats, setInboxStats] = useState({ total: 0, unseen: 0 });
-  const [accountEmail, setAccountEmail] = useState("colaboratium@gmail.com");
+  const [accountEmail, setAccountEmail] = useState("asesores@colaboratium.com.ar");
   const [loadingList, setLoadingList] = useState(true);
   const [search, setSearch] = useState("");
 
@@ -292,7 +292,7 @@ export default function InboxPage() {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success(`Respuesta enviada vía Gmail SMTP a ${activeEmail.fromEmail}`);
+        toast.success(`Respuesta enviada vía SMTP a ${activeEmail.fromEmail}`);
         setReplyBody("");
       } else {
         toast.error(data.error || "Error al enviar correo");
@@ -339,7 +339,7 @@ export default function InboxPage() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="font-extrabold text-sm text-white">Inbox Gmail ({accountEmail})</h2>
+                  <h2 className="font-extrabold text-sm text-white">Bandeja Corporativa ({accountEmail})</h2>
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                     Conectado a IMAP & SMTP
@@ -635,7 +635,7 @@ export default function InboxPage() {
                           className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 disabled:opacity-50 text-white rounded-xl font-bold text-xs shadow-md transition"
                         >
                           <Send className={`w-3.5 h-3.5 ${sendingReply ? "animate-spin" : ""}`} />
-                          <span>{sendingReply ? "Enviando..." : "Enviar Respuesta via Gmail SMTP"}</span>
+                          <span>{sendingReply ? "Enviando..." : "Enviar Respuesta via SMTP"}</span>
                         </button>
                       </div>
                     </form>

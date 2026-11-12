@@ -28,7 +28,8 @@ import {
     Cpu,
     GitFork,
     Settings,
-    FileText
+    FileText,
+    GraduationCap
 } from 'lucide-react';
 import { API_URL } from '@/config/api';
 import { toast } from 'sonner';
@@ -99,6 +100,15 @@ export const SECCIONES_SISTEMA = [
         badge: 'CRAWLER VIVO',
         badgeColor: 'bg-cyan-100 text-cyan-800 border-cyan-200',
         canCrud: true,
+    },
+    {
+        id: 'academia',
+        label: 'Academia & Capacitación',
+        desc: 'Cursos internos, clases con seguimiento real, prácticas y tablero de equipo.',
+        icon: GraduationCap,
+        badge: 'Formación',
+        badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+        canCrud: false,
     },
     {
         id: 'campaigns',

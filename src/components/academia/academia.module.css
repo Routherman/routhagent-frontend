@@ -1,0 +1,213 @@
+/* ==========================================================================
+   Estilos de la academia. CSS modules: no depende de Tailwind ni de ningún
+   kit, y no choca con los estilos del sistema.
+
+   Para adaptarlo a la marca alcanza con cambiar las variables de abajo
+   (o pisarlas desde un CSS global con más especificidad).
+   ========================================================================== */
+
+.raiz,
+.modalFondo {
+  --ac-fondo: transparent;
+  --ac-input-fondo: #ffffff;
+  --ac-modal-fondo: #ffffff;
+  --ac-superficie: #f6f7f9;
+  --ac-borde: #e3e6ea;
+  --ac-texto: #16191d;
+  --ac-tenue: #6a727c;
+  --ac-acento: #2457d6;
+  --ac-acento-texto: #ffffff;
+  --ac-ok: #1d7a46;
+  --ac-alerta: #a85b00;
+  --ac-error: #b42318;
+  --ac-radio: 12px;
+  color: var(--ac-texto);
+  font-family: inherit;
+}
+
+:global([data-academia-theme="dark"]) .raiz,
+:global([data-academia-theme="dark"]) .modalFondo {
+  --ac-fondo: transparent;
+  --ac-input-fondo: #0b1220;
+  --ac-modal-fondo: #111827;
+  --ac-superficie: rgba(255, 255, 255, 0.04);
+  --ac-borde: rgba(255, 255, 255, 0.12);
+  --ac-texto: #eef0f3;
+  --ac-tenue: #9aa3ad;
+  --ac-acento: #60a5fa;
+  --ac-acento-texto: #0b0d10;
+  --ac-ok: #5fd08e;
+  --ac-alerta: #f0b357;
+  --ac-error: #ff8a80;
+}
+
+.raiz {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 12px 4px 48px;
+  background: var(--ac-fondo);
+}
+
+.raiz h1 { font-size: 1.6rem; margin: 4px 0 16px; }
+.raiz h2 { font-size: 1.2rem; margin: 0 0 6px; }
+.raiz h3 { font-size: 0.95rem; margin: 16px 0 8px; color: var(--ac-tenue); text-transform: uppercase; letter-spacing: 0.04em; }
+
+.encabezado { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.filaAcciones { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 14px 0; }
+
+.tarjeta {
+  background: var(--ac-superficie);
+  border: 1px solid var(--ac-borde);
+  border-radius: var(--ac-radio);
+  padding: 18px;
+  margin: 16px 0;
+}
+
+.cursoCabecera { display: flex; gap: 16px; align-items: flex-start; }
+.portada { width: 120px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
+@media (max-width: 560px) { .portada { display: none; } }
+
+.resumen { margin: 6px 0 2px; }
+.barra { height: 6px; border-radius: 99px; background: var(--ac-borde); overflow: hidden; margin-top: 8px; }
+.barra > div { height: 100%; background: var(--ac-acento); transition: width 300ms ease; }
+
+.modulo { margin-top: 8px; }
+.listaClases { list-style: none; margin: 0; padding: 0; }
+.listaClases li {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--ac-borde);
+}
+.check input { width: 18px; height: 18px; cursor: pointer; }
+.nombreClase { color: inherit; text-decoration: none; }
+.nombreClase:hover { text-decoration: underline; }
+
+.etiqueta {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--ac-borde);
+  color: var(--ac-tenue);
+  white-space: nowrap;
+}
+.estado_completa, .practica_aprobado { color: var(--ac-ok); border-color: currentColor; }
+.estado_salteada, .practica_rehacer { color: var(--ac-alerta); border-color: currentColor; }
+.estado_en_curso, .practica_entregado { color: var(--ac-acento); border-color: currentColor; }
+.estado_no_medible { font-style: italic; }
+
+.boton, .botonSecundario, .botonTexto {
+  font: inherit;
+  font-size: 0.9rem;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: transform 80ms ease, opacity 120ms ease;
+}
+.boton { background: var(--ac-acento); color: var(--ac-acento-texto); border: 1px solid var(--ac-acento); }
+.botonSecundario { background: transparent; color: var(--ac-texto); border: 1px solid var(--ac-borde); }
+.botonTexto { background: none; border: 0; color: var(--ac-tenue); padding: 4px 8px; }
+.boton:active, .botonSecundario:active { transform: scale(0.97); }
+.boton:disabled, .botonSecundario:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+.volver { color: var(--ac-tenue); text-decoration: none; font-size: 0.9rem; }
+.tenue { color: var(--ac-tenue); }
+.fuerte { font-weight: 700; }
+.detalle { color: var(--ac-tenue); font-size: 0.8rem; }
+.alerta { color: var(--ac-alerta); font-size: 0.8rem; }
+.textoError { color: var(--ac-error); }
+.nota { color: var(--ac-tenue); font-size: 0.85rem; margin-top: 16px; }
+.kicker { color: var(--ac-acento); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 4px; }
+.descripcion, .explicacion { white-space: pre-wrap; line-height: 1.55; }
+
+.aviso, .logro, .devolucion {
+  border: 1px solid var(--ac-borde);
+  border-left: 3px solid var(--ac-acento);
+  background: var(--ac-superficie);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 12px 0;
+}
+.logro { border-left-color: var(--ac-ok); display: flex; align-items: center; gap: 8px; }
+.devolucion { border-left-color: var(--ac-alerta); }
+
+.pedido { margin: 12px 0; padding-left: 12px; border-left: 3px solid var(--ac-borde); font-style: italic; }
+
+.campo { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; font-size: 0.9rem; }
+.campo input, .campo textarea, .campo select {
+  font: inherit;
+  color: inherit;
+  background: var(--ac-input-fondo, #ffffff);
+  border: 1px solid var(--ac-borde);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.filtro { font-size: 0.85rem; color: var(--ac-tenue); display: flex; align-items: center; gap: 6px; }
+
+.tablaScroll { overflow-x: auto; border: 1px solid var(--ac-borde); border-radius: var(--ac-radio); margin-top: 16px; }
+.tabla { width: 100%; min-width: 680px; border-collapse: collapse; font-size: 0.9rem; }
+.tabla th { text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ac-tenue); padding: 10px 14px; border-bottom: 1px solid var(--ac-borde); }
+.tabla td { padding: 10px 14px; border-top: 1px solid var(--ac-borde); vertical-align: top; }
+.filaInactiva { opacity: 0.5; }
+
+/* Video */
+.marcoVideo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  width: 100%;
+  background: #000;
+  border-radius: var(--ac-radio);
+  overflow: hidden;
+}
+.marcoVideo iframe { width: 100%; height: auto; aspect-ratio: 16 / 9; border: 0; display: block; }
+/* Sin proporción fija en el <video>: hay clases filmadas en vertical. */
+.video { max-height: 78vh; width: auto; max-width: 100%; display: block; }
+.superpuesto {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.82);
+}
+
+/* Modal del video obligatorio: sin cruz, sin Escape, sin clic afuera. */
+.modalFondo {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.78);
+}
+.modal {
+  width: 100%;
+  max-width: 900px;
+  max-height: 100%;
+  overflow: auto;
+  background: var(--ac-modal-fondo, #ffffff);
+  border: 1px solid var(--ac-borde);
+  border-radius: var(--ac-radio);
+  padding: 18px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .barra > div, .boton, .botonSecundario { transition: none; }
+}
