@@ -1,11 +1,11 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
-import { useUser, useClerk } from '@clerk/nextjs';
+import { useUser, useClerk, SignInButton } from '@clerk/nextjs';
 import Link from 'next/link';
 import { API_URL } from '@/config/api';
 
 export default function Header() {
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
   const { signOut } = useClerk();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -75,61 +75,68 @@ export default function Header() {
           <span className="absolute top-[10px] right-[10px] w-1.5 h-1.5 bg-[#ff4a4a] rounded-full"></span>
         </button>
 
-        {/* Profile Custom Dropdown */}
-        <div className="relative ml-1" ref={dropdownRef}>
-          <div 
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center gap-2.5 bg-gray-50 dark:bg-slate-800/80 hover:bg-gray-100 dark:hover:bg-slate-700 border border-transparent dark:border-white/10 rounded-full pl-1.5 pr-4 py-1.5 cursor-pointer transition-colors shadow-sm"
-          >
-            {user ? (
-              <>
-                <img
-                  src={user.imageUrl}
-                  alt={user.firstName || 'Usuario'}
-                  className="w-7 h-7 rounded-full object-cover"
-                />
-                <span className="text-[13px] font-semibold text-gray-700 dark:text-white">
-                  {user.firstName || 'Usuario'}
-                </span>
-              </>
-            ) : (
-              <>
-                <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
-                <div className="w-16 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-              </>
-            )}
-            
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              strokeWidth={2.5} 
-              stroke="currentColor" 
-              className={`w-3 h-3 text-gray-400 dark:text-slate-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-            </svg>
+        {/* Profile Custom Dropdown or Sign-In Trigger */}
+        {!isLoaded ? (
+          <div className="flex items-center gap-2.5 bg-gray-50 dark:bg-slate-800/80 border border-transparent dark:border-white/10 rounded-full pl-1.5 pr-4 py-1.5 shadow-sm">
+            <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+            <div className="w-16 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
           </div>
-
-          {/* Dropdown Menu */}
-          {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-white/15 py-2 z-50">
-              <Link 
-                href="/dashboard/user" 
-                onClick={() => setIsDropdownOpen(false)}
-                className="block px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-white/10 font-medium"
+        ) : !user ? (
+          <SignInButton mode="modal">
+            <button
+              type="button"
+              className="ml-1 flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-[13px] rounded-full px-4 py-2 cursor-pointer transition-colors shadow-sm"
+            >
+              Iniciar sesión
+            </button>
+          </SignInButton>
+        ) : (
+          <div className="relative ml-1" ref={dropdownRef}>
+            <div 
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center gap-2.5 bg-gray-50 dark:bg-slate-800/80 hover:bg-gray-100 dark:hover:bg-slate-700 border border-transparent dark:border-white/10 rounded-full pl-1.5 pr-4 py-1.5 cursor-pointer transition-colors shadow-sm"
+            >
+              <img
+                src={user.imageUrl}
+                alt={user.firstName || 'Usuario'}
+                className="w-7 h-7 rounded-full object-cover"
+              />
+              <span className="text-[13px] font-semibold text-gray-700 dark:text-white">
+                {user.firstName || 'Usuario'}
+              </span>
+              
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                strokeWidth={2.5} 
+                stroke="currentColor" 
+                className={`w-3 h-3 text-gray-400 dark:text-slate-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
               >
-                Configuraciones
-              </Link>
-              <button 
-                onClick={() => signOut({ redirectUrl: '/' })}
-                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 font-medium"
-              >
-                Cerrar sesión
-              </button>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+              </svg>
             </div>
-          )}
-        </div>
+
+            {/* Dropdown Menu */}
+            {isDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-white/15 py-2 z-50">
+                <Link 
+                  href="/dashboard/user" 
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="block px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-white/10 font-medium"
+                >
+                  Configuraciones
+                </Link>
+                <button 
+                  onClick={() => signOut({ redirectUrl: '/' })}
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 font-medium"
+                >
+                  Cerrar sesión
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </header>
   );

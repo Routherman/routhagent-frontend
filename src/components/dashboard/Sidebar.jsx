@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '@/context/ThemeContext';
-import { useUser, SignOutButton } from '@clerk/nextjs';
+import { useUser, SignOutButton, SignInButton } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import { 
   LayoutGrid, 
@@ -16,6 +16,7 @@ import {
   Zap, 
   GitFork, 
   Settings, 
+  LogIn,
   LogOut,
   ChevronRight,
   ShieldCheck,
@@ -418,19 +419,35 @@ export default function Sidebar() {
           </div>
         )}
 
-        <SignOutButton>
-          <button 
-            className={`flex items-center h-10 px-3 rounded-2xl w-full transition-all duration-200 ${defaultColor} hover:text-rose-400 hover:bg-rose-500/10`}
-            title="Cerrar Sesión"
-          >
-            <div className="w-5 h-5 min-w-[20px] flex items-center justify-center">
-              <LogOut className="w-4 h-4" />
-            </div>
-            <span className="ml-3.5 text-xs font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-[-6px] group-hover:translate-x-0 overflow-hidden">
-              Cerrar Sesión
-            </span>
-          </button>
-        </SignOutButton>
+        {user ? (
+          <SignOutButton>
+            <button 
+              className={`flex items-center h-10 px-3 rounded-2xl w-full transition-all duration-200 ${defaultColor} hover:text-rose-400 hover:bg-rose-500/10`}
+              title="Cerrar Sesión"
+            >
+              <div className="w-5 h-5 min-w-[20px] flex items-center justify-center">
+                <LogOut className="w-4 h-4" />
+              </div>
+              <span className="ml-3.5 text-xs font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-[-6px] group-hover:translate-x-0 overflow-hidden">
+                Cerrar Sesión
+              </span>
+            </button>
+          </SignOutButton>
+        ) : isLoaded ? (
+          <SignInButton mode="modal">
+            <button 
+              className={`flex items-center h-10 px-3 rounded-2xl w-full transition-all duration-200 ${defaultColor} hover:text-amber-300 hover:bg-amber-500/10`}
+              title="Iniciar Sesión"
+            >
+              <div className="w-5 h-5 min-w-[20px] flex items-center justify-center">
+                <LogIn className="w-4 h-4" />
+              </div>
+              <span className="ml-3.5 text-xs font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-[-6px] group-hover:translate-x-0 overflow-hidden">
+                Iniciar Sesión
+              </span>
+            </button>
+          </SignInButton>
+        ) : null}
       </div>
     </aside>
   );
