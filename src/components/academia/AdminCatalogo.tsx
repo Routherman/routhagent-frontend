@@ -68,6 +68,14 @@ export default function AdminCatalogo({ alActualizar }: { alActualizar: () => vo
   const [claseObligatoria, setClaseObligatoria] = useState('')
   const [claseDesc, setClaseDesc] = useState('')
 
+  const [editClaseId, setEditClaseId] = useState<number | null>(null)
+  const [editNombre, setEditNombre] = useState('')
+  const [editProveedor, setEditProveedor] = useState<Proveedor>('youtube')
+  const [editVideoRef, setEditVideoRef] = useState('')
+  const [editDuracionS, setEditDuracionS] = useState('')
+  const [editObligatoria, setEditObligatoria] = useState('')
+  const [editDesc, setEditDesc] = useState('')
+
   async function refrescarCatalogoAdmin() {
     setCargando(true)
     setError(null)
@@ -207,6 +215,41 @@ export default function AdminCatalogo({ alActualizar }: { alActualizar: () => vo
       alActualizar()
     } catch (err) {
       setError(err instanceof ErrorApi ? err.message : 'No se pudo eliminar la clase.')
+    }
+  }
+
+  function abrirEdicionClase(cl: AdminClase) {
+    setEditClaseId(cl.id)
+    setEditNombre(cl.nombre)
+    setEditProveedor(cl.proveedor)
+    setEditVideoRef(cl.videoRef)
+    setEditDuracionS(cl.duracionS ? String(cl.duracionS) : '')
+    setEditObligatoria(cl.obligatoriaClave || '')
+    setEditDesc(cl.descripcion || '')
+    setError(null)
+    setMensaje(null)
+  }
+
+  async function guardarEdicionClase(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editClaseId) return
+    setError(null)
+    setMensaje(null)
+    try {
+      await api.admin.actualizarClase(editClaseId, {
+        nombre: editNombre.trim(),
+        proveedor: editProveedor,
+        videoRef: editVideoRef.trim(),
+        duracionS: editDuracionS.trim() ? Number(editDuracionS) : null,
+        obligatoriaClave: editObligatoria.trim() || null,
+        descripcion: editDesc.trim() || null,
+      })
+      setEditClaseId(null)
+      setMensaje('Clase actualizada correctamente.')
+      await refrescarCatalogoAdmin()
+      alActualizar()
+    } catch (err) {
+      setError(err instanceof ErrorApi ? err.message : 'No se pudo actualizar la clase.')
     }
   }
 
@@ -398,16 +441,61 @@ export default function AdminCatalogo({ alActualizar }: { alActualizar: () => vo
                       {clases
                         .filter((cl) => cl.moduloId === m.id)
                         .map((cl) => (
-                          <li key={cl.id}>
-                            <span className={estilos.etiqueta}>{cl.proveedor}</span>
-                            <span>
-                              {cl.nombre}
-                              {cl.obligatoriaClave ? ` (obligatoria: ${cl.obligatoriaClave})` : ''}
-                            </span>
-                            <span className={estilos.tenue}>{cl.duracionS ? `${cl.duracionS}s` : 'sin duración'}</span>
-                            <button type="button" className={estilos.botonTexto} onClick={() => void borrarClase(cl.id)}>
-                              Eliminar
-                            </button>
+                          <li key={cl.id} style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                              <span className={estilos.etiqueta}>{cl.proveedor}</span>
+                              <span>
+                                {cl.nombre}
+                                {cl.obligatoriaClave ? ` (obligatoria: ${cl.obligatoriaClave})` : ''}
+                              </span>
+                              <span className={estilos.tenue}>{cl.duracionS ? `${cl.duracionS}s` : 'sin duración'}</span>
+                              <button type="button" className={estilos.botonTexto} onClick={() => abrirEdicionClase(cl)}>
+                                Editar
+                              </button>
+                              <button type="button" className={estilos.botonTexto} onClick={() => void borrarClase(cl.id)}>
+                                Eliminar
+                              </button>
+                            </div>
+                            {editClaseId === cl.id && (
+                              <form onSubmit={(e) => void guardarEdicionClase(e)} className={estilos.tarjeta} style={{ margin: '4px 0', padding: 12 }}>
+                                <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+                                  <label className={estilos.campo}>
+                                    Título
+                                    <input required value={editNombre} onChange={(e) => setEditNombre(e.target.value)} />
+                                  </label>
+                                  <label className={estilos.campo}>
+                                    Proveedor
+                                    <select value={editProveedor} onChange={(e) => setEditProveedor(e.target.value as Proveedor)}>
+                                      <option value="youtube">YouTube</option>
+                                      <option value="bunny">Bunny Stream</option>
+                                      <option value="mux">Mux</option>
+                                      <option value="directo">MP4 / HLS directo</option>
+                                      <option value="drive">Google Drive</option>
+                                    </select>
+                                  </label>
+                                  <label className={estilos.campo}>
+                                    Video Ref (URL o ID)
+                                    <input required value={editVideoRef} onChange={(e) => setEditVideoRef(e.target.value)} />
+                                  </label>
+                                  <label className={estilos.campo}>
+                                    Duración (seg)
+                                    <input type="number" min={1} value={editDuracionS} onChange={(e) => setEditDuracionS(e.target.value)} />
+                                  </label>
+                                  <label className={estilos.campo}>
+                                    Clave obligatoria
+                                    <input value={editObligatoria} onChange={(e) => setEditObligatoria(e.target.value)} />
+                                  </label>
+                                </div>
+                                <label className={estilos.campo}>
+                                  Descripción
+                                  <textarea rows={2} value={editDesc} onChange={(e) => setEditDesc(e.target.value)} />
+                                </label>
+                                <div className={estilos.acciones}>
+                                  <button type="submit" className={estilos.boton}>Guardar</button>
+                                  <button type="button" className={estilos.botonSecundario} onClick={() => setEditClaseId(null)}>Cancelar</button>
+                                </div>
+                              </form>
+                            )}
                           </li>
                         ))}
                     </ul>

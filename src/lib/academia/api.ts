@@ -173,6 +173,17 @@ export const api = {
       orden?: number
       obligatoriaClave?: string | null
     }) => pedir('/admin/clases', { method: 'POST', body: json(datos) }),
+    actualizarClase: (
+      id: number,
+      datos: {
+        nombre?: string
+        descripcion?: string | null
+        proveedor?: Proveedor
+        videoRef?: string
+        duracionS?: number | null
+        obligatoriaClave?: string | null
+      },
+    ) => pedir(`/admin/clases/${id}`, { method: 'PATCH', body: json(datos) }),
     eliminarClase: (id: number) => pedir(`/admin/clases/${id}`, { method: 'DELETE' }),
     sincronizarEquipo: () => pedir<{ ok: true; equiposCount: number; personasCount: number }>('/admin/sincronizar-equipo', { method: 'POST' }),
   },
