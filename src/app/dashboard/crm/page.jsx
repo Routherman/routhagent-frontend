@@ -58,6 +58,7 @@ export const OFFICIAL_RUBROS = [
   'SOPORTE',
   'CREDITOS',
   'MASTER',
+  'PROSPECTO LIDERES',
   'PROSPECTO ASESORES'
 ];
 
@@ -71,6 +72,7 @@ export const RUBROS_METADATA = {
   'SOPORTE': { label: 'Soporte', badge: 'Helpdesk', desc: 'Usuario TEAM para atención y soporte' },
   'CREDITOS': { label: 'Créditos', badge: 'Scoring', desc: 'Analistas de créditos y tomadores' },
   'MASTER': { label: 'Master', badge: 'Admin', desc: 'Super Administrador del sistema' },
+  'PROSPECTO LIDERES': { label: 'Prospecto Líderes', badge: 'Brokers B2B', desc: 'Brokers y líderes fríos sin ingreso ni solicitud' },
   'PROSPECTO ASESORES': { label: 'Prospecto Asesores', badge: 'Campañas', desc: 'Candidatos para campañas de captación' }
 };
 
@@ -203,7 +205,7 @@ export function extractB2BLayer(contact) {
 export default function CrmPage() {
   const { user, isLoaded } = useUser();
   const [currentUserData, setCurrentUserData] = useState(null);
-  const [codigoEmpresa, setCodigoEmpresa] = useState(null);
+  const [codigoEmpresa, setCodigoEmpresa] = useState('KRZMJI');
   const [contacts, setContacts] = useState([]);
   const [allContacts, setAllContacts] = useState([]);
   const [rubros, setRubros] = useState(OFFICIAL_RUBROS);
@@ -260,12 +262,14 @@ export default function CrmPage() {
 
   // 1. Obtener código de empresa
   useEffect(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('codigoEmpresa') : null;
+    if (saved) setCodigoEmpresa(saved);
     if (isLoaded && user) {
       fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } })
-        .then(res => res.json())
+        .then(res => (res.ok ? res.json() : null))
         .then(data => {
-          setCurrentUserData(data);
-          if (data.codigo_empresa) {
+          if (data) setCurrentUserData(data);
+          if (data?.codigo_empresa) {
             setCodigoEmpresa(data.codigo_empresa);
           }
         })
@@ -370,10 +374,12 @@ export default function CrmPage() {
     return list.filter(c => {
       const grp = (c.grupo || '').toUpperCase();
       const rol = (c.rol_asignado || '').toUpperCase();
-      if (gUpper === 'PROSPECTO ASESORES') return grp.includes('PROSPECTO') || rol.includes('PROSPECTO');
+      const isProspect = grp.includes('PROSPECTO') || (!['ASESORES', 'ASESOR', 'LIDERES', 'LIDER', 'LÍDERES', 'LÍDER'].includes(grp) && rol.includes('PROSPECTO'));
+      if (gUpper === 'PROSPECTO LIDERES') return grp.includes('PROSPECTO LIDER') || (!grp && rol.includes('PROSPECTO LIDER'));
+      if (gUpper === 'PROSPECTO ASESORES') return isProspect && !grp.includes('LIDER');
       if (gUpper === 'TEAM') return ['TEAM', 'STAFF', 'EMPLEADOS'].includes(grp) || ['TEAM', 'STAFF', 'EMPLEADO', 'EMPLEADOS'].includes(rol);
-      if (gUpper === 'ASESORES') return ['ASESORES', 'ASESOR'].includes(grp) || ['ASESORES', 'ASESOR'].includes(rol);
-      if (gUpper === 'LIDERES') return ['LIDERES', 'LIDER', 'LÍDERES', 'LÍDER'].includes(grp) || ['LIDERES', 'LIDER', 'LÍDERES', 'LÍDER'].includes(rol);
+      if (gUpper === 'ASESORES') return !isProspect && (['ASESORES', 'ASESOR'].includes(grp) || ['ASESORES', 'ASESOR'].includes(rol));
+      if (gUpper === 'LIDERES') return !isProspect && (['LIDERES', 'LIDER', 'LÍDERES', 'LÍDER'].includes(grp) || ['LIDERES', 'LIDER', 'LÍDERES', 'LÍDER'].includes(rol));
       if (gUpper === 'INVERSORES') return ['INVERSORES', 'INVERSOR'].includes(grp) || ['INVERSORES', 'INVERSOR'].includes(rol);
       if (gUpper === 'SOPORTE') return ['SOPORTE', 'SUPPORT'].includes(grp) || ['SOPORTE', 'SUPPORT'].includes(rol);
       if (gUpper === 'CREDITOS') return ['CREDITOS', 'CRÉDITOS'].includes(grp) || ['CREDITOS', 'CRÉDITOS'].includes(rol);

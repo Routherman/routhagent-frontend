@@ -30,7 +30,7 @@ import { toast } from 'sonner';
 
 export default function AiModelsPage() {
   const { user, isLoaded } = useUser();
-  const [codigoEmpresa, setCodigoEmpresa] = useState(null);
+  const [codigoEmpresa, setCodigoEmpresa] = useState('KRZMJI');
   const [metrics, setMetrics] = useState({
     stats: [],
     summary: {
@@ -57,11 +57,13 @@ export default function AiModelsPage() {
 
   // 1. Obtener código de empresa
   useEffect(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('codigoEmpresa') : null;
+    if (saved) setCodigoEmpresa(saved);
     if (isLoaded && user) {
       fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } })
-        .then(res => res.json())
+        .then(res => (res.ok ? res.json() : null))
         .then(data => {
-          if (data.codigo_empresa) {
+          if (data?.codigo_empresa) {
             setCodigoEmpresa(data.codigo_empresa);
           }
         })

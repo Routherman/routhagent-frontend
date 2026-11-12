@@ -12,15 +12,20 @@ export default function Workflows() {
   const [codigoEmpresa, setCodigoEmpresa] = useState(null);
 
   useEffect(() => {
-    if (!isLoaded || !user) return;
+    if (!isLoaded) return;
     const fetchFlowsData = async () => {
       try {
-        const resUser = await fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
-        const dataUser = await resUser.json();
-        
-        if (dataUser && dataUser.codigo_empresa) {
-          setCodigoEmpresa(dataUser.codigo_empresa);
-          const res = await fetch(`${API_URL}/empresas/${dataUser.codigo_empresa}/flujos`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+        let codEmp = (typeof window !== 'undefined' ? localStorage.getItem('codigoEmpresa') : null) || 'KRZMJI';
+        if (user?.id) {
+          const resUser = await fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+          if (resUser.ok) {
+            const dataUser = await resUser.json();
+            if (dataUser?.codigo_empresa) codEmp = dataUser.codigo_empresa;
+          }
+        }
+        setCodigoEmpresa(codEmp);
+        const res = await fetch(`${API_URL}/empresas/${codEmp}/flujos`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+        if (res.ok) {
           const dataFlows = await res.json();
           setFlows(Array.isArray(dataFlows) ? dataFlows : []);
         }

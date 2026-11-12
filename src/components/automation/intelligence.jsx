@@ -5,7 +5,7 @@ import { Save, BrainCircuit } from 'lucide-react';
 import { API_URL } from '@/config/api';
 
 export default function Intelligence() {
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
   const [empresa, setEmpresa] = useState(null);
   const [codigoEmpresa, setCodigoEmpresa] = useState(null);
   const [promptIa, setPromptIa] = useState('');
@@ -15,21 +15,24 @@ export default function Intelligence() {
   const [saveMessage, setSaveMessage] = useState('');
 
   useEffect(() => {
-    if (!user) return;
+    if (!isLoaded) return;
     const fetchData = async () => {
       try {
-        const resUser = await fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
-        const dataUser = await resUser.json();
-        
-        if (dataUser && dataUser.codigo_empresa) {
-          setCodigoEmpresa(dataUser.codigo_empresa);
-          const resEmpresa = await fetch(`${API_URL}/empresas/${dataUser.codigo_empresa}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
-          const dataEmpresa = await resEmpresa.json();
-          if (resEmpresa.ok) {
-            setEmpresa(dataEmpresa);
-            setPromptIa(dataEmpresa.prompt_ia || '');
-            setConocimientoIa(dataEmpresa.conocimiento_ia || '');
+        let codEmp = (typeof window !== 'undefined' ? localStorage.getItem('codigoEmpresa') : null) || 'KRZMJI';
+        if (user?.id) {
+          const resUser = await fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+          if (resUser.ok) {
+            const dataUser = await resUser.json();
+            if (dataUser?.codigo_empresa) codEmp = dataUser.codigo_empresa;
           }
+        }
+        setCodigoEmpresa(codEmp);
+        const resEmpresa = await fetch(`${API_URL}/empresas/${codEmp}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+        if (resEmpresa.ok) {
+          const dataEmpresa = await resEmpresa.json();
+          setEmpresa(dataEmpresa);
+          setPromptIa(dataEmpresa.prompt_ia || '');
+          setConocimientoIa(dataEmpresa.conocimiento_ia || '');
         }
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -38,7 +41,7 @@ export default function Intelligence() {
       }
     };
     fetchData();
-  }, [user]);
+  }, [isLoaded, user]);
 
   const handleSave = async () => {
     if (!codigoEmpresa) return;

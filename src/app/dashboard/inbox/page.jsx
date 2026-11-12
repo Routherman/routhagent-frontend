@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useUser } from "@clerk/nextjs";
 import Sidebar from "@/components/dashboard/Sidebar";
 import Panel from "@/components/dashboard/Panel";
@@ -152,12 +152,21 @@ export default function InboxPage() {
   const [showContactDrawer, setShowContactDrawer] = useState(false);
   const [activeDrawerTab, setActiveDrawerTab] = useState("db"); // "db" | "ai" | "chat"
   const [isDropdownExpanded, setIsDropdownExpanded] = useState(false);
+  const [accounts, setAccounts] = useState([
+    { id: "asesores@colaboratium.com.ar", email: "asesores@colaboratium.com.ar", label: "Asesores Colaboratium", provider: "colaboratium", canReceive: true, canSend: true },
+    { id: "mkt@colaboratium.com.ar", email: "mkt@colaboratium.com.ar", label: "Marketing Colaboratium", provider: "colaboratium", canReceive: true, canSend: true },
+    { id: "colaboratium@gmail.com", email: "colaboratium@gmail.com", label: "Gmail Colaboratium", provider: "gmail", canReceive: true, canSend: true }
+  ]);
+  const [selectedAccount, setSelectedAccount] = useState("all");
+  const [replyFromAccount, setReplyFromAccount] = useState("asesores@colaboratium.com.ar");
+  const [activeEmailAccount, setActiveEmailAccount] = useState(null);
+  const activeFetchRef = useRef({ abort: null, seq: 0 });
 
-  // 1. Obtener código de empresa
+  // 1. Obtener código de empresa y cuentas de correo configuradas
   useEffect(() => {
     if (isLoaded && user) {
       fetch(`${API_URL}/users/me/${user.id}`, { headers: { "ngrok-skip-browser-warning": "true" } })
-        .then((res) => res.json())
+        .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data && data.codigo_empresa) {
             setCodigoEmpresa(data.codigo_empresa);
@@ -170,19 +179,47 @@ export default function InboxPage() {
     }
   }, [isLoaded, user]);
 
-  // 2. Cargar lista de correos
-  const fetchEmails = async () => {
+  useEffect(() => {
     const targetEmpresa = codigoEmpresa || "KRZMJI";
+    fetch(`${API_URL}/empresas/${targetEmpresa}/inbox/accounts`, {
+      headers: { "ngrok-skip-browser-warning": "true" }
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success && Array.isArray(data.accounts) && data.accounts.length > 0) {
+          setAccounts(data.accounts);
+        }
+      })
+      .catch(() => {});
+  }, [codigoEmpresa]);
+
+  // 2. Cargar lista de correos por casilla seleccionada (Gmail + @colaboratium.com.ar)
+  const fetchEmails = async (accountOverride = null) => {
+    const targetEmpresa = codigoEmpresa || "KRZMJI";
+    const targetAcc = accountOverride ?? selectedAccount;
+    activeFetchRef.current.abort?.abort();
+    const seq = ++activeFetchRef.current.seq;
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    activeFetchRef.current.abort = controller;
+    const abortTimer = controller ? setTimeout(() => controller.abort(), 20000) : null;
     try {
       setLoadingList(true);
-      const res = await fetch(`${API_URL}/empresas/${targetEmpresa}/inbox?limit=40`, {
-        headers: { "ngrok-skip-browser-warning": "true" }
+      const accQuery = targetAcc ? `&account=${encodeURIComponent(targetAcc)}` : "";
+      const res = await fetch(`${API_URL}/empresas/${targetEmpresa}/inbox?limit=25${accQuery}`, {
+        headers: { "ngrok-skip-browser-warning": "true" },
+        signal: controller?.signal
       });
       const data = await res.json();
+      if (seq !== activeFetchRef.current.seq) return;
       if (data.success) {
         setEmails(data.emails || []);
         setInboxStats(data.stats || { total: 0, unseen: 0 });
-        if (data.account) setAccountEmail(data.account);
+        if (Array.isArray(data.accounts) && data.accounts.length > 0) {
+          setAccounts(data.accounts);
+        }
+        if (data.account) {
+          setAccountEmail(data.account === "all" ? "Todas las casillas" : data.account);
+        }
 
         // Seleccionar primer correo si ninguno está seleccionado
         if (!selectedUid && data.emails && data.emails.length > 0) {
@@ -192,39 +229,70 @@ export default function InboxPage() {
         toast.error(data.error || "No se pudo conectar al Inbox");
       }
     } catch (err) {
-      console.error(err);
-      toast.error("Error al cargar correos de Gmail");
+      if (err?.name !== "AbortError" && seq === activeFetchRef.current.seq) {
+        console.error(err);
+        toast.error("Error al cargar correos de la casilla");
+      }
     } finally {
-      setLoadingList(false);
+      if (abortTimer) clearTimeout(abortTimer);
+      if (seq === activeFetchRef.current.seq) {
+        setLoadingList(false);
+      }
     }
   };
 
   useEffect(() => {
-    fetchEmails();
+    fetchEmails(selectedAccount);
     const safetyTimer = setTimeout(() => {
       setLoadingList(false);
-    }, 3000);
-    return () => clearTimeout(safetyTimer);
-  }, [codigoEmpresa]);
+    }, 18000);
+    return () => {
+      clearTimeout(safetyTimer);
+      activeFetchRef.current.abort?.abort();
+    };
+  }, [codigoEmpresa, selectedAccount]);
+
+  const handleSelectAccount = (accEmail) => {
+    if (accEmail === selectedAccount) return;
+    setLoadingList(true);
+    setSelectedUid(null);
+    setActiveEmail(null);
+    setActiveEmailAccount(null);
+    setContactProfile(null);
+    setSelectedAccount(accEmail);
+    if (accEmail && accEmail !== "all") {
+      setReplyFromAccount(accEmail);
+    }
+  };
 
   // 3. Cargar detalle de un correo y su perfil de contacto asociado
   const loadEmailDetails = async (uid, fallbackEmailItem = null) => {
-    if (!codigoEmpresa) return;
+    const targetEmpresa = codigoEmpresa || "KRZMJI";
+    const mailAccount = fallbackEmailItem?.account || (selectedAccount !== "all" ? selectedAccount : null);
     setSelectedUid(uid);
+    setActiveEmailAccount(mailAccount);
     setLoadingBody(true);
     setContactProfile(null);
+    if (mailAccount) {
+      setReplyFromAccount(mailAccount);
+    }
 
-    const emailInList = fallbackEmailItem || emails.find((e) => e.uid === uid);
+    const emailInList = fallbackEmailItem || emails.find((e) => e.uid === uid && (!mailAccount || e.account === mailAccount));
     const targetEmailAddress = emailInList?.fromEmail;
 
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const abortTimer = controller ? setTimeout(() => controller.abort(), 11000) : null;
     try {
-      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/inbox/${uid}`, {
-        headers: { "ngrok-skip-browser-warning": "true" }
+      const accQuery = mailAccount ? `?account=${encodeURIComponent(mailAccount)}` : "";
+      const res = await fetch(`${API_URL}/empresas/${targetEmpresa}/inbox/${uid}${accQuery}`, {
+        headers: { "ngrok-skip-browser-warning": "true" },
+        signal: controller?.signal
       });
       const data = await res.json();
       if (data.success && data.email) {
         const fullEmail = {
           ...data.email,
+          account: data.email.account || mailAccount,
           contact: emailInList?.contact || null,
           fromName: emailInList?.fromName || data.email.fromName
         };
@@ -239,9 +307,12 @@ export default function InboxPage() {
         }
       }
     } catch (err) {
-      console.error(err);
-      toast.error("Error al descargar cuerpo del correo");
+      if (err?.name !== "AbortError") {
+        console.error(err);
+        toast.error("Error al descargar cuerpo del correo");
+      }
     } finally {
+      if (abortTimer) clearTimeout(abortTimer);
       setLoadingBody(false);
     }
   };
@@ -287,12 +358,13 @@ export default function InboxPage() {
           to: activeEmail.fromEmail || activeEmail.from,
           subject: replySubject,
           body: replyBody,
-          inReplyTo: activeEmail.messageId
+          inReplyTo: activeEmail.messageId,
+          account: replyFromAccount || activeEmail.account || (selectedAccount !== "all" ? selectedAccount : null)
         })
       });
       const data = await res.json();
       if (data.success) {
-        toast.success(`Respuesta enviada vía SMTP a ${activeEmail.fromEmail}`);
+        toast.success(`Respuesta enviada desde ${data.fromEmail || replyFromAccount} a ${activeEmail.fromEmail}`);
         setReplyBody("");
       } else {
         toast.error(data.error || "Error al enviar correo");
@@ -332,13 +404,13 @@ export default function InboxPage() {
         <Header />
         <div className="flex-1 flex flex-col h-[calc(100vh-100px)] overflow-hidden bg-[#0c0d0e] text-white">
           {/* Top Bar Inbox Header */}
-          <div className="px-6 py-3.5 border-b border-white/10 flex items-center justify-between bg-[#121316]">
+          <div className="px-6 py-3.5 border-b border-white/10 flex flex-wrap items-center justify-between gap-3 bg-[#121316]">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center">
                 <Mail className="w-5 h-5" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="font-extrabold text-sm text-white">Bandeja Corporativa ({accountEmail})</h2>
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -351,9 +423,43 @@ export default function InboxPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1">
+                <button
+                  type="button"
+                  onClick={() => handleSelectAccount("all")}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${
+                    selectedAccount === "all"
+                      ? "bg-sky-500 text-white shadow"
+                      : "text-white/70 hover:text-white hover:bg-white/10"
+                  }`}
+                >
+                  Todas ({accounts.length})
+                </button>
+                {accounts.map((acc) => {
+                  const isActive = selectedAccount === acc.email;
+                  return (
+                    <button
+                      key={acc.email}
+                      type="button"
+                      onClick={() => handleSelectAccount(acc.email)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1.5 ${
+                        isActive
+                          ? acc.provider === "gmail"
+                            ? "bg-rose-500 text-white shadow"
+                            : "bg-indigo-500 text-white shadow"
+                          : "text-white/70 hover:text-white hover:bg-white/10"
+                      }`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${acc.provider === "gmail" ? "bg-rose-300" : "bg-emerald-300"}`} />
+                      <span>{acc.email}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
               <button
-                onClick={fetchEmails}
+                onClick={() => fetchEmails(selectedAccount)}
                 disabled={loadingList}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/10 hover:bg-white/5 text-xs font-bold text-white transition"
               >
@@ -399,10 +505,10 @@ export default function InboxPage() {
 
                     return (
                       <div
-                        key={em.uid}
+                        key={`${em.account || 'default'}-${em.uid}`}
                         onClick={() => loadEmailDetails(em.uid, em)}
                         className={`p-3.5 cursor-pointer transition-colors relative group ${
-                          isSelected
+                          isSelected && (!activeEmailAccount || !em.account || activeEmailAccount === em.account)
                             ? "bg-white/10 border-l-2 border-sky-400"
                             : "hover:bg-white/5"
                         }`}
@@ -443,6 +549,15 @@ export default function InboxPage() {
                         <div className="flex items-center justify-between gap-1.5 mt-1.5 text-[10px] text-white/40 truncate">
                           <span className="truncate">{em.fromEmail}</span>
                           <div className="flex items-center gap-2 shrink-0">
+                            {em.account && selectedAccount === "all" && (
+                              <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold border ${
+                                em.account.includes("gmail")
+                                  ? "bg-rose-500/15 text-rose-300 border-rose-500/30"
+                                  : "bg-indigo-500/15 text-indigo-300 border-indigo-500/30"
+                              }`}>
+                                {em.account.split("@")[0]}@{em.account.includes("gmail") ? "gmail" : "colab"}
+                              </span>
+                            )}
                             {isPending && (
                               <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold text-[9px]" title={em.contact?.nota_pendiente ? `Falta: ${em.contact.nota_pendiente}` : 'Pendiente'}>
                                 ⏳ Pendiente
@@ -625,10 +740,21 @@ export default function InboxPage() {
                         className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-xs text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-sky-500"
                       />
 
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-white/40">
-                          Se envía certificado desde <strong>{accountEmail}</strong>
-                        </span>
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2 text-[10px] text-white/60">
+                          <span>Enviar desde:</span>
+                          <select
+                            value={replyFromAccount}
+                            onChange={(e) => setReplyFromAccount(e.target.value)}
+                            className="bg-white/10 border border-white/15 rounded-lg px-2 py-1 text-[11px] font-bold text-white focus:outline-none focus:ring-1 focus:ring-sky-500"
+                          >
+                            {accounts.filter(a => a.canSend !== false).map((acc) => (
+                              <option key={acc.email} value={acc.email} className="bg-[#121316] text-white">
+                                {acc.email} ({acc.label})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                         <button
                           type="submit"
                           disabled={sendingReply}

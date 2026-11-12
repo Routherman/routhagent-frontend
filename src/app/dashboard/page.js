@@ -19,17 +19,39 @@ export default function Dashboard() {
     const [error, setError] = useState('');
 
     useEffect(() => {
-        if (!isLoaded || !user) return;
+        if (!isLoaded) return;
+
+        let cancelled = false;
+        const safetyTimer = setTimeout(() => {
+            if (!cancelled) setLoading(false);
+        }, 10000);
 
         const fetchData = async () => {
             try {
-                // 1. Get user and enterprise code
-                const userRes = await fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
-                const userData = await userRes.json();
-                const codEmp = userData.codigo_empresa || 'KRZMJI';
+                // 1. Get user and enterprise code (fallback cleanly to KRZMJI when unauthenticated or syncing)
+                let codEmp = (typeof window !== 'undefined' ? localStorage.getItem('codigoEmpresa') : null) || 'KRZMJI';
+                if (user?.id) {
+                    try {
+                        const ctrl = new AbortController();
+                        const reqTimer = setTimeout(() => ctrl.abort(), 8000);
+                        const userRes = await fetch(`${API_URL}/users/me/${user.id}`, {
+                            headers: { 'ngrok-skip-browser-warning': 'true' },
+                            signal: ctrl.signal
+                        }).finally(() => clearTimeout(reqTimer));
+                        if (userRes.ok) {
+                            const userData = await userRes.json();
+                            if (userData?.codigo_empresa) {
+                                codEmp = userData.codigo_empresa;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn("User enterprise fallback:", e?.message || e);
+                    }
+                }
+                if (cancelled) return;
                 setCodigoEmpresa(codEmp);
 
-                if (!userData.codigo_empresa && !codEmp) {
+                if (!codEmp) {
                     setError('No tienes una empresa asignada.');
                     setLoading(false);
                     return;
@@ -60,11 +82,16 @@ export default function Dashboard() {
                 console.error("Error fetching dashboard data:", err);
                 setError('Error al cargar la información.');
             } finally {
-                setLoading(false);
+                clearTimeout(safetyTimer);
+                if (!cancelled) setLoading(false);
             }
         };
 
         fetchData();
+        return () => {
+            cancelled = true;
+            clearTimeout(safetyTimer);
+        };
     }, [isLoaded, user]);
 
     const handoffChats = contacts.filter(c => c.estado_bot === 'HANDOFF');

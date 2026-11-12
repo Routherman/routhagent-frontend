@@ -9,9 +9,9 @@ import Equipo from './equipo'; // We will create this
 import { API_URL } from '@/config/api';
 
 export default function UserPanel() {
-    const { user } = useUser();
+    const { user, isLoaded } = useUser();
     const [activeTab, setActiveTab] = useState('config'); // 'config' | 'social' | 'empresa' | 'equipo'
-    const [userData, setUserData] = useState(null);
+    const [userData, setUserData] = useState({ codigo_empresa: 'KRZMJI', rol_nombre: 'invitado' });
     const [privilegios, setPrivilegios] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -26,14 +26,21 @@ export default function UserPanel() {
     }, []);
 
     useEffect(() => {
-        if (!user) return;
+        if (!isLoaded) return;
+        const fallbackEmpresa = (typeof window !== 'undefined' ? localStorage.getItem('codigoEmpresa') : null) || 'KRZMJI';
+        if (!user) {
+            setUserData({ codigo_empresa: fallbackEmpresa, rol_nombre: 'invitado' });
+            setPrivilegios({});
+            setLoading(false);
+            return;
+        }
         const fetchUserData = async () => {
             try {
                 const res = await fetch(`${API_URL}/users/me/${user.id}`, {
                     headers: { 'ngrok-skip-browser-warning': 'true' }
                 });
-                const data = await res.json();
-                setUserData(data);
+                const data = res.ok ? await res.json() : null;
+                setUserData(data && data.codigo_empresa ? data : { ...(data || {}), codigo_empresa: fallbackEmpresa });
                 
                 let privs = {};
                 if (data && data.rol_privilegios) {
@@ -46,12 +53,14 @@ export default function UserPanel() {
                 setPrivilegios(privs);
             } catch (err) {
                 console.error("Error fetching user data", err);
+                setUserData({ codigo_empresa: fallbackEmpresa, rol_nombre: 'invitado' });
+                setPrivilegios({});
             } finally {
                 setLoading(false);
             }
         };
         fetchUserData();
-    }, [user]);
+    }, [isLoaded, user]);
 
     const allTabs = [
         { id: 'config', label: 'Configuraciones', icon: Settings },

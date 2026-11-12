@@ -1,10 +1,11 @@
 "use client";
 import React, { useState } from 'react';
-import { UserProfile } from '@clerk/nextjs';
+import { UserProfile, useUser, SignInButton } from '@clerk/nextjs';
 import { Palette, Bell, ShieldUser, Check } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 
 export default function Configurations() {
+  const { user, isLoaded } = useUser();
   const { activeTheme, allThemes, changeTheme } = useTheme();
 
   const [notifications, setNotifications] = useState({
@@ -126,16 +127,31 @@ export default function Configurations() {
 
         {/* Clerk UserProfile component embedded */}
         <div className="w-full overflow-hidden flex justify-center">
-          <UserProfile 
-            routing="hash"
-            appearance={{
-              elements: {
-                rootBox: "w-full",
-                card: "w-full shadow-none border border-gray-100 dark:border-white/10 rounded-2xl",
-                navbar: "border-r border-gray-100 dark:border-white/10"
-              }
-            }}
-          />
+          {!isLoaded ? (
+            <p className="text-sm text-gray-500 dark:text-slate-400 py-4">Verificando sesión...</p>
+          ) : user ? (
+            <UserProfile 
+              routing="hash"
+              appearance={{
+                elements: {
+                  rootBox: "w-full",
+                  card: "w-full shadow-none border border-gray-100 dark:border-white/10 rounded-2xl",
+                  navbar: "border-r border-gray-100 dark:border-white/10"
+                }
+              }}
+            />
+          ) : (
+            <div className="w-full rounded-2xl border border-dashed border-gray-200 dark:border-white/10 p-6 text-center">
+              <p className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-3">
+                Iniciá sesión para gestionar tu contraseña, correos y dispositivos conectados.
+              </p>
+              <SignInButton mode="modal">
+                <button className="px-4 py-2 rounded-xl bg-gray-900 dark:bg-sky-500 text-white text-sm font-semibold hover:opacity-90 transition">
+                  Iniciar sesión
+                </button>
+              </SignInButton>
+            </div>
+          )}
         </div>
       </div>
 

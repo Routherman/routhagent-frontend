@@ -5,7 +5,7 @@ import { Building, Hash, Save, Check } from 'lucide-react';
 import { API_URL } from '@/config/api';
 
 export default function Empresa({ privilegios }) {
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
   const [empresa, setEmpresa] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -23,23 +23,26 @@ export default function Empresa({ privilegios }) {
 
   // Fetch local user and then the enterprise
   useEffect(() => {
-    if (!user) return;
+    if (!isLoaded) return;
     const fetchData = async () => {
       try {
-        const resUser = await fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
-        const dataUser = await resUser.json();
-        
-        if (dataUser && dataUser.codigo_empresa) {
-          setCodigoEmpresa(dataUser.codigo_empresa);
-          const resEmpresa = await fetch(`${API_URL}/empresas/${dataUser.codigo_empresa}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
-          const dataEmpresa = await resEmpresa.json();
-          if (resEmpresa.ok) {
-            setEmpresa(dataEmpresa);
-            setNombre(dataEmpresa.nombre || '');
-            setTelefono(dataEmpresa.telefono || '');
-            setEmail(dataEmpresa.email || '');
-            setDireccion(dataEmpresa.direccion || '');
+        let codEmp = (typeof window !== 'undefined' ? localStorage.getItem('codigoEmpresa') : null) || 'KRZMJI';
+        if (user?.id) {
+          const resUser = await fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+          if (resUser.ok) {
+            const dataUser = await resUser.json();
+            if (dataUser?.codigo_empresa) codEmp = dataUser.codigo_empresa;
           }
+        }
+        setCodigoEmpresa(codEmp);
+        const resEmpresa = await fetch(`${API_URL}/empresas/${codEmp}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+        if (resEmpresa.ok) {
+          const dataEmpresa = await resEmpresa.json();
+          setEmpresa(dataEmpresa);
+          setNombre(dataEmpresa.nombre || '');
+          setTelefono(dataEmpresa.telefono || '');
+          setEmail(dataEmpresa.email || '');
+          setDireccion(dataEmpresa.direccion || '');
         }
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -48,7 +51,7 @@ export default function Empresa({ privilegios }) {
       }
     };
     fetchData();
-  }, [user]);
+  }, [isLoaded, user]);
 
   const handleSave = async (e) => {
     e.preventDefault();

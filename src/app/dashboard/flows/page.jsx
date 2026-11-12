@@ -23,16 +23,23 @@ export default function FlowsPage() {
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
-    if (!isLoaded || !user) return;
+    if (!isLoaded) return;
+    const fallbackEmpresa = (typeof window !== 'undefined' ? localStorage.getItem('codigoEmpresa') : null) || 'KRZMJI';
+    if (!user) {
+      setCodigoEmpresa(fallbackEmpresa);
+      fetchFlows(fallbackEmpresa);
+      return;
+    }
     fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } })
-      .then(res => res.json())
+      .then(res => (res.ok ? res.json() : null))
       .then(userData => {
-        const cod = userData.codigo_empresa || 'KRZMJI';
+        const cod = userData?.codigo_empresa || fallbackEmpresa;
         setCodigoEmpresa(cod);
         fetchFlows(cod);
       })
       .catch(() => {
-        fetchFlows('KRZMJI');
+        setCodigoEmpresa(fallbackEmpresa);
+        fetchFlows(fallbackEmpresa);
       });
   }, [isLoaded, user]);
 

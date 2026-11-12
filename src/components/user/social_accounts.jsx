@@ -29,7 +29,7 @@ const InstagramIcon = ({ className }) => (
 );
 
 export default function SocialAccounts() {
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
   const [empresa, setEmpresa] = useState(null);
   const [codigoEmpresa, setCodigoEmpresa] = useState(null);
   const [loadingData, setLoadingData] = useState(true);
@@ -69,41 +69,44 @@ export default function SocialAccounts() {
 
   // Fetch local user and then the enterprise
   useEffect(() => {
-    if (!user) return;
+    if (!isLoaded) return;
     const fetchData = async () => {
       try {
-        const resUser = await fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
-        const dataUser = await resUser.json();
-        
-        if (dataUser && dataUser.codigo_empresa) {
-          setCodigoEmpresa(dataUser.codigo_empresa);
-          const resEmpresa = await fetch(`${API_URL}/empresas/${dataUser.codigo_empresa}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+        let codEmp = (typeof window !== 'undefined' ? localStorage.getItem('codigoEmpresa') : null) || 'KRZMJI';
+        if (user?.id) {
+          const resUser = await fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+          if (resUser.ok) {
+            const dataUser = await resUser.json();
+            if (dataUser?.codigo_empresa) codEmp = dataUser.codigo_empresa;
+          }
+        }
+        setCodigoEmpresa(codEmp);
+        const resEmpresa = await fetch(`${API_URL}/empresas/${codEmp}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+        if (resEmpresa.ok) {
           const dataEmpresa = await resEmpresa.json();
-          if (resEmpresa.ok) {
-            setEmpresa(dataEmpresa);
-            
-            // Populate if already connected
-            let cv = dataEmpresa.cuentas_vinculadas;
-            if (typeof cv === 'string') {
-              try { cv = JSON.parse(cv); } catch(e){}
-            }
-            if (cv && cv.whatsapp) {
-                setWebhookToken(cv.whatsapp.webhook_token || '');
-                setPhoneId(cv.whatsapp.phone_id || '');
-                setAccessToken(cv.whatsapp.access_token || '');
-            }
-            if (cv && cv.wasender) {
-                setWasSessionName(cv.wasender.session_name || 'Colab');
-                setWasPhoneNumber(cv.wasender.phone_number || '+54 9 11 2473 5062');
-                setWasApiKey(cv.wasender.api_key || '');
-                setWasWebhookSecret(cv.wasender.webhook_secret || '');
-                setWasBlockOutgoing(cv.wasender.block_outgoing ?? false);
-            }
-            if (cv && cv.instagram) {
-                setIgUsername(cv.instagram.username || cv.instagram.handle || '@colaboratium');
-                setIgPageId(cv.instagram.meta_page_id || '');
-                setIgAccessToken(cv.instagram.access_token || '');
-            }
+          setEmpresa(dataEmpresa);
+          
+          // Populate if already connected
+          let cv = dataEmpresa.cuentas_vinculadas;
+          if (typeof cv === 'string') {
+            try { cv = JSON.parse(cv); } catch(e){}
+          }
+          if (cv && cv.whatsapp) {
+              setWebhookToken(cv.whatsapp.webhook_token || '');
+              setPhoneId(cv.whatsapp.phone_id || '');
+              setAccessToken(cv.whatsapp.access_token || '');
+          }
+          if (cv && cv.wasender) {
+              setWasSessionName(cv.wasender.session_name || 'Colab');
+              setWasPhoneNumber(cv.wasender.phone_number || '+54 9 11 2473 5062');
+              setWasApiKey(cv.wasender.api_key || '');
+              setWasWebhookSecret(cv.wasender.webhook_secret || '');
+              setWasBlockOutgoing(cv.wasender.block_outgoing ?? false);
+          }
+          if (cv && cv.instagram) {
+              setIgUsername(cv.instagram.username || cv.instagram.handle || '@colaboratium');
+              setIgPageId(cv.instagram.meta_page_id || '');
+              setIgAccessToken(cv.instagram.access_token || '');
           }
         }
       } catch (err) {
@@ -113,7 +116,7 @@ export default function SocialAccounts() {
       }
     };
     fetchData();
-  }, [user]);
+  }, [isLoaded, user]);
 
   let wpConnected = false;
   let wasConnected = false;
