@@ -47,6 +47,56 @@ import CrmHierarchyTree from '@/components/dashboard/CrmHierarchyTree';
 import ContactActionMenu from '@/components/dashboard/ContactActionMenu';
 import { toast } from 'sonner';
 
+// Iconos vectoriales para WhatsApp e Instagram
+export const WhatsAppIcon = ({ className = "w-3.5 h-3.5" }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.886-9.885 9.886m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.82 11.82 0 00-3.48-8.413z" />
+  </svg>
+);
+
+export const InstagramIcon = ({ className = "w-3.5 h-3.5" }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+  </svg>
+);
+
+// Formateadores de URL de contacto seguro
+export const formatWhatsAppUrl = (phone) => {
+  if (!phone) return null;
+  const digits = String(phone).replace(/\D/g, '');
+  if (!digits) return null;
+  const fullPhone = digits.startsWith('54') 
+    ? digits 
+    : (digits.length <= 11 ? `549${digits}` : digits);
+  return `https://wa.me/${fullPhone}`;
+};
+
+export const formatMailtoUrl = (email, nombre = '') => {
+  if (!email || !email.includes('@')) return null;
+  const cleanEmail = email.trim();
+  const subject = encodeURIComponent(`Contacto Colaboratium - ${nombre || 'Asesoría'}`);
+  return `mailto:${cleanEmail}?subject=${subject}`;
+};
+
+export const formatInstagramUrl = (ig) => {
+  if (!ig) return null;
+  const clean = String(ig).trim();
+  if (!clean) return null;
+  if (clean.startsWith('http://') || clean.startsWith('https://')) return clean;
+  const handle = clean.replace(/^@+/, '').replace(/\/+$/, '');
+  return `https://www.instagram.com/${handle}/`;
+};
+
+export const formatLinkedInUrl = (li) => {
+  if (!li) return null;
+  const clean = String(li).trim();
+  if (!clean) return null;
+  if (clean.startsWith('http://') || clean.startsWith('https://')) return clean;
+  return `https://www.linkedin.com/in/${clean.replace(/\/+$/, '')}`;
+};
+
 // 9 Rubros requeridos ordenados según requerimientos de Colaboratium
 export const OFFICIAL_RUBROS = [
   'TODOS',
@@ -1052,7 +1102,7 @@ export default function CrmPage() {
                       <th className="py-3 px-4">WhatsApp / Teléfono</th>
                       <th className="py-3 px-4">Datos Bancarios (CBU / Alias)</th>
                       <th className="py-3 px-4">Grupo / Rubro</th>
-                      <th className="py-3 px-4">Redes</th>
+                      <th className="py-3 px-4">Contactar / Redes</th>
                       <th className="py-3 px-4 text-right">Acciones</th>
                     </tr>
                   </thead>
@@ -1094,9 +1144,14 @@ export default function CrmPage() {
                               <span className="italic">Sin DNI</span>
                             )}
                             {c.email && (
-                              <span className="text-gray-500 truncate max-w-[140px]">
-                                {c.email}
-                              </span>
+                              <a
+                                href={formatMailtoUrl(c.email, c.nombre)}
+                                className="text-gray-500 hover:text-blue-600 hover:underline truncate max-w-[160px] inline-flex items-center gap-1 transition"
+                                title={`Enviar correo a: ${c.email}`}
+                              >
+                                <Mail className="w-2.5 h-2.5 shrink-0" />
+                                <span className="truncate">{c.email}</span>
+                              </a>
                             )}
                           </div>
 
@@ -1162,15 +1217,20 @@ export default function CrmPage() {
                         {/* Phone & WA */}
                         <td className="py-3.5 px-4 font-mono font-bold text-gray-800">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <a 
-                              href={`https://wa.me/${(c.telefono || '').replace(/\D/g, '')}`} 
-                              target="_blank" 
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1.5 text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-xl"
-                            >
-                              <Phone className="w-3.5 h-3.5" />
-                              {c.telefono}
-                            </a>
+                            {c.telefono ? (
+                              <a 
+                                href={formatWhatsAppUrl(c.telefono) || `https://wa.me/${(c.telefono || '').replace(/\D/g, '')}`} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 px-2.5 py-1 rounded-xl transition"
+                                title="Abrir chat directo de WhatsApp"
+                              >
+                                <WhatsAppIcon className="w-3.5 h-3.5" />
+                                <span>{c.telefono}</span>
+                              </a>
+                            ) : (
+                              <span className="text-gray-300 italic text-[11px] font-sans">Sin teléfono</span>
+                            )}
                             {c.linea_wa?.startsWith('WA_S') || c.canal === 'wasender' ? (
                               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-200 text-[9px] font-black tracking-tight" title="Línea WASender API (Pruebas / Ads)">
                                 <span className="w-1 h-1 rounded-full bg-purple-600 animate-pulse"></span>
@@ -1218,26 +1278,76 @@ export default function CrmPage() {
                           </span>
                         </td>
 
-                        {/* Social Links */}
+                        {/* Canales de Contacto Directo: WhatsApp, Email, Instagram */}
                         <td className="py-3.5 px-4">
-                          <div className="flex items-center gap-1.5 text-gray-400">
-                            {c.instagram && (
-                              <span className="px-1.5 py-0.5 rounded bg-pink-50 text-pink-700 text-[10px] font-bold">
-                                IG: {c.instagram}
-                              </span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {/* Botón WhatsApp */}
+                            {formatWhatsAppUrl(c.telefono) && (
+                              <a
+                                href={formatWhatsAppUrl(c.telefono)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-[11px] font-black transition-all hover:scale-105 shadow-2xs group"
+                                title={`Contactar por WhatsApp: ${c.telefono}`}
+                              >
+                                <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-600 group-hover:scale-110 transition-transform" />
+                                <span>WhatsApp</span>
+                              </a>
                             )}
-                            {c.linkedin && (
-                              <span className="px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 text-[10px] font-bold">
-                                IN
-                              </span>
+
+                            {/* Botón Email */}
+                            {formatMailtoUrl(c.email) && (
+                              <a
+                                href={formatMailtoUrl(c.email, c.nombre)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-[11px] font-black transition-all hover:scale-105 shadow-2xs group"
+                                title={`Enviar correo a: ${c.email}`}
+                              >
+                                <Mail className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
+                                <span>Email</span>
+                              </a>
+                            )}
+
+                            {/* Botón Instagram */}
+                            {formatInstagramUrl(c.instagram) && (
+                              <a
+                                href={formatInstagramUrl(c.instagram)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-gradient-to-r from-purple-50 via-pink-50 to-amber-50 hover:from-purple-100 hover:via-pink-100 hover:to-amber-100 text-pink-900 border border-pink-200 text-[11px] font-black transition-all hover:scale-105 shadow-2xs group"
+                                title={`Ver perfil y contactar por Instagram: ${c.instagram}`}
+                              >
+                                <InstagramIcon className="w-3.5 h-3.5 text-pink-600 group-hover:scale-110 transition-transform" />
+                                <span>IG</span>
+                              </a>
+                            )}
+
+                            {/* Redes Secundarias: LinkedIn / Telegram si existen */}
+                            {formatLinkedInUrl(c.linkedin) && (
+                              <a
+                                href={formatLinkedInUrl(c.linkedin)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-[10px] font-black transition hover:scale-105"
+                                title={`Perfil de LinkedIn: ${c.linkedin}`}
+                              >
+                                <span>IN</span>
+                              </a>
                             )}
                             {c.telegram && (
-                              <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-bold">
-                                TG: {c.telegram}
-                              </span>
+                              <a
+                                href={c.telegram.startsWith('http') ? c.telegram : `https://t.me/${c.telegram.replace('@', '')}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-200 text-[10px] font-black transition hover:scale-105"
+                                title={`Chat en Telegram: ${c.telegram}`}
+                              >
+                                <span>TG</span>
+                              </a>
                             )}
-                            {!c.instagram && !c.linkedin && !c.telegram && (
-                              <span className="text-gray-300 italic">-</span>
+
+                            {/* Si no tiene ningún dato de contacto */}
+                            {!formatWhatsAppUrl(c.telefono) && !formatMailtoUrl(c.email) && !formatInstagramUrl(c.instagram) && !c.linkedin && !c.telegram && (
+                              <span className="text-gray-300 italic text-[11px]">Sin canales</span>
                             )}
                           </div>
                         </td>
@@ -1531,6 +1641,84 @@ export default function CrmPage() {
                 </div>
 
                 <div className="mt-4 space-y-3 text-xs">
+                  {/* Barra de Contacto Rápido Directo */}
+                  <div className="p-3 bg-gradient-to-r from-indigo-50/80 via-purple-50/60 to-pink-50/60 rounded-2xl border border-indigo-100/90 shadow-2xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase text-indigo-900 tracking-wider flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Canales de Contacto Directo</span>
+                      </span>
+                      <span className="text-[10px] text-indigo-600 font-bold">1 Clic</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {formatWhatsAppUrl(showDetailModal.telefono) && (
+                        <a
+                          href={formatWhatsAppUrl(showDetailModal.telefono)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-sm transition hover:scale-105 active:scale-95"
+                          title="Abrir chat en WhatsApp"
+                        >
+                          <WhatsAppIcon className="w-3.5 h-3.5" />
+                          <span>WhatsApp</span>
+                        </a>
+                      )}
+
+                      {formatMailtoUrl(showDetailModal.email) && (
+                        <a
+                          href={formatMailtoUrl(showDetailModal.email, showDetailModal.nombre)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-sm transition hover:scale-105 active:scale-95"
+                          title="Enviar correo electrónico"
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                          <span>Enviar Mail</span>
+                        </a>
+                      )}
+
+                      {formatInstagramUrl(showDetailModal.instagram) && (
+                        <a
+                          href={formatInstagramUrl(showDetailModal.instagram)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 hover:opacity-95 text-white font-black text-xs shadow-sm transition hover:scale-105 active:scale-95"
+                          title="Ver perfil de Instagram"
+                        >
+                          <InstagramIcon className="w-3.5 h-3.5" />
+                          <span>Instagram ({showDetailModal.instagram})</span>
+                        </a>
+                      )}
+
+                      {formatLinkedInUrl(showDetailModal.linkedin) && (
+                        <a
+                          href={formatLinkedInUrl(showDetailModal.linkedin)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-700 hover:bg-sky-800 text-white font-black text-xs shadow-sm transition hover:scale-105"
+                          title="Ver LinkedIn"
+                        >
+                          <span>LinkedIn</span>
+                        </a>
+                      )}
+
+                      {showDetailModal.telegram && (
+                        <a
+                          href={showDetailModal.telegram.startsWith('http') ? showDetailModal.telegram : `https://t.me/${showDetailModal.telegram.replace('@', '')}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-black text-xs shadow-sm transition hover:scale-105"
+                          title="Abrir Telegram"
+                        >
+                          <span>Telegram</span>
+                        </a>
+                      )}
+
+                      {!formatWhatsAppUrl(showDetailModal.telefono) && !formatMailtoUrl(showDetailModal.email) && !formatInstagramUrl(showDetailModal.instagram) && !showDetailModal.linkedin && !showDetailModal.telegram && (
+                        <span className="text-xs text-gray-400 italic">No hay datos de contacto registrados para esta persona.</span>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="p-3 bg-gray-50 rounded-2xl space-y-2">
                     <div className="flex justify-between">
                       <span className="text-gray-400 font-bold uppercase text-[10px]">DNI:</span>
@@ -1538,12 +1726,36 @@ export default function CrmPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400 font-bold uppercase text-[10px]">Email:</span>
-                      <span className="font-medium text-gray-800">{showDetailModal.email || 'No registrado'}</span>
+                      {showDetailModal.email ? (
+                        <a 
+                          href={formatMailtoUrl(showDetailModal.email, showDetailModal.nombre)} 
+                          className="font-medium text-blue-600 hover:underline flex items-center gap-1"
+                        >
+                          <Mail className="w-3 h-3" />
+                          <span>{showDetailModal.email}</span>
+                        </a>
+                      ) : (
+                        <span className="text-gray-400 italic">No registrado</span>
+                      )}
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400 font-bold uppercase text-[10px]">Grupo:</span>
                       <span className="font-bold text-indigo-600">{showDetailModal.grupo || 'CLIENTES'}</span>
                     </div>
+                    {showDetailModal.instagram && (
+                      <div className="flex justify-between items-center pt-1 border-t border-gray-200/50">
+                        <span className="text-gray-400 font-bold uppercase text-[10px]">Instagram:</span>
+                        <a 
+                          href={formatInstagramUrl(showDetailModal.instagram)} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="font-bold text-pink-600 hover:underline flex items-center gap-1"
+                        >
+                          <InstagramIcon className="w-3 h-3" />
+                          <span>{showDetailModal.instagram}</span>
+                        </a>
+                      </div>
+                    )}
                   </div>
 
                   <div className="p-3 bg-gray-50 rounded-2xl space-y-2">
