@@ -152,6 +152,7 @@ export default function InboxPage() {
   const [showContactDrawer, setShowContactDrawer] = useState(false);
   const [activeDrawerTab, setActiveDrawerTab] = useState("db"); // "db" | "ai" | "chat"
   const [isDropdownExpanded, setIsDropdownExpanded] = useState(false);
+  const [userRole, setUserRole] = useState("");
   const [accounts, setAccounts] = useState([
     { id: "asesores@colaboratium.com.ar", email: "asesores@colaboratium.com.ar", label: "Asesores Colaboratium", provider: "colaboratium", canReceive: true, canSend: true },
     { id: "mkt@colaboratium.com.ar", email: "mkt@colaboratium.com.ar", label: "Marketing Colaboratium", provider: "colaboratium", canReceive: true, canSend: true },
@@ -174,6 +175,9 @@ export default function InboxPage() {
               localStorage.setItem("codigoEmpresa", data.codigo_empresa);
             }
           }
+          if (data && data.rol_nombre) {
+            setUserRole(data.rol_nombre.toLowerCase());
+          }
         })
         .catch((err) => console.error(err));
     }
@@ -181,17 +185,22 @@ export default function InboxPage() {
 
   useEffect(() => {
     const targetEmpresa = codigoEmpresa || "KRZMJI";
-    fetch(`${API_URL}/empresas/${targetEmpresa}/inbox/accounts`, {
+    const authQuery = user ? `?clerkId=${encodeURIComponent(user.id)}&role=${encodeURIComponent(userRole)}` : "";
+    fetch(`${API_URL}/empresas/${targetEmpresa}/inbox/accounts${authQuery}`, {
       headers: { "ngrok-skip-browser-warning": "true" }
     })
       .then((res) => res.json())
       .then((data) => {
         if (data?.success && Array.isArray(data.accounts) && data.accounts.length > 0) {
           setAccounts(data.accounts);
+          if (data.accounts.length === 1) {
+            setSelectedAccount(data.accounts[0].email);
+            setReplyFromAccount(data.accounts[0].email);
+          }
         }
       })
       .catch(() => {});
-  }, [codigoEmpresa]);
+  }, [codigoEmpresa, user, userRole]);
 
   // 2. Cargar lista de correos por casilla seleccionada (Gmail + @colaboratium.com.ar)
   const fetchEmails = async (accountOverride = null) => {
@@ -205,7 +214,8 @@ export default function InboxPage() {
     try {
       setLoadingList(true);
       const accQuery = targetAcc ? `&account=${encodeURIComponent(targetAcc)}` : "";
-      const res = await fetch(`${API_URL}/empresas/${targetEmpresa}/inbox?limit=25${accQuery}`, {
+      const authQuery = user ? `&clerkId=${encodeURIComponent(user.id)}&role=${encodeURIComponent(userRole)}` : "";
+      const res = await fetch(`${API_URL}/empresas/${targetEmpresa}/inbox?limit=25${accQuery}${authQuery}`, {
         headers: { "ngrok-skip-browser-warning": "true" },
         signal: controller?.signal
       });
@@ -250,7 +260,7 @@ export default function InboxPage() {
       clearTimeout(safetyTimer);
       activeFetchRef.current.abort?.abort();
     };
-  }, [codigoEmpresa, selectedAccount]);
+  }, [codigoEmpresa, selectedAccount, userRole]);
 
   const handleSelectAccount = (accEmail) => {
     if (accEmail === selectedAccount) return;

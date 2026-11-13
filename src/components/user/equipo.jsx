@@ -45,7 +45,9 @@ export default function Equipo({ userData, privilegios }) {
     const [editingRole, setEditingRole] = useState(null);
     const [roleForm, setRoleForm] = useState({
         nombre: '',
-        privilegios: getDefaultPrivs(false)
+        privilegios: getDefaultPrivs(false),
+        nivel_arbol: 7,
+        tipo_visibilidad: 'solo_arbol'
     });
 
     useEffect(() => {
@@ -145,7 +147,9 @@ export default function Equipo({ userData, privilegios }) {
 
             const payload = {
                 nombre: roleForm.nombre,
-                privilegios: payloadPrivs
+                privilegios: payloadPrivs,
+                nivel_arbol: parseInt(roleForm.nivel_arbol, 10) || 7,
+                tipo_visibilidad: roleForm.tipo_visibilidad || 'solo_arbol'
             };
 
             let res;
@@ -257,13 +261,17 @@ export default function Equipo({ userData, privilegios }) {
 
             setRoleForm({
                 nombre: role.nombre,
-                privilegios: merged
+                privilegios: merged,
+                nivel_arbol: role.nivel_arbol ?? 7,
+                tipo_visibilidad: role.tipo_visibilidad ?? 'solo_arbol'
             });
         } else {
             setEditingRole(null);
             setRoleForm({
                 nombre: '',
-                privilegios: getDefaultPrivs(false)
+                privilegios: getDefaultPrivs(false),
+                nivel_arbol: 7,
+                tipo_visibilidad: 'solo_arbol'
             });
         }
         setShowRoleForm(true);
@@ -599,6 +607,25 @@ export default function Equipo({ userData, privilegios }) {
                                                         <span className="text-[10px] text-gray-400 font-bold block">
                                                             {rol.is_system ? 'Rol de Sistema (Protegido)' : 'Rol Personalizado'}
                                                         </span>
+                                                        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                                                                (rol.nivel_arbol || 7) <= 2 ? 'bg-purple-100 text-purple-800 border border-purple-200' :
+                                                                (rol.nivel_arbol || 7) <= 5 ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' :
+                                                                (rol.nivel_arbol || 7) === 6 ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                                                                (rol.nivel_arbol || 7) === 7 ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                                                                (rol.nivel_arbol || 7) === 8 ? 'bg-sky-100 text-sky-800 border border-sky-200' :
+                                                                'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                                            }`}>
+                                                                Nivel {rol.nivel_arbol || 7}
+                                                            </span>
+                                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                                                                rol.tipo_visibilidad === 'privilegios_extendidos'
+                                                                    ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                                                    : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                            }`}>
+                                                                {rol.tipo_visibilidad === 'privilegios_extendidos' ? '🌐 Privilegios Extendidos' : '🌳 Solo Árbol'}
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 {isMasterOrMain && (
@@ -793,6 +820,122 @@ export default function Equipo({ userData, privilegios }) {
                                 {editingRole?.is_system && (
                                     <p className="text-[11px] text-gray-400 mt-1">El nombre de un rol de sistema no puede alterarse.</p>
                                 )}
+                            </div>
+
+                            {/* 0. CONFIGURACIÓN DEL ÁRBOL JERÁRQUICO (NIVELES 1 A 9) & VISIBILIDAD */}
+                            <div className="p-6 bg-white rounded-3xl border border-gray-200/90 shadow-xs">
+                                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
+                                    <div className="w-7 h-7 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-600">
+                                        <Shield className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-black text-gray-900 uppercase tracking-wider">
+                                            Jerarquía Organizacional & Árbol de Visibilidad
+                                        </h4>
+                                        <p className="text-xs text-gray-500">
+                                            Control de acceso estricto RBAC según el nodo del usuario en el árbol corporativo.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">
+                                    <div>
+                                        <label className="block text-xs font-black text-gray-700 uppercase tracking-wider mb-2">
+                                            Posición en el Árbol (Niveles 1 a 9)
+                                        </label>
+                                        <select
+                                            value={roleForm.nivel_arbol || 7}
+                                            onChange={e => setRoleForm({ ...roleForm, nivel_arbol: parseInt(e.target.value, 10) })}
+                                            className="w-full px-3.5 py-3 rounded-2xl border-2 border-gray-300 bg-white text-gray-950 font-bold text-xs focus:ring-2 focus:ring-black outline-none shadow-2xs"
+                                        >
+                                            <option value={1}>Nivel 1: Master (Superadministrador Global)</option>
+                                            <option value={2}>Nivel 2: Main (Dirección Ejecutiva)</option>
+                                            <option value={3}>Nivel 3: Créditos (Mesa de Operaciones)</option>
+                                            <option value={4}>Nivel 4: Soporte (Mesa de Ayuda)</option>
+                                            <option value={5}>Nivel 5: Team (Staff Operativo)</option>
+                                            <option value={6}>Nivel 6: Líderes (Gestión de Equipos de Asesores)</option>
+                                            <option value={7}>Nivel 7: Asesores (Asesores Comerciales Directos)</option>
+                                            <option value={8}>Nivel 8: Prospectos Asesores (Onboarding Comercial)</option>
+                                            <option value={9}>Nivel 9: Inversores (Visibilidad Restringida: Chat Asesor/Líder + Mails + Tickets)</option>
+                                        </select>
+                                        <div className="mt-2 p-2.5 rounded-xl bg-gray-50 border border-gray-100 text-[11px] text-gray-600 leading-relaxed">
+                                            {roleForm.nivel_arbol === 9 && (
+                                                <span className="font-bold text-emerald-800">
+                                                    🔒 Nivel Inversor: Solo podrá chatear con su Asesor/Líder asignado, ver correos cruzados con su Asesor/Líder y dar seguimiento a sus tickets.
+                                                </span>
+                                            )}
+                                            {roleForm.nivel_arbol === 6 && (
+                                                <span className="font-bold text-amber-800">
+                                                    👥 Nivel Líder: Podrá crear webinars, supervisar a sus asesores directos y monitorear a los inversores en su rama.
+                                                </span>
+                                            )}
+                                            {roleForm.nivel_arbol === 7 && (
+                                                <span className="font-bold text-blue-800">
+                                                    💼 Nivel Asesor: Podrá crear sesiones Google Meet con inversores, comunicarse con su Líder y atender su cartera asignada.
+                                                </span>
+                                            )}
+                                            {(roleForm.nivel_arbol <= 2) && (
+                                                <span className="font-bold text-purple-800">
+                                                    ⚡ Nivel Directivo / Master: Control total sin restricciones sobre toda la organización.
+                                                </span>
+                                            )}
+                                            {(roleForm.nivel_arbol >= 3 && roleForm.nivel_arbol <= 5) && (
+                                                <span className="font-bold text-indigo-800">
+                                                    🛠️ Staff Operativo (Créditos / Soporte / Team): Igualdad posicional intermedia.
+                                                </span>
+                                            )}
+                                            {roleForm.nivel_arbol === 8 && (
+                                                <span className="font-bold text-sky-800">
+                                                    🎓 Prospecto Asesor: En proceso de inducción y academia antes de activación comercial.
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-black text-gray-700 uppercase tracking-wider mb-2">
+                                            Tipo de Visibilidad de Datos
+                                        </label>
+                                        <div className="grid grid-cols-2 gap-2 mt-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => setRoleForm({ ...roleForm, tipo_visibilidad: 'solo_arbol' })}
+                                                className={`p-3 rounded-2xl border-2 text-left transition flex flex-col justify-between ${
+                                                    roleForm.tipo_visibilidad === 'solo_arbol'
+                                                        ? 'border-emerald-500 bg-emerald-50/70 text-emerald-950 ring-2 ring-emerald-500/30'
+                                                        : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-1.5 font-black text-xs">
+                                                    <span>🌳 Solo Árbol</span>
+                                                </div>
+                                                <p className="text-[10px] text-gray-500 mt-1 leading-tight">
+                                                    Solo visualiza los datos de nodos subordinados directos e inferiores a su posición.
+                                                </p>
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => setRoleForm({ ...roleForm, tipo_visibilidad: 'privilegios_extendidos' })}
+                                                className={`p-3 rounded-2xl border-2 text-left transition flex flex-col justify-between ${
+                                                    roleForm.tipo_visibilidad === 'privilegios_extendidos'
+                                                        ? 'border-purple-500 bg-purple-50/70 text-purple-950 ring-2 ring-purple-500/30'
+                                                        : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-1.5 font-black text-xs">
+                                                    <span>🌐 Privilegios Extendidos</span>
+                                                </div>
+                                                <p className="text-[10px] text-gray-500 mt-1 leading-tight">
+                                                    Puede ver nodos superiores y carteras cruzadas de otras áreas según sus permisos.
+                                                </p>
+                                            </button>
+                                        </div>
+                                        <p className="text-[11px] text-gray-400 mt-2">
+                                            Control de aislamiento de cartera y privacidad comercial.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* 1. MATRIZ DE PERMISOS POR SECCIÓN (TODAS LAS SECCIONES CRUD) */}

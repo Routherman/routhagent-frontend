@@ -76,8 +76,20 @@ export default function CalendarPage() {
     horario: "10:30 a 12:00 hs",
     cupos: 25,
     meetLink: "https://meet.google.com/new",
-    ubicacion: "Google Meet"
+    ubicacion: "Google Meet",
+    contactoId: "",
+    contactoNombre: "",
+    contactoEmail: "",
+    contactoTelefono: "",
+    notas: ""
   });
+
+  // Estado del Modal de Resumen de Reunión con IA
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const [selectedEventForSummary, setSelectedEventForSummary] = useState(null);
+  const [summaryTranscriptInput, setSummaryTranscriptInput] = useState("");
+  const [generatingSummary, setGeneratingSummary] = useState(false);
+  const [meetingSummaryData, setMeetingSummaryData] = useState(null);
 
   // Form State para Inscribir Asesor
   const [bookForm, setBookForm] = useState({
@@ -192,7 +204,7 @@ export default function CalendarPage() {
 
   const isSuper = !userRole || ["master", "main"].includes(userRole);
   const canCreateWebinar = isSuper || userPrivs?.manage_calendar_webinar || userRole.includes("lider");
-  const canCreateMeet = isSuper || userPrivs?.manage_calendar_meet || userRole.includes("asesor");
+  const canCreateMeet = isSuper || userPrivs?.manage_calendar_meet || userRole.includes("asesor") || userRole.includes("lider");
   const canManageEvents = isSuper || userPrivs?.manage_calendar_events;
 
   // 2. Cargar slots de capacitación con inscriptos
@@ -361,7 +373,12 @@ export default function CalendarPage() {
       horario: '10:30 a 12:00 hs',
       cupos: type === 'webinar' ? 25 : 5,
       meetLink: 'https://meet.google.com/new',
-      ubicacion: 'Google Meet'
+      ubicacion: 'Google Meet',
+      contactoId: '',
+      contactoNombre: '',
+      contactoEmail: '',
+      contactoTelefono: '',
+      notas: ''
     });
     setShowCreateModal(true);
   };
@@ -374,7 +391,11 @@ export default function CalendarPage() {
     }
     setCreatingEvent(true);
     try {
-      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/calendar/events`, {
+      const endpoint = createModalType === 'meet' 
+        ? `${API_URL}/empresas/${codigoEmpresa}/calendar/meetings` 
+        : `${API_URL}/empresas/${codigoEmpresa}/calendar/events`;
+
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -392,7 +413,12 @@ export default function CalendarPage() {
           horaFin: createForm.horaFin,
           meetLink: createForm.meetLink || 'https://meet.google.com/new',
           ubicacion: createForm.ubicacion,
-          cupos: parseInt(createForm.cupos, 10) || 25,
+          cupos: parseInt(createForm.cupos, 10) || (createModalType === 'meet' ? 5 : 25),
+          contacto_id: createForm.contactoId ? parseInt(createForm.contactoId, 10) : null,
+          contacto_nombre: createForm.contactoNombre,
+          contacto_email: createForm.contactoEmail,
+          contacto_telefono: createForm.contactoTelefono,
+          notas: createForm.notas,
           userId: user?.id,
           userName: userName,
           userRole: userRole
@@ -400,7 +426,7 @@ export default function CalendarPage() {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success("¡Evento creado y registrado en Google Calendar (colaboratium@gmail.com)!", {
+        toast.success(createModalType === 'meet' ? "¡Sesión Google Meet creada y sincronizada con Google Calendar!" : "¡Evento creado y registrado en Google Calendar!", {
           action: data.googleCalendarUrl ? {
             label: "Ver en Google Calendar",
             onClick: () => window.open(data.googleCalendarUrl, '_blank')
@@ -415,6 +441,57 @@ export default function CalendarPage() {
       toast.error("Error de conexión al registrar evento");
     } finally {
       setCreatingEvent(false);
+    }
+  };
+
+  const openSummaryModal = (slot) => {
+    setSelectedEventForSummary(slot);
+    let existingSummary = slot.resumen_ia || null;
+    if (typeof existingSummary === 'string' && (existingSummary.startsWith('{') || existingSummary.startsWith('['))) {
+      try { existingSummary = JSON.parse(existingSummary); } catch(e) {}
+    }
+    setMeetingSummaryData(existingSummary);
+    setSummaryTranscriptInput(slot.transcript || "");
+    setShowSummaryModal(true);
+  };
+
+  const handleGenerateSummary = async () => {
+    if (!selectedEventForSummary) return;
+    if (!summaryTranscriptInput.trim()) {
+      toast.error("Por favor ingresa las notas o la transcripción de la reunión");
+      return;
+    }
+    setGeneratingSummary(true);
+    try {
+      const meetId = selectedEventForSummary.dbId || selectedEventForSummary.id;
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/calendar/meetings/${meetId}/summarize`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true"
+        },
+        body: JSON.stringify({
+          transcript: summaryTranscriptInput,
+          clientName: selectedEventForSummary.contacto_nombre || selectedEventForSummary.titulo,
+          meetingTitle: selectedEventForSummary.titulo,
+          advisorName: userName,
+          userId: user?.id,
+          userName: userName,
+          userRole: userRole
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.summary) {
+        setMeetingSummaryData(data.summary);
+        toast.success("¡Resumen de IA generado y archivado en la base de datos!");
+        fetchSlots();
+      } else {
+        toast.error(data.error || "No se pudo generar el resumen");
+      }
+    } catch(e) {
+      toast.error("Error al conectar con el servicio de IA");
+    } finally {
+      setGeneratingSummary(false);
     }
   };
 
@@ -667,6 +744,20 @@ export default function CalendarPage() {
                                 title="Copiar enlace"
                               >
                                 <Copy className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Botón de Resumen con IA para reuniones Meet */}
+                          {(isVirtual || s.isCustom) && (
+                            <div className="mt-2.5 pt-2 border-t border-gray-100 flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => openSummaryModal(s)}
+                                className="w-full py-1.5 px-3 rounded-xl bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 border border-purple-200 text-purple-900 text-[11px] font-black flex items-center justify-center gap-1.5 transition shadow-2xs"
+                              >
+                                <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                                <span>{s.resumen_ia ? "Ver Resumen IA" : "Generar Resumen IA"}</span>
                               </button>
                             </div>
                           )}
@@ -1467,6 +1558,50 @@ export default function CalendarPage() {
                     </div>
                   </div>
 
+                  {/* Datos del Inversor Convocado para Reunión Meet */}
+                  {createModalType === 'meet' && (
+                    <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-2xl space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Video className="w-4 h-4 text-blue-600" />
+                        <span className="text-[11px] font-black text-blue-950 uppercase tracking-wider">
+                          Datos del Inversor Convocado (Google Meet)
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="text-[9px] font-black text-gray-700 uppercase">Nombre Inversor</label>
+                          <input
+                            type="text"
+                            value={createForm.contactoNombre}
+                            onChange={e => setCreateForm({ ...createForm, contactoNombre: e.target.value })}
+                            placeholder="Ej. Roberto Sánchez"
+                            className="w-full mt-0.5 px-3 py-2 text-xs bg-white text-gray-950 border border-gray-300 rounded-xl font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[9px] font-black text-gray-700 uppercase">Email Inversor (Invitación iCal)</label>
+                          <input
+                            type="email"
+                            value={createForm.contactoEmail}
+                            onChange={e => setCreateForm({ ...createForm, contactoEmail: e.target.value })}
+                            placeholder="inversor@ejemplo.com"
+                            className="w-full mt-0.5 px-3 py-2 text-xs bg-white text-gray-950 border border-gray-300 rounded-xl font-bold"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-black text-gray-700 uppercase">Notas de Preparación / Perfil</label>
+                        <input
+                          type="text"
+                          value={createForm.notas}
+                          onChange={e => setCreateForm({ ...createForm, notas: e.target.value })}
+                          placeholder="Ej. Interés en colocación en cuotas con garantía hipotecaria"
+                          className="w-full mt-0.5 px-3 py-2 text-xs bg-white text-gray-950 border border-gray-300 rounded-xl font-bold"
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   {/* Selector de Fecha Estilo Google Calendar */}
                   <div>
                     <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
@@ -1934,6 +2069,208 @@ export default function CalendarPage() {
                       )}
                     </button>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal de Resumen Ejecutivo de Reunión con IA (Colaboratium Brain) */}
+          {showSummaryModal && selectedEventForSummary && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+              <div className="bg-white dark:bg-[#111827] rounded-3xl w-full max-w-2xl max-h-[90vh] border border-gray-200 dark:border-white/10 shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+                {/* Header Modal */}
+                <div className="p-5 border-b border-gray-100 dark:border-white/10 flex items-center justify-between bg-gradient-to-r from-purple-50/50 via-indigo-50/30 to-transparent dark:from-purple-950/20 dark:to-transparent">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 text-white flex items-center justify-center font-black shadow-md shadow-purple-600/20">
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-base text-gray-900 dark:text-white flex items-center gap-2">
+                        <span>Resumen de Reunión Meet con IA</span>
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300">
+                          Colaboratium Brain
+                        </span>
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        {selectedEventForSummary.titulo} • {selectedEventForSummary.contacto_nombre || 'Inversor'} ({selectedEventForSummary.dia || selectedEventForSummary.fecha || 'Fecha programada'})
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowSummaryModal(false)}
+                    className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Contenido Scrollable */}
+                <div className="p-6 overflow-y-auto space-y-5">
+                  {/* Si ya existe un resumen generado */}
+                  {meetingSummaryData ? (
+                    <div className="space-y-4">
+                      {/* Fila de Insignias y Datos Clave */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="p-3 bg-purple-50/70 dark:bg-purple-950/30 rounded-2xl border border-purple-200/70 dark:border-purple-800/40">
+                          <span className="text-[10px] font-black uppercase text-purple-700 dark:text-purple-300 tracking-wider block">
+                            Interés Detectado
+                          </span>
+                          <div className="mt-1 flex items-center gap-1.5 font-black text-sm">
+                            <span className={`inline-block w-2.5 h-2.5 rounded-full ${
+                              String(meetingSummaryData.estado_interes).toUpperCase() === 'ALTO'
+                                ? 'bg-emerald-500'
+                                : String(meetingSummaryData.estado_interes).toUpperCase() === 'MEDIO'
+                                ? 'bg-amber-500'
+                                : 'bg-rose-500'
+                            }`} />
+                            <span className="text-gray-900 dark:text-white">
+                              {meetingSummaryData.estado_interes || 'ALTO'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="p-3 bg-blue-50/70 dark:bg-blue-950/30 rounded-2xl border border-blue-200/70 dark:border-blue-800/40">
+                          <span className="text-[10px] font-black uppercase text-blue-700 dark:text-blue-300 tracking-wider block">
+                            Perfil Inversor
+                          </span>
+                          <p className="mt-1 text-xs font-bold text-gray-900 dark:text-white line-clamp-2">
+                            {meetingSummaryData.perfil_inversor || 'Moderado / Conservador'}
+                          </p>
+                        </div>
+
+                        <div className="p-3 bg-indigo-50/70 dark:bg-indigo-950/30 rounded-2xl border border-indigo-200/70 dark:border-indigo-800/40">
+                          <span className="text-[10px] font-black uppercase text-indigo-700 dark:text-indigo-300 tracking-wider block">
+                            Capital / Plazo
+                          </span>
+                          <p className="mt-1 text-xs font-bold text-gray-900 dark:text-white line-clamp-2">
+                            {meetingSummaryData.capital_plazo || 'A definir en propuesta'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Resumen Ejecutivo */}
+                      <div className="p-4 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-200/80 dark:border-white/10">
+                        <h4 className="text-xs font-black text-gray-800 dark:text-gray-200 uppercase tracking-wider mb-2 flex items-center gap-2">
+                          <FileText className="w-3.5 h-3.5 text-purple-600" />
+                          <span>Resumen Ejecutivo</span>
+                        </h4>
+                        <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                          {meetingSummaryData.resumen_ejecutivo}
+                        </p>
+                      </div>
+
+                      {/* Acuerdos Alcanzados */}
+                      {Array.isArray(meetingSummaryData.acuerdos) && meetingSummaryData.acuerdos.length > 0 && (
+                        <div className="p-4 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-2xl border border-emerald-200/60 dark:border-emerald-800/30">
+                          <h4 className="text-xs font-black text-emerald-900 dark:text-emerald-300 uppercase tracking-wider mb-2 flex items-center gap-2">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Acuerdos Alcanzados</span>
+                          </h4>
+                          <ul className="space-y-1.5">
+                            {meetingSummaryData.acuerdos.map((item, idx) => (
+                              <li key={idx} className="text-xs text-emerald-950 dark:text-emerald-200 flex items-start gap-2">
+                                <span className="text-emerald-500 font-bold shrink-0 mt-0.5">•</span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Próximos Pasos */}
+                      {Array.isArray(meetingSummaryData.proximos_pasos) && meetingSummaryData.proximos_pasos.length > 0 && (
+                        <div className="p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-2xl border border-amber-200/60 dark:border-amber-800/30">
+                          <h4 className="text-xs font-black text-amber-900 dark:text-amber-300 uppercase tracking-wider mb-2 flex items-center gap-2">
+                            <ArrowRight className="w-3.5 h-3.5 text-amber-600" />
+                            <span>Próximos Pasos y Compromisos</span>
+                          </h4>
+                          <ul className="space-y-1.5">
+                            {meetingSummaryData.proximos_pasos.map((item, idx) => (
+                              <li key={idx} className="text-xs text-amber-950 dark:text-amber-200 flex items-start gap-2">
+                                <span className="text-amber-500 font-bold shrink-0 mt-0.5">•</span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between pt-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const clipText = meetingSummaryData.markdown_formateado || `*Resumen de Reunión: ${selectedEventForSummary.titulo}*\n\n${meetingSummaryData.resumen_ejecutivo}\n\n*Perfil:* ${meetingSummaryData.perfil_inversor}\n*Capital y Plazo:* ${meetingSummaryData.capital_plazo}`;
+                            navigator.clipboard.writeText(clipText);
+                            toast.success("¡Resumen copiado al portapapeles!");
+                          }}
+                          className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/5 text-gray-700 dark:text-gray-300 text-xs font-bold flex items-center gap-1.5 transition"
+                        >
+                          <Copy className="w-3 h-3" />
+                          <span>Copiar Resumen</span>
+                        </button>
+
+                        <span className="text-[11px] text-gray-400">
+                          Archivado en Base de Datos de Colaboratium
+                        </span>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* Sección para Generar / Re-generar con Transcripción o Notas */}
+                  <div className="pt-4 border-t border-gray-100 dark:border-white/10 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-black text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-2">
+                        <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                        <span>{meetingSummaryData ? "Actualizar / Re-generar Resumen con IA" : "Transcripción o Apuntes de la Videollamada"}</span>
+                      </label>
+                      <span className="text-[10px] text-gray-400">
+                        Notas de Meet o Dictado
+                      </span>
+                    </div>
+
+                    <textarea
+                      rows={5}
+                      value={summaryTranscriptInput}
+                      onChange={(e) => setSummaryTranscriptInput(e.target.value)}
+                      placeholder="Pegá aquí la transcripción de Google Meet o tus apuntes clave de la videollamada (ej. El inversor Juan Pérez quiere colocar USD 10.000 a 180 días con tasa fija, acordamos enviar contrato el lunes)..."
+                      className="w-full px-3.5 py-2.5 text-xs text-gray-900 dark:text-white bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-600 resize-none font-mono"
+                    />
+
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] text-gray-500">
+                        El motor de IA procesa la minuta, extrae los compromisos y los guarda en la base de datos vinculados al inversor.
+                      </p>
+                      <button
+                        type="button"
+                        disabled={generatingSummary || !summaryTranscriptInput.trim()}
+                        onClick={handleGenerateSummary}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-black shadow-lg shadow-purple-600/25 active:scale-95 transition shrink-0"
+                      >
+                        {generatingSummary ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            <span>Generando con IA...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span>{meetingSummaryData ? "Re-generar y Archivar" : "Generar Resumen y Archivar"}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Modal */}
+                <div className="p-4 border-t border-gray-100 dark:border-white/10 flex items-center justify-end bg-gray-50/50 dark:bg-white/5">
+                  <button
+                    type="button"
+                    onClick={() => setShowSummaryModal(false)}
+                    className="px-5 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10 transition"
+                  >
+                    Cerrar
+                  </button>
                 </div>
               </div>
             </div>
