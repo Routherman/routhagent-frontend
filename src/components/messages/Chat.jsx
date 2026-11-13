@@ -101,8 +101,10 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
     }
   };
 
-  // Determine if within 24h window
-  let isWithin24Hours = false;
+  // Línea oficial activa en CRM: WASender (+54 9 11 2473 5062).
+  // WASender no impone límite de 24h ni restringe el envío libre de mensajes en ningún momento.
+  const isWasender = true;
+  let isWithin24Hours = true;
   let remainingTimeStr = '';
   
   if (messages.length > 0) {
@@ -115,11 +117,10 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
       const hours24 = 24 * 60 * 60 * 1000;
       
       if (diffMs < hours24) {
-        isWithin24Hours = true;
         const remainingMs = Math.min(hours24, Math.max(0, hours24 - diffMs));
         const rHours = Math.floor(remainingMs / (1000 * 60 * 60));
         const rMins = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
-        remainingTimeStr = `Ventana de 24h abierta (quedan ${rHours}h ${rMins}m)`;
+        remainingTimeStr = `Ventana 24h abierta (${rHours}h ${rMins}m)`;
       }
     }
   }
@@ -264,16 +265,10 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
                <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></span>
             )}
             <span className="text-[12px] text-gray-500 dark:text-slate-400">{contact?.estado_bot === 'ACTIVO' ? 'IA Respondiendo' : 'Pausado (Modo Humano)'}</span>
-            {isWithin24Hours && (
-              <span className="ml-2 text-[11px] font-medium text-green-600 dark:text-emerald-300 bg-green-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded border border-green-100 dark:border-emerald-800/40">
-                {remainingTimeStr}
-              </span>
-            )}
-            {!isWithin24Hours && messages.length > 0 && (
-              <span className="ml-2 text-[11px] font-medium text-red-500 dark:text-rose-300 bg-red-50 dark:bg-rose-950/50 px-2 py-0.5 rounded border border-red-100 dark:border-rose-800/40">
-                Fuera de la ventana de 24h
-              </span>
-            )}
+            <span className="ml-2 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800/40 flex items-center gap-1 shadow-2xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Línea WASender • Activa 24/7 (Sin límite)</span>
+            </span>
           </div>
 
           {/* Banner de Derivación y Resumen de Necesidad del Cliente */}
@@ -495,60 +490,69 @@ export default function Chat({ messages = [], contact, onHeaderClick, onSendMess
             <Plus className="w-3 h-3" />
             <span>+ Crear Respuesta</span>
           </button>
+
+          {/* Acceso directo a Plantillas (Opcional, sin bloquear el chat) */}
+          <button
+            onClick={handleOpenTemplates}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-50 dark:bg-sky-500/10 hover:bg-sky-100 dark:hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-500/30 text-[11px] font-bold shrink-0 transition cursor-pointer"
+            title="Abrir selector de plantillas pre-aprobadas"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+            </svg>
+            <span>💬 Plantillas</span>
+          </button>
         </div>
       </div>
 
-      {/* Input Area */}
-      {isWithin24Hours || messages.length === 0 ? (
-        <div className="p-4 mx-6 mb-6 bg-white dark:bg-[#0d1322] border rounded-[20px] shadow-sm flex flex-col gap-3 border-gray-200 dark:border-white/10">
-           <input 
-              type="text" 
-              placeholder="Enter to send, Shift + Enter to add new line" 
-              className="w-full outline-none text-[14px] bg-transparent text-gray-700 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-           />
-           <div className="flex justify-between items-center text-gray-400 dark:text-slate-400 pt-3 border-t border-gray-50 dark:border-white/10 mt-1">
-              <div className="flex gap-4 items-center">
-                <span className="font-serif font-bold text-[15px] cursor-pointer hover:text-gray-600 dark:hover:text-white transition-colors">B</span>
-                <span className="font-serif italic text-[15px] cursor-pointer hover:text-gray-600 dark:hover:text-white transition-colors">I</span>
-                <span className="font-serif underline text-[15px] cursor-pointer hover:text-gray-600 dark:hover:text-white transition-colors">U</span>
-                <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1"></div>
-                <svg className="w-[18px] h-[18px] cursor-pointer hover:text-gray-600 dark:hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" /></svg>
-                <svg className="w-[18px] h-[18px] cursor-pointer hover:text-gray-600 dark:hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" /></svg>
-              </div>
-              <div className="flex gap-4 items-center">
-                <svg className="w-5 h-5 cursor-pointer hover:text-gray-600 dark:hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-                <svg className="w-5 h-5 cursor-pointer hover:text-gray-600 dark:hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
-              </div>
-           </div>
-        </div>
-      ) : (
-        <div className="p-4 mx-6 mb-6">
-          {templateSent ? (
-            <div className="w-full py-5 px-6 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl flex flex-col items-center gap-2 text-center">
-              <div className="flex items-center gap-2 text-green-600 dark:text-emerald-400">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+      {/* Input Area: WASender 100% libre sin restricción de 24h ni bloqueo de plantillas */}
+      <div className="p-4 mx-6 mb-6 bg-white dark:bg-[#0d1322] border rounded-[20px] shadow-sm flex flex-col gap-3 border-gray-200 dark:border-white/10">
+         <input 
+            type="text" 
+            placeholder="Escribí un mensaje (Enter para enviar, Shift + Enter para nueva línea)..." 
+            className="w-full outline-none text-[14px] bg-transparent text-gray-700 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+         />
+         <div className="flex justify-between items-center text-gray-400 dark:text-slate-400 pt-3 border-t border-gray-50 dark:border-white/10 mt-1">
+            <div className="flex gap-4 items-center">
+              <span className="font-serif font-bold text-[15px] cursor-pointer hover:text-gray-600 dark:hover:text-white transition-colors">B</span>
+              <span className="font-serif italic text-[15px] cursor-pointer hover:text-gray-600 dark:hover:text-white transition-colors">I</span>
+              <span className="font-serif underline text-[15px] cursor-pointer hover:text-gray-600 dark:hover:text-white transition-colors">U</span>
+              <div className="w-px h-4 bg-gray-200 dark:bg-white/10 mx-1"></div>
+              <button 
+                type="button"
+                onClick={handleOpenTemplates} 
+                className="text-[11px] font-semibold text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 flex items-center gap-1 transition-colors px-2 py-0.5 rounded-md hover:bg-sky-50 dark:hover:bg-sky-950/40 cursor-pointer"
+                title="Elegir y enviar plantilla oficial"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
                 </svg>
-                <span className="font-bold text-sm">Plantilla enviada</span>
-              </div>
-              <p className="text-gray-500 dark:text-slate-400 text-xs">Esperando respuesta del cliente para reabrir la conversación.</p>
+                <span>Plantillas</span>
+              </button>
             </div>
-          ) : (
-            <button 
-              onClick={handleOpenTemplates}
-              className="w-full py-4 bg-gray-900 dark:bg-sky-600 hover:dark:bg-sky-500 text-white font-bold rounded-2xl hover:bg-black transition-colors flex items-center justify-center gap-2 border border-white/10"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-              </svg>
-              Iniciar conversación devuelta (Usar Plantilla)
-            </button>
-          )}
-        </div>
-      )}
+            <div className="flex gap-4 items-center">
+              <button 
+                type="button"
+                onClick={() => {
+                  if (inputValue.trim()) {
+                    onSendMessage(inputValue);
+                    setInputValue('');
+                  }
+                }}
+                disabled={!inputValue.trim()}
+                className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+              >
+                <span>Enviar</span>
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </button>
+            </div>
+         </div>
+      </div>
 
       {/* Modal: Crear Nueva Respuesta Rápida del Operador */}
       {showNewResponseModal && (
