@@ -284,6 +284,13 @@ export default function CrmPage() {
   const [showManageRubros, setShowManageRubros] = useState(false);
   const [newRubroName, setNewRubroName] = useState('');
 
+  // Modal para redactar y enviar correo interno (por defecto asesores@colaboratium.com.ar)
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailModalContact, setEmailModalContact] = useState(null);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
+
   // Form State
   const initialForm = {
     nombre: '',
@@ -523,6 +530,64 @@ export default function CrmPage() {
     const url = `${API_URL}/empresas/${codigoEmpresa}/crm/export-vcf?grupo=${selectedGroup === 'TODOS' ? '' : selectedGroup}`;
     window.open(url, '_blank');
     toast.success('Generando y descargando libreta VCF para celulares...');
+  };
+
+  // Contacto Directo Interno: WhatsApp en Mensajes
+  const handleOpenWhatsAppChat = (c) => {
+    if (!c?.telefono) {
+      toast.error('El contacto no tiene teléfono registrado');
+      return;
+    }
+    const cleanPhone = String(c.telefono).replace(/\D/g, '');
+    router.push(`/dashboard/messages?contactId=${c.id}&phone=${encodeURIComponent(cleanPhone)}&name=${encodeURIComponent(c.nombre || '')}`);
+  };
+
+  // Contacto Directo Interno: Email desde asesores@colaboratium.com.ar
+  const handleOpenEmailComposer = (c) => {
+    if (!c?.email || !c.email.includes('@')) {
+      toast.error('El contacto no tiene un email válido registrado');
+      return;
+    }
+    setEmailModalContact(c);
+    setEmailSubject(`Contacto Colaboratium - ${c.nombre || 'Asesoría'}`);
+    setEmailBody(`Hola ${c.nombre || ''},\n\nTe escribimos desde Colaboratium para ponernos en contacto contigo.\n\nQuedamos a tu entera disposición para avanzar con la propuesta.\n\nSaludos cordiales,\nEquipo de Asesores Colaboratium\nasesores@colaboratium.com.ar`);
+    setShowEmailModal(true);
+  };
+
+  const handleSendEmailFromPlatform = async (e) => {
+    if (e) e.preventDefault();
+    if (!emailModalContact?.email || !emailBody.trim()) {
+      toast.error('Por favor escribe el cuerpo del mensaje');
+      return;
+    }
+    setSendingEmail(true);
+    try {
+      const res = await fetch(`${API_URL}/empresas/${codigoEmpresa}/inbox/reply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
+        body: JSON.stringify({
+          to: emailModalContact.email,
+          subject: emailSubject || `Contacto Colaboratium - ${emailModalContact.nombre || ''}`,
+          body: emailBody,
+          account: 'asesores@colaboratium.com.ar'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`¡Correo enviado con éxito desde asesores@colaboratium.com.ar a ${emailModalContact.email}!`);
+        setShowEmailModal(false);
+        setEmailModalContact(null);
+      } else {
+        toast.error(data.error || 'No se pudo enviar el correo');
+      }
+    } catch (err) {
+      toast.error('Error de conexión al enviar el correo');
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   // Manejo de importación CSV
@@ -1144,14 +1209,15 @@ export default function CrmPage() {
                               <span className="italic">Sin DNI</span>
                             )}
                             {c.email && (
-                              <a
-                                href={formatMailtoUrl(c.email, c.nombre)}
-                                className="text-gray-500 hover:text-blue-600 hover:underline truncate max-w-[160px] inline-flex items-center gap-1 transition"
-                                title={`Enviar correo a: ${c.email}`}
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEmailComposer(c)}
+                                className="text-gray-500 hover:text-blue-600 hover:underline truncate max-w-[160px] inline-flex items-center gap-1 transition text-left cursor-pointer"
+                                title={`Redactar correo interno a: ${c.email} desde asesores@colaboratium.com.ar`}
                               >
                                 <Mail className="w-2.5 h-2.5 shrink-0" />
                                 <span className="truncate">{c.email}</span>
-                              </a>
+                              </button>
                             )}
                           </div>
 
@@ -1218,16 +1284,15 @@ export default function CrmPage() {
                         <td className="py-3.5 px-4 font-mono font-bold text-gray-800">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             {c.telefono ? (
-                              <a 
-                                href={formatWhatsAppUrl(c.telefono) || `https://wa.me/${(c.telefono || '').replace(/\D/g, '')}`} 
-                                target="_blank" 
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1.5 text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 px-2.5 py-1 rounded-xl transition"
-                                title="Abrir chat directo de WhatsApp"
+                              <button 
+                                type="button"
+                                onClick={() => handleOpenWhatsAppChat(c)}
+                                className="inline-flex items-center gap-1.5 text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 px-2.5 py-1 rounded-xl transition cursor-pointer"
+                                title="Abrir conversación interna de WhatsApp en Mensajes"
                               >
                                 <WhatsAppIcon className="w-3.5 h-3.5" />
                                 <span>{c.telefono}</span>
-                              </a>
+                              </button>
                             ) : (
                               <span className="text-gray-300 italic text-[11px] font-sans">Sin teléfono</span>
                             )}
@@ -1278,33 +1343,33 @@ export default function CrmPage() {
                           </span>
                         </td>
 
-                        {/* Canales de Contacto Directo: WhatsApp, Email, Instagram */}
+                        {/* Canales de Contacto Directo: WhatsApp (Mensajes), Email (Asesores), Instagram */}
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            {/* Botón WhatsApp */}
+                            {/* Botón WhatsApp: Abre chat en plataforma */}
                             {formatWhatsAppUrl(c.telefono) && (
-                              <a
-                                href={formatWhatsAppUrl(c.telefono)}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-[11px] font-black transition-all hover:scale-105 shadow-2xs group"
-                                title={`Contactar por WhatsApp: ${c.telefono}`}
+                              <button
+                                type="button"
+                                onClick={() => handleOpenWhatsAppChat(c)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-[11px] font-black transition-all hover:scale-105 shadow-2xs group cursor-pointer"
+                                title={`Abrir chat interno en Mensajes para WhatsApp: ${c.telefono}`}
                               >
                                 <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-600 group-hover:scale-110 transition-transform" />
                                 <span>WhatsApp</span>
-                              </a>
+                              </button>
                             )}
 
-                            {/* Botón Email */}
+                            {/* Botón Email: Envía usando asesores@colaboratium.com.ar */}
                             {formatMailtoUrl(c.email) && (
-                              <a
-                                href={formatMailtoUrl(c.email, c.nombre)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-[11px] font-black transition-all hover:scale-105 shadow-2xs group"
-                                title={`Enviar correo a: ${c.email}`}
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEmailComposer(c)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-[11px] font-black transition-all hover:scale-105 shadow-2xs group cursor-pointer"
+                                title={`Enviar correo a ${c.email} desde asesores@colaboratium.com.ar`}
                               >
                                 <Mail className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
                                 <span>Email</span>
-                              </a>
+                              </button>
                             )}
 
                             {/* Botón Instagram */}
@@ -1653,27 +1718,35 @@ export default function CrmPage() {
 
                     <div className="flex items-center gap-2 flex-wrap">
                       {formatWhatsAppUrl(showDetailModal.telefono) && (
-                        <a
-                          href={formatWhatsAppUrl(showDetailModal.telefono)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-sm transition hover:scale-105 active:scale-95"
-                          title="Abrir chat en WhatsApp"
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const c = showDetailModal;
+                            setShowDetailModal(null);
+                            handleOpenWhatsAppChat(c);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-sm transition hover:scale-105 active:scale-95 cursor-pointer"
+                          title="Iniciar conversación interna de WhatsApp en Mensajes"
                         >
                           <WhatsAppIcon className="w-3.5 h-3.5" />
-                          <span>WhatsApp</span>
-                        </a>
+                          <span>WhatsApp (Mensajes)</span>
+                        </button>
                       )}
 
                       {formatMailtoUrl(showDetailModal.email) && (
-                        <a
-                          href={formatMailtoUrl(showDetailModal.email, showDetailModal.nombre)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-sm transition hover:scale-105 active:scale-95"
-                          title="Enviar correo electrónico"
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const c = showDetailModal;
+                            setShowDetailModal(null);
+                            handleOpenEmailComposer(c);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-sm transition hover:scale-105 active:scale-95 cursor-pointer"
+                          title="Redactar correo oficial desde asesores@colaboratium.com.ar"
                         >
                           <Mail className="w-3.5 h-3.5" />
-                          <span>Enviar Mail</span>
-                        </a>
+                          <span>Enviar Mail (Asesores)</span>
+                        </button>
                       )}
 
                       {formatInstagramUrl(showDetailModal.instagram) && (
@@ -2130,6 +2203,148 @@ export default function CrmPage() {
               </div>
             );
           })()}
+
+          {/* Modal para Enviar Correo desde Plataforma usando asesores@colaboratium.com.ar */}
+          {showEmailModal && emailModalContact && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+              <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 animate-in zoom-in-95 duration-200">
+                {/* Header */}
+                <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-md">
+                      <Mail className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-base text-gray-900 flex items-center gap-2">
+                        <span>Redactar Correo Interno</span>
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-blue-100 text-blue-800">
+                          SMTP Oficial
+                        </span>
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        Despacho directo hacia {emailModalContact.nombre}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowEmailModal(false);
+                      setEmailModalContact(null);
+                    }}
+                    className="p-1.5 text-gray-400 hover:text-gray-700 rounded-xl hover:bg-gray-100 transition"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Formulario */}
+                <form onSubmit={handleSendEmailFromPlatform} className="mt-4 space-y-3.5">
+                  {/* Remitente por defecto (asesores@colaboratium.com.ar) */}
+                  <div className="p-3 bg-indigo-50/70 rounded-2xl border border-indigo-100/90 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-black uppercase text-indigo-950 tracking-wider block">
+                        Cuenta Remitente Oficial
+                      </span>
+                      <p className="text-xs font-mono font-bold text-indigo-900 mt-0.5">
+                        asesores@colaboratium.com.ar
+                      </p>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-indigo-200 text-indigo-900">
+                      Asesores
+                    </span>
+                  </div>
+
+                  {/* Destinatario */}
+                  <div>
+                    <label className="text-[11px] font-black text-gray-700 uppercase tracking-wider block mb-1">
+                      Destinatario
+                    </label>
+                    <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800">
+                      <span>{emailModalContact.nombre}</span>
+                      <span className="text-blue-600 font-mono font-semibold">{emailModalContact.email}</span>
+                    </div>
+                  </div>
+
+                  {/* Asunto */}
+                  <div>
+                    <label className="text-[11px] font-black text-gray-700 uppercase tracking-wider block mb-1">
+                      Asunto
+                    </label>
+                    <input
+                      type="text"
+                      value={emailSubject}
+                      onChange={(e) => setEmailSubject(e.target.value)}
+                      placeholder="Asunto del correo..."
+                      required
+                      className="w-full px-3 py-2 text-xs text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 font-medium"
+                    />
+                  </div>
+
+                  {/* Mensaje */}
+                  <div>
+                    <label className="text-[11px] font-black text-gray-700 uppercase tracking-wider block mb-1">
+                      Mensaje
+                    </label>
+                    <textarea
+                      rows={6}
+                      value={emailBody}
+                      onChange={(e) => setEmailBody(e.target.value)}
+                      placeholder="Escribe aquí el contenido del correo..."
+                      required
+                      className="w-full px-3 py-2 text-xs text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 font-sans resize-none leading-relaxed"
+                    />
+                  </div>
+
+                  {/* Botones de Acción */}
+                  <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowEmailModal(false);
+                        router.push(`/dashboard/inbox?account=asesores@colaboratium.com.ar`);
+                      }}
+                      className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Abrir en Bandeja Inbox</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={sendingEmail}
+                        onClick={() => {
+                          setShowEmailModal(false);
+                          setEmailModalContact(null);
+                        }}
+                        className="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition cursor-pointer"
+                      >
+                        Cancelar
+                      </button>
+
+                      <button
+                        type="submit"
+                        disabled={sendingEmail || !emailBody.trim()}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-black shadow-lg shadow-blue-500/25 active:scale-95 transition cursor-pointer"
+                      >
+                        {sendingEmail ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            <span>Enviando...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-3.5 h-3.5" />
+                            <span>Enviar Correo</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       </Panel>
     </>

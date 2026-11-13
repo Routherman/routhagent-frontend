@@ -104,6 +104,50 @@ export default function MessagesPanel() {
     };
   }, [codigoEmpresa, user?.id, currentUserData?.rol_nombre]);
 
+  // 2b. Auto-seleccionar conversación si viene con query param contactId o phone desde CRM
+  const handledParamRef = React.useRef(false);
+  useEffect(() => {
+    if (typeof window === 'undefined' || handledParamRef.current) return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetContactId = urlParams.get('contactId');
+    const targetPhone = urlParams.get('phone');
+    const targetName = urlParams.get('name');
+
+    if (!targetContactId && !targetPhone) return;
+
+    // Buscar en la lista de contactos existentes
+    const matched = contacts.find(c => 
+      (targetContactId && String(c.id) === String(targetContactId)) || 
+      (targetPhone && c.telefono && c.telefono.replace(/\D/g, '') === targetPhone.replace(/\D/g, ''))
+    );
+
+    if (matched) {
+      setActiveContact(matched);
+      handledParamRef.current = true;
+    } else if (contacts.length > 0 || !loading) {
+      // Si el contacto aún no tiene mensajes intercambiados, creamos el contacto en la vista activa
+      const cleanPhone = (targetPhone || '').replace(/\D/g, '');
+      const placeholder = {
+        id: targetContactId ? parseInt(targetContactId, 10) : Date.now(),
+        name: targetName || 'Contacto CRM',
+        telefono: targetPhone || cleanPhone,
+        email: '',
+        grupo: 'CRM',
+        estado_bot: 'ACTIVO',
+        categoria: 'General',
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(targetName || 'Usuario')}`,
+        time: 'Ahora',
+        lastMessageTime: new Date(),
+        lastMessage: 'Nueva conversación iniciada desde CRM',
+        unread: 0,
+        online: true
+      };
+      setContacts(prev => [placeholder, ...prev.filter(p => p.id !== placeholder.id)]);
+      setActiveContact(placeholder);
+      handledParamRef.current = true;
+    }
+  }, [contacts, loading, codigoEmpresa]);
+
   // 3. Poll messages for active contact
   useEffect(() => {
     if (!activeContact) return;
