@@ -64,9 +64,9 @@ export const InstagramIcon = ({ className = "w-3.5 h-3.5" }) => (
 
 // Formateadores de URL de contacto seguro
 export const formatWhatsAppUrl = (phone) => {
-  if (!phone) return null;
+  if (!phone || String(phone).startsWith('B2B-')) return null;
   const digits = String(phone).replace(/\D/g, '');
-  if (!digits) return null;
+  if (!digits || digits.length < 8) return null;
   const fullPhone = digits.startsWith('54') 
     ? digits 
     : (digits.length <= 11 ? `549${digits}` : digits);
@@ -270,6 +270,10 @@ export default function CrmPage() {
   const [selectedCapaFilter, setSelectedCapaFilter] = useState('ALL'); // 'ALL' | 'ALL_B2B' | 1 | 2 | 3 | 4 | 5
   const [quickLaunchModalContact, setQuickLaunchModalContact] = useState(null);
   const [quickLaunchChannel, setQuickLaunchChannel] = useState('whatsapp'); // 'whatsapp' | 'email'
+
+  // Paginación para alto rendimiento con 7.000+ contactos
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
 
   // Árbol de dependencias jerárquico
   const [treeData, setTreeData] = useState(null);
@@ -749,6 +753,13 @@ export default function CrmPage() {
     return true;
   });
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, selectedGroup, selectedCapaFilter]);
+
+  const totalPages = Math.ceil(filtered.length / pageSize) || 1;
+  const paginatedContacts = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
     <>
       <Sidebar />
@@ -1172,7 +1183,7 @@ export default function CrmPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {filtered.map(c => (
+                    {paginatedContacts.map(c => (
                       <tr key={c.id} className="hover:bg-gray-50/60 transition-colors">
                         {/* Name & DNI */}
                         <td className="py-3.5 px-4">
@@ -1283,29 +1294,31 @@ export default function CrmPage() {
                         {/* Phone & WA */}
                         <td className="py-3.5 px-4 font-mono font-bold text-gray-800">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            {c.telefono ? (
-                              <button 
-                                type="button"
-                                onClick={() => handleOpenWhatsAppChat(c)}
-                                className="inline-flex items-center gap-1.5 text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 px-2.5 py-1 rounded-xl transition cursor-pointer"
-                                title="Abrir conversación interna de WhatsApp en Mensajes"
-                              >
-                                <WhatsAppIcon className="w-3.5 h-3.5" />
-                                <span>{c.telefono}</span>
-                              </button>
+                            {c.telefono && !c.telefono.startsWith('B2B-') ? (
+                              <>
+                                <button 
+                                  type="button"
+                                  onClick={() => handleOpenWhatsAppChat(c)}
+                                  className="inline-flex items-center gap-1.5 text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 px-2.5 py-1 rounded-xl transition cursor-pointer"
+                                  title="Abrir conversación interna de WhatsApp en Mensajes"
+                                >
+                                  <WhatsAppIcon className="w-3.5 h-3.5" />
+                                  <span>{c.telefono}</span>
+                                </button>
+                                {c.linea_wa?.startsWith('WA_S') || c.canal === 'wasender' ? (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-200 text-[9px] font-black tracking-tight" title="Línea WASender API (Pruebas / Ads)">
+                                    <span className="w-1 h-1 rounded-full bg-purple-600 animate-pulse"></span>
+                                    <span>{c.linea_wa || 'WA_S***5239'}</span>
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 text-[9px] font-black tracking-tight" title="Línea WhatsApp Business Oficial">
+                                    <span className="w-1 h-1 rounded-full bg-emerald-600"></span>
+                                    <span>WA_B</span>
+                                  </span>
+                                )}
+                              </>
                             ) : (
-                              <span className="text-gray-300 italic text-[11px] font-sans">Sin teléfono</span>
-                            )}
-                            {c.linea_wa?.startsWith('WA_S') || c.canal === 'wasender' ? (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-200 text-[9px] font-black tracking-tight" title="Línea WASender API (Pruebas / Ads)">
-                                <span className="w-1 h-1 rounded-full bg-purple-600 animate-pulse"></span>
-                                <span>{c.linea_wa || 'WA_S***5239'}</span>
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 text-[9px] font-black tracking-tight" title="Línea WhatsApp Business Oficial">
-                                <span className="w-1 h-1 rounded-full bg-emerald-600"></span>
-                                <span>WA_B</span>
-                              </span>
+                              <span className="text-gray-400 italic text-[11px] font-sans">Sin WhatsApp</span>
                             )}
                           </div>
                         </td>
@@ -1477,6 +1490,68 @@ export default function CrmPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Barra de Paginación */}
+              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold text-gray-600">
+                <div className="flex items-center gap-2">
+                  <span>Mostrando</span>
+                  <span className="font-bold text-gray-900 font-mono">
+                    {filtered.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}
+                  </span>
+                  <span>a</span>
+                  <span className="font-bold text-gray-900 font-mono">
+                    {Math.min(currentPage * pageSize, filtered.length)}
+                  </span>
+                  <span>de</span>
+                  <span className="font-black text-gray-900 font-mono">
+                    {filtered.length.toLocaleString('es-AR')}
+                  </span>
+                  <span>contactos</span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] text-gray-500">Filas por pág:</span>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        setPageSize(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="bg-white border border-gray-300 rounded-lg px-2 py-1 text-xs font-bold text-gray-800 focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
+                    >
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                      <option value={250}>250</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold transition cursor-pointer"
+                    >
+                      ‹ Anterior
+                    </button>
+
+                    <div className="px-2 font-mono font-bold text-gray-900">
+                      {currentPage} / {totalPages}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage >= totalPages}
+                      className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold transition cursor-pointer"
+                    >
+                      Siguiente ›
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
