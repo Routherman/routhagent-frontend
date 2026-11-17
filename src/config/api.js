@@ -1,4 +1,4 @@
-const defaultBackend = 'https://clients-altered-coast-factor.trycloudflare.com';
+const defaultBackend = 'https://contacting-smithsonian-aaa-scripts.trycloudflare.com';
 let rawUrl = (process.env.NEXT_PUBLIC_API_URL || defaultBackend).trim().replace(/\/+$/, '');
 
 // Si estamos navegando en localhost, usar http://localhost:8080 directamente para máxima velocidad y evitar depender del túnel
@@ -14,7 +14,7 @@ if (typeof window !== 'undefined') {
 }
 
 // Si la URL apunta a ngrok o a cualquier túnel de trycloudflare que no sea el túnel activo actual, usar defaultBackend
-if (rawUrl.includes('ngrok') || (rawUrl.includes('trycloudflare.com') && !rawUrl.includes('clients-altered-coast-factor'))) {
+if (rawUrl.includes('ngrok') || (rawUrl.includes('trycloudflare.com') && !rawUrl.includes('contacting-smithsonian-aaa-scripts'))) {
   rawUrl = defaultBackend;
 }
 
