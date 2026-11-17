@@ -97,13 +97,19 @@ export default function TicketsPage() {
   // 1. Obtener código de empresa y datos de usuario
   useEffect(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('codigoEmpresa') : null;
-    if (saved) setCodigoEmpresa(saved);
+    if (saved && saved !== '0J4Y3K' && saved !== 'Y7IC3G') {
+      setCodigoEmpresa(saved);
+    } else if (typeof window !== 'undefined') {
+      localStorage.setItem('codigoEmpresa', 'KRZMJI');
+      setCodigoEmpresa('KRZMJI');
+    }
     if (isLoaded && user) {
       fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } })
         .then(res => (res.ok ? res.json() : null))
         .then(data => {
           if (data?.codigo_empresa) {
-            setCodigoEmpresa(data.codigo_empresa);
+            const normEmpresa = (data.codigo_empresa === '0J4Y3K' || data.codigo_empresa === 'Y7IC3G') ? 'KRZMJI' : data.codigo_empresa;
+            setCodigoEmpresa(normEmpresa);
             setCurrentUserData(data);
           }
         })
@@ -116,9 +122,13 @@ export default function TicketsPage() {
     if (!codigoEmpresa) return;
     try {
       setLoading(true);
-      const roleParam = (currentUserData?.rol_nombre ? `role=${encodeURIComponent(currentUserData.rol_nombre)}&user_id=${currentUserData.id}` : '') + (user?.id ? `&clerkId=${user.id}` : '');
+      const queryParts = [];
+      if (currentUserData?.rol_nombre) queryParts.push(`role=${encodeURIComponent(currentUserData.rol_nombre)}`);
+      if (currentUserData?.id) queryParts.push(`user_id=${encodeURIComponent(currentUserData.id)}`);
+      if (user?.id) queryParts.push(`clerkId=${encodeURIComponent(user.id)}`);
+      const roleParam = queryParts.join('&');
       const [tRes, uRes, rRes] = await Promise.all([
-        fetch(`${API_URL}/empresas/${codigoEmpresa}/tickets?${roleParam}`, {
+        fetch(`${API_URL}/empresas/${codigoEmpresa}/tickets${roleParam ? `?${roleParam}` : ''}`, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         }),
         fetch(`${API_URL}/empresas/${codigoEmpresa}/users`, {
@@ -152,7 +162,7 @@ export default function TicketsPage() {
 
   useEffect(() => {
     fetchTickets();
-  }, [codigoEmpresa, currentUserData?.rol_nombre]);
+  }, [codigoEmpresa, currentUserData?.rol_nombre, user?.id]);
 
   // Crear nuevo ticket
   const handleCreateTicket = async (e) => {
