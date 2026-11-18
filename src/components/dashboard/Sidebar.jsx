@@ -30,7 +30,7 @@ export default function Sidebar() {
   const [hasHandoffs, setHasHandoffs] = useState(false);
   const [empresaCode, setEmpresaCode] = useState('');
 
-  const [userRole, setUserRole] = useState('master');
+  const [userRole, setUserRole] = useState('prospecto asesores');
   const [userPrivs, setUserPrivs] = useState(null);
   const [chatsAttentionCount, setChatsAttentionCount] = useState(0);
   const [pendingTicketsCount, setPendingTicketsCount] = useState(0);
@@ -67,9 +67,30 @@ export default function Sidebar() {
 
     let intervalId;
 
-    fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } })
-      .then(res => res.json())
+    const loadUserAndStartPolling = async () => {
+      let res = await fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+      if (res.status === 404) {
+        await fetch(`${API_URL}/users/sync`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+          body: JSON.stringify({
+            clerkId: user.id,
+            email: user.primaryEmailAddress?.emailAddress,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            imageUrl: user.imageUrl,
+            token: user.id
+          })
+        });
+        res = await fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+      }
+      if (!res.ok) return null;
+      return res.json();
+    };
+
+    loadUserAndStartPolling()
       .then(userData => {
+        if (!userData) return;
         const codigoEmpresa = userData.codigo_empresa;
         if (userData.rol_nombre) setUserRole(userData.rol_nombre.toLowerCase());
         let privs = userData.rol_privilegios;
@@ -83,7 +104,7 @@ export default function Sidebar() {
           const pollStatus = async () => {
             try {
               // 1. Polling de contactos y handoffs (solo los que tienen mensajes)
-              const res = await fetch(`${API_URL}/contacts/${codigoEmpresa}?onlyWithMessages=true`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+              const res = await fetch(`${API_URL}/contacts/${codigoEmpresa}?onlyWithMessages=true&clerkId=${encodeURIComponent(user.id)}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
               const data = await res.json();
 
               let currentHandoffs = 0;

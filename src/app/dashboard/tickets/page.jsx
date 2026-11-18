@@ -104,22 +104,43 @@ export default function TicketsPage() {
       setCodigoEmpresa('KRZMJI');
     }
     if (isLoaded && user) {
-      fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } })
-        .then(res => (res.ok ? res.json() : null))
-        .then(data => {
-          if (data?.codigo_empresa) {
-            const normEmpresa = (data.codigo_empresa === '0J4Y3K' || data.codigo_empresa === 'Y7IC3G') ? 'KRZMJI' : data.codigo_empresa;
-            setCodigoEmpresa(normEmpresa);
-            setCurrentUserData(data);
+      const syncAndLoadUser = async () => {
+        try {
+          let res = await fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+          if (res.status === 404) {
+            await fetch(`${API_URL}/users/sync`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+              body: JSON.stringify({
+                clerkId: user.id,
+                email: user.primaryEmailAddress?.emailAddress,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                imageUrl: user.imageUrl,
+                token: user.id
+              })
+            });
+            res = await fetch(`${API_URL}/users/me/${user.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
           }
-        })
-        .catch(err => console.error("Error fetching user data:", err));
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.codigo_empresa) {
+              const normEmpresa = (data.codigo_empresa === '0J4Y3K' || data.codigo_empresa === 'Y7IC3G') ? 'KRZMJI' : data.codigo_empresa;
+              setCodigoEmpresa(normEmpresa);
+              setCurrentUserData(data);
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching user data:", err);
+        }
+      };
+      syncAndLoadUser();
     }
   }, [isLoaded, user]);
 
   // 2. Cargar tickets, roles y usuarios del equipo
   const fetchTickets = async () => {
-    if (!codigoEmpresa) return;
+    if (!codigoEmpresa || !isLoaded || !user?.id) return;
     try {
       setLoading(true);
       const queryParts = [];
@@ -161,8 +182,10 @@ export default function TicketsPage() {
   };
 
   useEffect(() => {
-    fetchTickets();
-  }, [codigoEmpresa, currentUserData?.rol_nombre, user?.id]);
+    if (isLoaded && user?.id) {
+      fetchTickets();
+    }
+  }, [codigoEmpresa, currentUserData?.rol_nombre, isLoaded, user?.id]);
 
   // Crear nuevo ticket
   const handleCreateTicket = async (e) => {
