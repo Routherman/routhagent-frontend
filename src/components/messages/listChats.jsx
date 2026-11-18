@@ -101,17 +101,17 @@ export default function ListChats({
   };
 
   return (
-    <div className="w-full flex-shrink-0 flex flex-col h-full bg-white dark:bg-[#070b14] border-r border-gray-100 dark:border-white/10 select-none">
+    <div className="w-full flex-1 flex flex-col h-full min-h-0 overflow-hidden bg-white dark:bg-[#070b14] border-r border-gray-100 dark:border-white/10 select-none">
       {/* Search Bar con alto contraste de texto */}
-      <div className="p-3 border-b border-gray-100 dark:border-white/10 flex items-center gap-2">
-        <div className="flex-1 bg-white dark:bg-[#0d1322] flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-300 dark:border-white/15 focus-within:border-black dark:focus-within:border-sky-400 transition-all shadow-xs">
-          <Search className="w-4 h-4 text-gray-500 dark:text-slate-400 shrink-0" />
+      <div className="p-2 md:p-3 border-b border-gray-100 dark:border-white/10 flex items-center gap-2 shrink-0">
+        <div className="flex-1 bg-white dark:bg-[#0d1322] flex items-center gap-2 px-2.5 py-1.5 md:px-3 md:py-2 rounded-xl border border-gray-300 dark:border-white/15 focus-within:border-black dark:focus-within:border-sky-400 transition-all shadow-xs">
+          <Search className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-500 dark:text-slate-400 shrink-0" />
           <input 
             type="text" 
             placeholder="Buscar por nombre, tel, rol..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-transparent outline-none w-full text-[13px] text-gray-950 dark:text-white placeholder-gray-500 dark:placeholder-slate-400 font-bold" 
+            className="bg-transparent outline-none w-full text-[11.5px] md:text-[13px] text-gray-950 dark:text-white placeholder-gray-500 dark:placeholder-slate-400 font-bold" 
           />
           {searchTerm && (
             <button 
@@ -125,14 +125,14 @@ export default function ListChats({
       </div>
 
       {/* Filtros: Roles y Tiempo */}
-      <div className="px-3 py-2 border-b border-gray-100 dark:border-white/10 bg-gray-50/70 dark:bg-[#0a101d] space-y-2">
+      <div className="px-2.5 py-1.5 md:px-3 md:py-2 border-b border-gray-100 dark:border-white/10 bg-gray-50/70 dark:bg-[#0a101d] space-y-1.5 shrink-0">
         {/* Selector de Rol */}
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-black uppercase text-gray-500 dark:text-slate-400 tracking-wider shrink-0">Rol:</span>
+        <div className="flex items-center gap-1.5 md:gap-2">
+          <span className="text-[9.5px] md:text-[10px] font-black uppercase text-gray-500 dark:text-slate-400 tracking-wider shrink-0">Rol:</span>
           <select
             value={selectedRole}
             onChange={(e) => setSelectedRole(e.target.value)}
-            className="flex-1 text-[11px] font-extrabold bg-white dark:bg-[#11192a] border border-gray-200 dark:border-white/10 rounded-lg px-2.5 py-1 text-gray-900 dark:text-white focus:outline-none shadow-2xs"
+            className="flex-1 text-[10.5px] md:text-[11px] font-extrabold bg-white dark:bg-[#11192a] border border-gray-200 dark:border-white/10 rounded-lg px-2 py-1 text-gray-900 dark:text-white focus:outline-none shadow-2xs"
           >
             <option value="TODOS">Todos los roles ({contacts.length})</option>
             <option value="ASESORES">Asesores</option>
@@ -145,8 +145,8 @@ export default function ListChats({
         </div>
 
         {/* Selector de Tiempo */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-black uppercase text-gray-500 dark:text-slate-400 tracking-wider shrink-0 mr-0.5">Tiempo:</span>
+        <div className="flex items-center gap-1">
+          <span className="text-[9.5px] md:text-[10px] font-black uppercase text-gray-500 dark:text-slate-400 tracking-wider shrink-0 mr-0.5">Tiempo:</span>
           <div className="grid grid-cols-4 gap-1 flex-1">
             {[
               { id: 'TODOS', label: 'Todos' },
@@ -158,7 +158,7 @@ export default function ListChats({
                 key={tf.id}
                 type="button"
                 onClick={() => setTimeFilter(tf.id)}
-                className={`text-[10px] py-1 rounded-md font-bold transition text-center shadow-2xs ${
+                className={`text-[9.5px] md:text-[10px] py-0.5 md:py-1 rounded-md font-bold transition text-center shadow-2xs ${
                   timeFilter === tf.id
                     ? 'bg-gray-950 dark:bg-sky-500 text-white font-extrabold shadow-xs'
                     : 'bg-white dark:bg-[#11192a] text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-white/10 border border-gray-200 dark:border-white/10'
@@ -172,26 +172,26 @@ export default function ListChats({
       </div>
 
       {/* Action Button */}
-      <div className="px-3 py-2 border-b border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-[#090e1a]">
+      <div className="px-2.5 py-1.5 md:px-3 md:py-2 border-b border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-[#090e1a] shrink-0">
         <button 
           onClick={onStartMassive}
-          className="w-full bg-[#111215] dark:bg-sky-600 hover:bg-black dark:hover:bg-sky-500 text-white font-bold text-xs py-2 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 hover:shadow"
+          className="w-full bg-[#111215] dark:bg-sky-600 hover:bg-black dark:hover:bg-sky-500 text-white font-bold text-[11px] md:text-xs py-1.5 md:py-2 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 hover:shadow"
         >
-          <Send className="w-3.5 h-3.5" />
+          <Send className="w-3 h-3 md:w-3.5 md:h-3.5" />
           Generar envío masivo
         </button>
       </div>
 
       {/* Barra de Conteo */}
-      <div className="px-3.5 py-1.5 bg-gray-50/40 dark:bg-[#0b1120] border-b border-gray-100 dark:border-white/10 flex items-center justify-between text-[11px] font-bold text-gray-500 dark:text-slate-400">
+      <div className="px-3 py-1 bg-gray-50/40 dark:bg-[#0b1120] border-b border-gray-100 dark:border-white/10 flex items-center justify-between text-[10px] md:text-[11px] font-bold text-gray-500 dark:text-slate-400 shrink-0">
         <span>Conversaciones con mensajes:</span>
-        <span className="text-gray-900 dark:text-white font-extrabold bg-gray-200/80 dark:bg-white/10 px-2 py-0.5 rounded-full text-[10px]">
+        <span className="text-gray-900 dark:text-white font-extrabold bg-gray-200/80 dark:bg-white/10 px-2 py-0.5 rounded-full text-[9.5px] md:text-[10px]">
           {filteredContacts.length}
         </span>
       </div>
 
-      {/* Contacts List */}
-      <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-white/10">
+      {/* Contacts List (Scroll nativo habilitado en celular) */}
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y divide-y divide-gray-100 dark:divide-white/10">
         {filteredContacts.length === 0 ? (
           <div className="p-8 text-center text-gray-400 dark:text-slate-500 text-xs">
             No se encontraron contactos que coincidan.
@@ -211,7 +211,7 @@ export default function ListChats({
               <div 
                 key={c.id} 
                 onClick={() => onSelectContact(c)}
-                className={`relative flex items-start gap-3 p-3 cursor-pointer transition-all group ${
+                className={`relative flex items-start gap-2.5 md:gap-3 p-2.5 md:p-3 cursor-pointer transition-all group ${
                   isActive
                     ? 'bg-indigo-50/70 dark:bg-indigo-950/40 border-l-4 border-indigo-600 dark:border-sky-400'
                     : 'hover:bg-gray-50/80 dark:hover:bg-white/5 border-l-4 border-transparent'
@@ -222,11 +222,11 @@ export default function ListChats({
                   <img 
                     src={c.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(primaryIdentity)}&background=0D8ABC&color=fff`} 
                     alt={primaryIdentity} 
-                    className="w-11 h-11 rounded-full object-cover shadow-xs border border-gray-200 dark:border-white/15" 
+                    className="w-9 h-9 md:w-11 md:h-11 rounded-full object-cover shadow-xs border border-gray-200 dark:border-white/15" 
                   />
                   <span
                     title={c.estado_bot === 'ACTIVO' ? 'IA Activa' : 'IA Desactivada (Modo Humano)'}
-                    className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white dark:border-[#070b14] rounded-full ${
+                    className={`absolute bottom-0 right-0 w-2.5 h-2.5 md:w-3 md:h-3 border-2 border-white dark:border-[#070b14] rounded-full ${
                       c.estado_bot === 'ACTIVO' ? 'bg-emerald-500' : 'bg-amber-500'
                     }`}
                   />
@@ -235,51 +235,51 @@ export default function ListChats({
                 {/* Contact Main Info */}
                 <div className="flex-1 min-w-0">
                   {/* Fila 1: Nombre de quien habla (o Número si no está agendado) + Fecha */}
-                  <div className="flex items-start justify-between gap-2 mb-0.5">
+                  <div className="flex items-start justify-between gap-1.5 mb-0.5">
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-extrabold text-[13.5px] text-gray-900 dark:text-white truncate leading-tight">
+                      <h3 className="font-extrabold text-[12px] md:text-[13.5px] text-gray-900 dark:text-white truncate leading-tight">
                         {primaryIdentity}
                       </h3>
                       {showSubPhone && (
-                        <p className="text-[11px] font-mono font-semibold text-sky-700 dark:text-sky-400 truncate leading-tight mt-0.5">
+                        <p className="text-[10px] md:text-[11px] font-mono font-semibold text-sky-700 dark:text-sky-400 truncate leading-tight mt-0.5">
                           {formattedPhone}
                         </p>
                       )}
                     </div>
-                    <span className="text-[10px] font-medium text-gray-400 dark:text-slate-400 whitespace-nowrap shrink-0 mt-0.5">
+                    <span className="text-[9.5px] md:text-[10px] font-medium text-gray-400 dark:text-slate-400 whitespace-nowrap shrink-0">
                       {c.time || ''}
                     </span>
                   </div>
 
                   {/* Fila 2: Último mensaje + Contador de no leídos */}
-                  <div className="flex items-center justify-between gap-1.5 text-[12px] my-1">
-                    <p className="text-gray-600 dark:text-slate-300 truncate text-[12px]">
+                  <div className="flex items-center justify-between gap-1.5 text-[11px] md:text-[12px] my-0.5">
+                    <p className="text-gray-600 dark:text-slate-300 truncate text-[11px] md:text-[12px]">
                       {c.lastMessage || formattedPhone || 'Sin mensajes'}
                     </p>
                     
                     {c.unread > 0 && (
-                      <span className="bg-indigo-600 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold min-w-[18px] text-center shrink-0">
+                      <span className="bg-indigo-600 text-white text-[9.5px] md:text-[10px] px-1.5 py-0.2 rounded-full font-bold min-w-[16px] text-center shrink-0">
                         {c.unread}
                       </span>
                     )}
                   </div>
 
                   {/* Fila 3: Badges de Rol, Estado IA, Resolución y Línea */}
-                  <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                  <div className="mt-1 flex items-center gap-1 flex-wrap">
                     {c.categoria && c.categoria.toLowerCase() !== 'general' && (
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-extrabold border uppercase tracking-wider shrink-0 ${getRoleBadgeStyle(c.categoria)}`}>
+                      <span className={`text-[8.5px] md:text-[9px] px-1.5 py-0.2 rounded-md font-extrabold border uppercase tracking-wider shrink-0 ${getRoleBadgeStyle(c.categoria)}`}>
                         {c.categoria}
                       </span>
                     )}
 
                     {/* Indicador de IA Activa vs Modo Humano */}
                     {c.estado_bot === 'ACTIVO' ? (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/50 text-[9px] font-bold">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/50 text-[8.5px] md:text-[9px] font-bold">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                         <span>IA Activa</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/50 text-[9px] font-bold">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/50 text-[8.5px] md:text-[9px] font-bold">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                         <span>Modo Humano</span>
                       </span>

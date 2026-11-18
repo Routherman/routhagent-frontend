@@ -231,14 +231,14 @@ export default function Chat({ messages = [], contact, onBack, onHeaderClick, on
   const headerSubPhone = (!isPlaceholderName && formattedPhone && headerPrimaryTitle !== formattedPhone) ? formattedPhone : '';
 
   return (
-    <div className="flex-1 flex flex-col bg-[#f8f9fa] dark:bg-[#080d19] border-l border-r border-gray-100 dark:border-white/10 min-w-0 h-full relative">
+    <div className="flex-1 flex flex-col bg-[#f8f9fa] dark:bg-[#080d19] border-l border-r border-gray-100 dark:border-white/10 min-w-0 min-h-0 h-full overflow-hidden relative">
       {/* Chat Header */}
       <div 
-        className="min-h-[68px] md:min-h-[76px] py-2.5 flex flex-col sm:flex-row sm:items-center justify-between px-3 md:px-6 border-b border-gray-100 dark:border-white/10 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors gap-2"
+        className="py-2 md:py-2.5 flex items-center justify-between px-2.5 md:px-6 border-b border-gray-100 dark:border-white/10 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors gap-2 shrink-0"
         onClick={onHeaderClick}
       >
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
             {/* Botón Volver en Celular */}
             {onBack && (
               <button
@@ -247,128 +247,111 @@ export default function Chat({ messages = [], contact, onBack, onHeaderClick, on
                   e.stopPropagation();
                   onBack();
                 }}
-                className="md:hidden inline-flex items-center justify-center w-8 h-8 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-white/20 transition shrink-0 mr-0.5"
+                className="md:hidden inline-flex items-center justify-center w-7 h-7 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-white/20 transition shrink-0"
                 title="Volver a la lista de chats"
               >
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-3.5 h-3.5" />
               </button>
             )}
 
-            <h2 className="font-extrabold text-[15px] text-gray-900 dark:text-white truncate">
+            <h2 className="font-extrabold text-[13px] md:text-[15px] text-gray-900 dark:text-white truncate max-w-[160px] sm:max-w-none">
               {headerPrimaryTitle}
             </h2>
 
             {headerSubPhone && (
-              <span className="text-[12px] font-mono font-bold text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 px-2 py-0.5 rounded-md border border-sky-200 dark:border-sky-800/50">
+              <span className="text-[10.5px] md:text-[12px] font-mono font-bold text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 px-1.5 py-0.5 rounded-md border border-sky-200 dark:border-sky-800/50">
                 {headerSubPhone}
               </span>
             )}
             
             {/* Badge Identificador de Línea WA_B vs WA_S */}
             {contact?.linea_wa?.startsWith('WA_S') || contact?.canal === 'wasender' ? (
-              <span className="bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 text-[10px] px-2 py-0.5 rounded-md font-extrabold border border-purple-300 dark:border-purple-700/50 flex items-center gap-1 shadow-2xs">
+              <span className="bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 text-[9px] md:text-[10px] px-1.5 py-0.5 rounded-md font-extrabold border border-purple-300 dark:border-purple-700/50 flex items-center gap-1 shadow-2xs">
                 <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>
                 <span>{contact.linea_wa || 'WA_S***5062'}</span>
               </span>
             ) : (
-              <span className="bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 text-[10px] px-2 py-0.5 rounded-md font-extrabold border border-emerald-300 dark:border-emerald-700/50 flex items-center gap-1 shadow-2xs">
+              <span className="bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 text-[9px] md:text-[10px] px-1.5 py-0.5 rounded-md font-extrabold border border-emerald-300 dark:border-emerald-700/50 flex items-center gap-1 shadow-2xs">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                 <span>WA_B</span>
               </span>
             )}
 
             {contact?.categoria && contact?.categoria.toLowerCase() !== 'general' && (
-              <span className="bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-slate-300 text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
+              <span className="hidden sm:inline-block bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-slate-300 text-[9px] md:text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
                 {contact.categoria}
               </span>
             )}
             {contact?.estado_resolucion === 'PENDIENTE' && (
-              <span className="bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[10px] px-2 py-0.5 rounded-md font-extrabold uppercase tracking-wider border border-amber-300 dark:border-amber-700/50">
+              <span className="bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[9px] md:text-[10px] px-1.5 py-0.5 rounded-md font-extrabold uppercase tracking-wider border border-amber-300 dark:border-amber-700/50">
                 ⚠️ Pendiente
               </span>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+          <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
             {contact?.estado_bot === 'ACTIVO' ? (
-               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+               <span className="w-1.5 h-1.5 md:w-2 md:h-2 bg-emerald-500 rounded-full animate-pulse"></span>
             ) : (
-               <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
+               <span className="w-1.5 h-1.5 md:w-2 md:h-2 bg-amber-500 rounded-full"></span>
             )}
-            <span className="text-[12px] font-semibold text-gray-600 dark:text-slate-300">
+            <span className="text-[10.5px] md:text-[12px] font-semibold text-gray-600 dark:text-slate-300 truncate">
               {contact?.estado_bot === 'ACTIVO'
-                ? 'IA Activa (Respondiendo automáticamente)'
-                : 'IA Desactivada (Modo Humano — Tocá "Activar IA" o escribí /IAON)'}
+                ? 'IA Activa'
+                : 'IA Desactivada (Modo Humano — /IAON)'}
             </span>
           </div>
-
-          {/* Banner de Derivación y Resumen de Necesidad del Cliente */}
-          {(contact?.derivado_desde || contact?.resumen_necesidad || contact?.nota_pendiente) && (
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 mt-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-50/95 via-purple-50/90 to-blue-50/80 dark:from-indigo-950/60 dark:via-purple-950/40 dark:to-blue-950/30 border border-indigo-200 dark:border-indigo-700/50 text-[11px] text-indigo-950 dark:text-indigo-200 shadow-xs animate-in fade-in duration-150">
-              <div className="flex items-center gap-1.5 shrink-0">
-                <span className="font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-300 flex items-center gap-1 bg-indigo-100 dark:bg-indigo-900/60 px-2 py-0.5 rounded-md">
-                  ↪️ Origen: {contact.derivado_desde || 'Soporte'}
-                </span>
-                <span className="px-1.5 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-extrabold flex items-center gap-1">
-                  ✨ Resumen IA
-                </span>
-              </div>
-              <span className="font-semibold text-gray-800 dark:text-slate-200">
-                {contact.resumen_necesidad || contact.nota_pendiente || 'Atención personalizada requerida'}
-              </span>
-            </div>
-          )}
         </div>
-        <div className="flex items-center gap-2 md:gap-3 text-gray-500 dark:text-slate-400 shrink-0 self-end sm:self-center">
+        <div className="flex items-center gap-1.5 md:gap-3 text-gray-500 dark:text-slate-400 shrink-0">
            {/* Botón para activar/desactivar la IA */}
            <button 
              type="button"
              onClick={(e) => { e.stopPropagation(); onToggleBot(contact); }}
-             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-extrabold transition-all shadow-xs cursor-pointer ${
+             className={`flex items-center gap-1 px-2.5 md:px-3.5 py-1 md:py-1.5 rounded-full text-[10.5px] md:text-xs font-extrabold transition-all shadow-xs cursor-pointer ${
                contact?.estado_bot === 'ACTIVO'
                  ? 'bg-red-50 text-red-600 border border-red-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-700/50 hover:bg-red-100 dark:hover:bg-rose-900/60'
                  : 'bg-emerald-600 text-white border border-emerald-500 hover:bg-emerald-500 shadow-emerald-500/20'
              }`}
            >
-             <Sparkles className="w-3.5 h-3.5" />
-             <span>{contact?.estado_bot === 'ACTIVO' ? 'Desactivar IA' : 'Activar IA'}</span>
+             <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5" />
+             <span>{contact?.estado_bot === 'ACTIVO' ? 'Pausar IA' : 'Activar IA'}</span>
            </button>
            
            <button
              type="button"
              onClick={(e) => { e.stopPropagation(); onHeaderClick && onHeaderClick(); }}
              title="Ver información y delegación del contacto"
-             className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-800 dark:hover:text-white transition-colors"
+             className="p-1 md:p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-800 dark:hover:text-white transition-colors"
            >
-             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
+             <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
            </button>
         </div>
       </div>
       
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-3 md:p-6 space-y-4 md:space-y-5">
-        <div className="flex flex-col gap-4 md:gap-5">
+      {/* Messages Area (Scroll nativo fluido en celular) */}
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y p-2.5 md:p-6 space-y-3 md:space-y-4">
+        <div className="flex flex-col gap-3 md:gap-4">
           {/* Card Destacada de Solicitud Derivada por IA en el Historial */}
           {(contact?.resumen_necesidad || contact?.derivado_desde) && (
-            <div className="w-full my-1 p-3.5 rounded-2xl bg-gradient-to-r from-indigo-50 via-purple-50 to-sky-50 dark:from-indigo-950/40 dark:via-purple-950/30 dark:to-sky-950/20 border border-indigo-200 dark:border-indigo-800/40 shadow-xs animate-in fade-in">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-indigo-600 text-white text-[11px] font-black uppercase tracking-wider">
-                  <Sparkles className="w-3.5 h-3.5" /> Solicitud Derivada (Resumen IA)
+            <div className="w-full my-0.5 p-2.5 md:p-3.5 rounded-2xl bg-gradient-to-r from-indigo-50 via-purple-50 to-sky-50 dark:from-indigo-950/40 dark:via-purple-950/30 dark:to-sky-950/20 border border-indigo-200 dark:border-indigo-800/40 shadow-xs animate-in fade-in">
+              <div className="flex items-center justify-between mb-1">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-600 text-white text-[9.5px] md:text-[11px] font-black uppercase tracking-wider">
+                  <Sparkles className="w-3 h-3" /> Resumen IA
                 </span>
-                <span className="text-[11px] font-bold text-indigo-700 dark:text-indigo-400">
-                  Derivado desde: {contact.derivado_desde || 'Soporte / RAG'}
+                <span className="text-[10px] md:text-[11px] font-bold text-indigo-700 dark:text-indigo-400">
+                  Origen: {contact.derivado_desde || 'Soporte'}
                 </span>
               </div>
-              <p className="text-xs text-indigo-950 dark:text-indigo-100 font-medium leading-relaxed">
+              <p className="text-[11px] md:text-xs text-indigo-950 dark:text-indigo-100 font-medium leading-relaxed">
                 {contact.resumen_necesidad || contact.nota_pendiente}
               </p>
             </div>
           )}
 
           {messages.map((m) => (
-            <div key={m.id} className={`flex flex-col max-w-[90%] md:max-w-[80%] ${m.isMine ? 'self-end items-end' : 'self-start items-start'}`}>
+            <div key={m.id} className={`flex flex-col max-w-[88%] md:max-w-[80%] ${m.isMine ? 'self-end items-end' : 'self-start items-start'}`}>
               
               {/* Message Bubble */}
-              <div className={`p-3 md:p-4 rounded-[20px] ${m.isMine ? 'bg-sky-600 dark:bg-sky-500 text-white rounded-tr-sm shadow-sm' : 'bg-white dark:bg-[#11192a] border border-gray-100 dark:border-white/10 shadow-sm text-gray-700 dark:text-slate-100 rounded-tl-sm'}`}>
+              <div className={`p-2.5 md:p-4 rounded-2xl md:rounded-[20px] ${m.isMine ? 'bg-sky-600 dark:bg-sky-500 text-white rounded-tr-sm shadow-sm' : 'bg-white dark:bg-[#11192a] border border-gray-100 dark:border-white/10 shadow-sm text-gray-700 dark:text-slate-100 rounded-tl-sm'}`}>
                 
                 {m.image && (
                   <div className="flex flex-col items-center">
@@ -428,12 +411,12 @@ export default function Chat({ messages = [], contact, onBack, onHeaderClick, on
                 )}
                 
                 {!m.file && !m.audio && !m.image && (
-                  <p className="text-[14px] leading-relaxed">{m.text}</p>
+                  <p className="text-[12.5px] md:text-[14px] leading-relaxed break-words">{m.text}</p>
                 )}
               </div>
               
               {/* Message Time/Status */}
-              <span className="text-[11px] font-medium text-gray-400 mt-1.5 px-1 flex items-center gap-1">
+              <span className="text-[10px] md:text-[11px] font-medium text-gray-400 mt-1 px-1 flex items-center gap-1">
                 {m.status === 'Read' && <span className="italic">{m.status}</span>}
                 {m.status === 'Delivered' && <span className="italic">{m.status}</span>}
                 {!m.status && m.isMine && <span className="italic">Sent</span>}
@@ -544,16 +527,16 @@ export default function Chat({ messages = [], contact, onBack, onHeaderClick, on
       </div>
 
       {/* Input Area: WASender 100% libre sin restricción de 24h ni bloqueo de plantillas */}
-      <div className="p-3 mx-2 mb-2 md:p-4 md:mx-6 md:mb-6 bg-white dark:bg-[#0d1322] border rounded-[20px] shadow-sm flex flex-col gap-2.5 border-gray-200 dark:border-white/10">
+      <div className="p-2.5 mx-2 mb-1.5 md:p-4 md:mx-6 md:mb-5 bg-white dark:bg-[#0d1322] border rounded-2xl md:rounded-[20px] shadow-sm flex flex-col gap-2 border-gray-200 dark:border-white/10 shrink-0">
          <input 
             type="text" 
-            placeholder="Escribí un mensaje (o /IAON para reactivar la IA sin mostrarlo al cliente)..." 
-            className="w-full outline-none text-[14px] bg-transparent text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500"
+            placeholder="Escribí un mensaje (o /IAON para reactivar la IA)..." 
+            className="w-full outline-none text-[12.5px] md:text-[14px] bg-transparent text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
          />
-         <div className="flex justify-between items-center text-gray-400 dark:text-slate-400 pt-2.5 border-t border-gray-100 dark:border-white/10">
+         <div className="flex justify-between items-center text-gray-400 dark:text-slate-400 pt-1.5 md:pt-2.5 border-t border-gray-100 dark:border-white/10">
             <div className="flex gap-2 md:gap-3 items-center flex-wrap">
               <span className="hidden sm:inline font-serif font-bold text-[15px] cursor-pointer hover:text-gray-600 dark:hover:text-white transition-colors">B</span>
               <span className="hidden sm:inline font-serif italic text-[15px] cursor-pointer hover:text-gray-600 dark:hover:text-white transition-colors">I</span>

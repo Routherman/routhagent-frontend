@@ -42,11 +42,7 @@ export default function Header() {
             },
             body: JSON.stringify(payload)
           });
-          const data = await res.json();
-          
-          if (data.user && !data.user.codigo_empresa) {
-            window.location.href = '/create_account';
-          }
+          await res.json();
         } catch (error) {
           console.warn("Syncing user with backend:", error.message || error);
         }
@@ -56,52 +52,52 @@ export default function Header() {
   }, [user]);
 
   return (
-    <header className="flex items-center justify-between pt-8 pb-4 px-8 relative bg-transparent text-gray-900 dark:text-white transition-colors shrink-0">
-      <h1 className="text-[28px] font-bold text-gray-900 dark:text-white tracking-tight">Routh Agent</h1>
+    <header className="flex items-center justify-between py-2.5 px-3.5 md:pt-6 md:pb-3.5 md:px-7 relative bg-transparent text-gray-900 dark:text-white transition-colors shrink-0">
+      <h1 className="text-base md:text-[24px] font-extrabold text-gray-900 dark:text-white tracking-tight truncate">Routh Agent</h1>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 md:gap-3">
         {/* Search */}
-        <button className="w-10 h-10 rounded-full bg-gray-50 dark:bg-slate-800/80 hover:bg-gray-100 dark:hover:bg-slate-700 border border-transparent dark:border-white/10 flex items-center justify-center text-gray-500 dark:text-slate-300 transition-colors shadow-sm">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-[18px] h-[18px]">
+        <button className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-50 dark:bg-slate-800/80 hover:bg-gray-100 dark:hover:bg-slate-700 border border-transparent dark:border-white/10 flex items-center justify-center text-gray-500 dark:text-slate-300 transition-colors shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 md:w-[18px] md:h-[18px]">
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
           </svg>
         </button>
 
         {/* Notifications */}
-        <button className="w-10 h-10 rounded-full bg-gray-50 dark:bg-slate-800/80 hover:bg-gray-100 dark:hover:bg-slate-700 border border-transparent dark:border-white/10 flex items-center justify-center text-gray-500 dark:text-slate-300 transition-colors relative shadow-sm">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-[18px] h-[18px]">
+        <button className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-50 dark:bg-slate-800/80 hover:bg-gray-100 dark:hover:bg-slate-700 border border-transparent dark:border-white/10 flex items-center justify-center text-gray-500 dark:text-slate-300 transition-colors relative shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 md:w-[18px] md:h-[18px]">
             <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
           </svg>
-          <span className="absolute top-[10px] right-[10px] w-1.5 h-1.5 bg-[#ff4a4a] rounded-full"></span>
+          <span className="absolute top-[7px] right-[7px] md:top-[10px] md:right-[10px] w-1.5 h-1.5 bg-[#ff4a4a] rounded-full"></span>
         </button>
 
         {/* Profile Custom Dropdown or Sign-In Trigger */}
         {!isLoaded ? (
-          <div className="flex items-center gap-2.5 bg-gray-50 dark:bg-slate-800/80 border border-transparent dark:border-white/10 rounded-full pl-1.5 pr-4 py-1.5 shadow-sm">
-            <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
-            <div className="w-16 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+          <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800/80 border border-transparent dark:border-white/10 rounded-full pl-1.5 pr-3 py-1 shadow-sm">
+            <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+            <div className="w-12 md:w-16 h-3.5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
           </div>
         ) : !user ? (
           <SignInButton mode="modal">
             <button
               type="button"
-              className="ml-1 flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-[13px] rounded-full px-4 py-2 cursor-pointer transition-colors shadow-sm"
+              className="ml-1 flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs md:text-[13px] rounded-full px-3 py-1.5 md:px-4 md:py-2 cursor-pointer transition-colors shadow-sm"
             >
               Iniciar sesión
             </button>
           </SignInButton>
         ) : (
-          <div className="relative ml-1" ref={dropdownRef}>
+          <div className="relative ml-0.5 md:ml-1" ref={dropdownRef}>
             <div 
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2.5 bg-gray-50 dark:bg-slate-800/80 hover:bg-gray-100 dark:hover:bg-slate-700 border border-transparent dark:border-white/10 rounded-full pl-1.5 pr-4 py-1.5 cursor-pointer transition-colors shadow-sm"
+              className="flex items-center gap-1.5 md:gap-2.5 bg-gray-50 dark:bg-slate-800/80 hover:bg-gray-100 dark:hover:bg-slate-700 border border-transparent dark:border-white/10 rounded-full pl-1 pr-2.5 py-1 md:pl-1.5 md:pr-4 md:py-1.5 cursor-pointer transition-colors shadow-sm"
             >
               <img
                 src={user.imageUrl}
                 alt={user.firstName || 'Usuario'}
-                className="w-7 h-7 rounded-full object-cover"
+                className="w-6 h-6 md:w-7 md:h-7 rounded-full object-cover"
               />
-              <span className="text-[13px] font-semibold text-gray-700 dark:text-white">
+              <span className="text-[11px] md:text-[13px] font-semibold text-gray-700 dark:text-white max-w-[80px] md:max-w-none truncate">
                 {user.firstName || 'Usuario'}
               </span>
               

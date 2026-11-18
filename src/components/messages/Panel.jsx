@@ -373,13 +373,13 @@ export default function MessagesPanel() {
   }
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-white dark:bg-[#070b14] rounded-2xl md:rounded-[32px] shadow-sm relative">
+    <div className="flex flex-1 h-full min-h-0 w-full overflow-hidden bg-white dark:bg-[#070b14] rounded-2xl md:rounded-[32px] shadow-sm relative">
       {view === 'massive' ? (
         <MassivePanel contacts={contacts} onCancel={() => setView('chat')} codigoEmpresa={codigoEmpresa} />
       ) : (
         <>
           {/* En celular (< md), si hay un chat activo se oculta la lista para ver el chat a pantalla completa */}
-          <div className={`${activeContact ? 'hidden md:flex' : 'flex'} w-full md:w-[350px] lg:w-[370px] flex-shrink-0 h-full`}>
+          <div className={`${activeContact ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-[340px] lg:w-[360px] flex-shrink-0 h-full min-h-0 overflow-hidden`}>
             <ListContacts 
                contacts={contacts} 
                onStartMassive={() => setView('massive')} 
@@ -391,7 +391,7 @@ export default function MessagesPanel() {
             />
           </div>
 
-          <div className={`${activeContact ? 'flex' : 'hidden md:flex'} flex-1 h-full min-w-0 relative`}>
+          <div className={`${activeContact ? 'flex' : 'hidden md:flex'} flex-col flex-1 h-full min-h-0 min-w-0 overflow-hidden relative`}>
             {activeContact ? (
               <Chat
                 messages={messages}
