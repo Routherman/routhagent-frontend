@@ -41,7 +41,7 @@ export default function ThemeWrapper({ children }) {
 
     return (
         <div
-            className={`h-screen max-h-screen w-full flex p-2 md:p-3 font-sans overflow-hidden transition-colors duration-300 ease-in-out relative ${isDark ? 'dark bg-[#060911]' : 'bg-[#F1F5F9]'}`}
+            className={`h-[100dvh] max-h-[100dvh] w-full flex p-1 md:p-3 font-sans overflow-hidden transition-colors duration-300 ease-in-out relative ${isDark ? 'dark bg-[#060911]' : 'bg-[#F1F5F9]'}`}
             style={{
                 backgroundColor: themeData?.hex || (isDark ? '#060911' : '#F1F5F9'),
                 color: isLightBg ? '#0f172a' : '#f8fafc'

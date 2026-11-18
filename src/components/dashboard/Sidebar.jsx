@@ -13,7 +13,9 @@ import {
   ChevronRight,
   ShieldCheck,
   ChevronDown,
-  Layers
+  Layers,
+  Menu,
+  X
 } from 'lucide-react';
 import { API_URL } from '@/config/api';
 import { getSidebarSections, isSectionVisible } from '@/config/secciones';
@@ -209,10 +211,13 @@ export default function Sidebar() {
   const mainNavItems = rawMainItems.filter(filterPerm);
   const opsNavItems = rawOpsItems.filter(filterPerm);
   const showConfig = filterPerm(rawConfigItem);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileQuickItems = mainNavItems.slice(0, 4);
 
   return (
+    <>
     <aside 
-      className="group w-20 hover:w-64 flex flex-col justify-between py-6 px-3.5 transition-all duration-300 ease-in-out shrink-0 select-none z-30"
+      className="hidden md:flex group w-20 hover:w-64 flex-col justify-between py-6 px-3.5 transition-all duration-300 ease-in-out shrink-0 select-none z-30"
       style={{ willChange: 'width' }}
     >
       <div className="flex flex-col gap-6 w-full">
@@ -441,5 +446,157 @@ export default function Sidebar() {
         ) : null}
       </div>
     </aside>
+
+    {/* Barra de Navegación Inferior para Celular (< md) */}
+    <nav className="fixed bottom-0 left-0 right-0 h-14 z-40 flex md:hidden items-center justify-around bg-[#0b101d]/95 backdrop-blur-md border-t border-white/10 px-1 select-none">
+      {mobileQuickItems.map((item) => {
+        const Icon = item.icon;
+        const isActive = item.exact
+          ? pathname === item.href
+          : pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'));
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={() => setMobileMenuOpen(false)}
+            className={`relative flex flex-col items-center justify-center flex-1 h-full py-1 transition-colors ${
+              isActive ? 'text-amber-400 font-extrabold' : 'text-slate-300 hover:text-white font-medium'
+            }`}
+          >
+            <div className="relative flex items-center justify-center">
+              <Icon className="w-5 h-5" />
+              {item.count > 0 ? (
+                <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 bg-red-600 text-white text-[9px] font-black rounded-full flex items-center justify-center border border-black/40">
+                  {item.count > 99 ? '99+' : item.count}
+                </span>
+              ) : item.badge ? (
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full" />
+              ) : null}
+            </div>
+            <span className="text-[10px] mt-0.5 truncate max-w-[68px]">{item.label}</span>
+          </Link>
+        );
+      })}
+
+      <button
+        type="button"
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        className={`flex flex-col items-center justify-center flex-1 h-full py-1 transition-colors ${
+          mobileMenuOpen ? 'text-amber-400 font-extrabold' : 'text-slate-300 hover:text-white font-medium'
+        }`}
+      >
+        {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        <span className="text-[10px] mt-0.5">Menú</span>
+      </button>
+    </nav>
+
+    {/* Drawer Completo para Celular al tocar "Menú" */}
+    {mobileMenuOpen && (
+      <div
+        className="fixed inset-0 z-50 md:hidden bg-black/70 backdrop-blur-xs flex flex-col justify-end pb-14"
+        onClick={() => setMobileMenuOpen(false)}
+      >
+        <div
+          className="bg-[#0b101d] border-t border-white/15 rounded-t-3xl p-4 max-h-[80vh] overflow-y-auto text-white shadow-2xl space-y-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between border-b border-white/10 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 bg-[#f4ebd0] rounded-xl flex items-center justify-center">
+                <img src="/icono.svg" alt="Routh Logo" className="w-6 h-6 object-contain" />
+              </div>
+              <div>
+                <h2 className="text-xs font-extrabold uppercase tracking-wider">ROUTH AGENT — COLABORATIUM</h2>
+                <p className="text-[10px] text-amber-300 font-semibold">{empresaCode ? `Empresa: ${empresaCode}` : 'Panel Móvil'}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(false)}
+              className="p-1.5 rounded-xl bg-white/10 text-slate-300 hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            {mainNavItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = item.exact
+                ? pathname === item.href
+                : pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'));
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  target={item.target || undefined}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-2.5 p-2.5 rounded-xl text-xs font-bold border transition ${
+                    isActive
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-400/40'
+                      : 'bg-white/5 text-slate-200 border-white/10 hover:bg-white/10'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{item.label}</span>
+                  {item.count > 0 && (
+                    <span className="ml-auto px-1.5 py-0.2 text-[10px] font-black bg-red-600 text-white rounded-full">
+                      {item.count}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+
+          {opsNavItems.length > 0 && (
+            <div className="space-y-1.5 pt-2 border-t border-white/10">
+              <p className="text-[10px] font-black uppercase tracking-wider text-amber-400 px-1">Sistema & Flujos</p>
+              <div className="grid grid-cols-2 gap-2">
+                {opsNavItems.map((subItem) => {
+                  const SubIcon = subItem.icon;
+                  return (
+                    <Link
+                      key={subItem.href}
+                      href={subItem.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-2 p-2 rounded-xl text-[11px] font-semibold bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10"
+                    >
+                      <SubIcon className="w-3.5 h-3.5 shrink-0 text-amber-300" />
+                      <span className="truncate">{subItem.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between pt-3 border-t border-white/10 gap-2">
+            {showConfig && (
+              <Link
+                href={rawConfigItem.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold bg-white/10 text-white"
+              >
+                <Settings className="w-4 h-4" />
+                <span>{rawConfigItem.label}</span>
+              </Link>
+            )}
+            {user && (
+              <SignOutButton>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 ml-auto"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Cerrar Sesión</span>
+                </button>
+              </SignOutButton>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

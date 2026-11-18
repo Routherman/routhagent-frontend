@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { API_URL } from '@/config/api';
 import { toast } from 'sonner';
+import { X } from 'lucide-react';
 
-export default function InfoContact({ contact, codigoEmpresa }) {
+export default function InfoContact({ contact, codigoEmpresa, onClose }) {
   const [roles, setRoles] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -41,27 +42,44 @@ export default function InfoContact({ contact, codigoEmpresa }) {
   if (!contact) return null;
 
   return (
-    <div className="w-[300px] flex-shrink-0 flex flex-col h-full bg-white overflow-y-auto">
+    <div className="w-[300px] max-w-[90vw] flex-shrink-0 flex flex-col h-full bg-white dark:bg-[#070b14] border-l border-gray-100 dark:border-white/10 overflow-y-auto relative">
       {/* Header Info */}
-      <div className="flex flex-col items-center pt-8 pb-6 border-b border-gray-100">
-        <h3 className="font-semibold text-gray-800 text-[15px] mb-6">Information</h3>
-        <div className="w-24 h-24 rounded-full overflow-hidden mb-4 ring-4 ring-gray-50 shadow-sm">
+      <div className="flex flex-col items-center pt-6 pb-6 px-4 border-b border-gray-100 dark:border-white/10 relative">
+        <div className="w-full flex items-center justify-between mb-4">
+          <h3 className="font-bold text-gray-800 dark:text-white text-[15px]">Información del Contacto</h3>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-xl text-gray-400 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition"
+              title="Cerrar panel de información"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        <div className="w-20 h-20 rounded-full overflow-hidden mb-3 ring-4 ring-gray-50 dark:ring-white/10 shadow-sm">
            <img src={contact.avatar} alt={contact.name} className="w-full h-full object-cover" />
         </div>
-        <h2 className="text-[18px] font-bold text-gray-900">{contact.name}</h2>
-        <p className="text-[13px] text-gray-500 mt-1 font-medium">{contact.telefono}</p>
+        <h2 className="text-[16px] font-extrabold text-gray-900 dark:text-white text-center px-2">{contact.name}</h2>
+        <p className="text-[13px] font-mono text-sky-700 dark:text-sky-400 mt-1 font-semibold">
+          {contact.formattedPhone || (contact.telefono ? `+${String(contact.telefono).replace(/^\+/, '')}` : '')}
+        </p>
+        {contact.email && (
+          <p className="text-[12px] text-gray-500 dark:text-slate-400 mt-0.5 truncate max-w-full">{contact.email}</p>
+        )}
       </div>
 
       {/* Asignación Section */}
-      <div className="p-6 border-b border-gray-100">
-        <div className="flex justify-between items-center mb-4">
-          <h4 className="font-semibold text-gray-800 text-[14px]">Delegar Chat</h4>
+      <div className="p-5 border-b border-gray-100 dark:border-white/10">
+        <div className="flex justify-between items-center mb-3">
+          <h4 className="font-bold text-gray-800 dark:text-white text-[14px]">Delegar Chat</h4>
         </div>
         <div className="flex flex-col gap-3">
             <div>
-                <label className="block text-xs text-gray-500 mb-1">Rol Asignado</label>
+                <label className="block text-xs text-gray-500 dark:text-slate-400 mb-1">Rol Asignado</label>
                 <select 
-                   className="w-full text-sm text-gray-900 bg-white border-gray-200 rounded-md focus:ring-black focus:border-black p-2 border"
+                   className="w-full text-sm text-gray-900 dark:text-white bg-white dark:bg-[#11192a] border-gray-200 dark:border-white/15 rounded-lg p-2 border"
                    onChange={(e) => handleAssign(e.target.value, contact.usuario_asignado_id)}
                    value={contact.categoria || 'General'}
                    disabled={loading}
@@ -73,9 +91,9 @@ export default function InfoContact({ contact, codigoEmpresa }) {
                 </select>
             </div>
             <div>
-                <label className="block text-xs text-gray-500 mb-1">Usuario Específico (Opcional)</label>
+                <label className="block text-xs text-gray-500 dark:text-slate-400 mb-1">Usuario Específico (Opcional)</label>
                 <select 
-                   className="w-full text-sm text-gray-900 bg-white border-gray-200 rounded-md focus:ring-black focus:border-black p-2 border"
+                   className="w-full text-sm text-gray-900 dark:text-white bg-white dark:bg-[#11192a] border-gray-200 dark:border-white/15 rounded-lg p-2 border"
                    onChange={(e) => handleAssign(contact.categoria, e.target.value || null)}
                    value={contact.usuario_asignado_id || ''}
                    disabled={loading}
@@ -88,22 +106,6 @@ export default function InfoContact({ contact, codigoEmpresa }) {
             </div>
         </div>
       </div>
-      
-      {/* Media Section */}
-      <div className="p-6 border-b border-gray-100">
-        <div className="flex justify-between items-center mb-4">
-          <h4 className="font-semibold text-gray-800 text-[14px]">Media</h4>
-          <span className="text-[11px] font-medium text-gray-400 hover:text-gray-600 cursor-pointer">Show More</span>
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          <img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=100&h=100&fit=crop" className="w-full aspect-square rounded-xl object-cover shadow-sm" />
-          <img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=100&h=100&fit=crop" className="w-full aspect-square rounded-xl object-cover shadow-sm" />
-          <div className="w-full aspect-square bg-gray-800 rounded-xl flex items-center justify-center text-white text-[13px] font-bold shadow-sm cursor-pointer hover:bg-gray-700 transition">
-            +5
-          </div>
-        </div>
-      </div>
-
     </div>
   );
 }

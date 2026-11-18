@@ -92,31 +92,31 @@ export default function ListChats({
 
   const getRoleBadgeStyle = (cat) => {
     const upper = (cat || '').toUpperCase();
-    if (upper === 'LIDERES') return 'bg-amber-100 text-amber-800 border-amber-200';
-    if (upper === 'ASESORES') return 'bg-blue-100 text-blue-800 border-blue-200';
-    if (upper === 'INVERSORES') return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-    if (upper === 'SOPORTE') return 'bg-purple-100 text-purple-800 border-purple-200';
-    if (upper === 'MASTER') return 'bg-slate-200 text-slate-800 border-slate-300';
-    return 'bg-gray-100 text-gray-700 border-gray-200';
+    if (upper.includes('LIDER')) return 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-700/50';
+    if (upper.includes('ASESOR')) return 'bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-700/50';
+    if (upper.includes('INVERSOR')) return 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700/50';
+    if (upper === 'SOPORTE') return 'bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-700/50';
+    if (upper === 'MASTER') return 'bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700';
+    return 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 border-gray-200 dark:border-slate-700';
   };
 
   return (
-    <div className="w-full md:w-[340px] flex-shrink-0 flex flex-col h-full bg-white border-r border-gray-100 select-none">
+    <div className="w-full flex-shrink-0 flex flex-col h-full bg-white dark:bg-[#070b14] border-r border-gray-100 dark:border-white/10 select-none">
       {/* Search Bar con alto contraste de texto */}
-      <div className="p-3.5 border-b border-gray-100 flex items-center gap-2">
-        <div className="flex-1 bg-white flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-300 focus-within:border-black focus-within:ring-1 focus-within:ring-black transition-all shadow-xs">
-          <Search className="w-4 h-4 text-gray-500 shrink-0" />
+      <div className="p-3 border-b border-gray-100 dark:border-white/10 flex items-center gap-2">
+        <div className="flex-1 bg-white dark:bg-[#0d1322] flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-300 dark:border-white/15 focus-within:border-black dark:focus-within:border-sky-400 transition-all shadow-xs">
+          <Search className="w-4 h-4 text-gray-500 dark:text-slate-400 shrink-0" />
           <input 
             type="text" 
             placeholder="Buscar por nombre, tel, rol..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-transparent outline-none w-full text-[13px] text-gray-950 placeholder-gray-500 font-bold" 
+            className="bg-transparent outline-none w-full text-[13px] text-gray-950 dark:text-white placeholder-gray-500 dark:placeholder-slate-400 font-bold" 
           />
           {searchTerm && (
             <button 
               onClick={() => setSearchTerm('')} 
-              className="text-gray-400 hover:text-black text-sm font-black px-1"
+              className="text-gray-400 hover:text-black dark:hover:text-white text-sm font-black px-1"
             >
               ×
             </button>
@@ -125,14 +125,14 @@ export default function ListChats({
       </div>
 
       {/* Filtros: Roles y Tiempo */}
-      <div className="px-3.5 py-2.5 border-b border-gray-100 bg-gray-50/70 space-y-2">
+      <div className="px-3 py-2 border-b border-gray-100 dark:border-white/10 bg-gray-50/70 dark:bg-[#0a101d] space-y-2">
         {/* Selector de Rol */}
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-black uppercase text-gray-500 tracking-wider shrink-0">Rol:</span>
+          <span className="text-[10px] font-black uppercase text-gray-500 dark:text-slate-400 tracking-wider shrink-0">Rol:</span>
           <select
             value={selectedRole}
             onChange={(e) => setSelectedRole(e.target.value)}
-            className="flex-1 text-[11px] font-extrabold bg-white border border-gray-200 rounded-lg px-2.5 py-1 text-gray-900 focus:outline-none focus:ring-1 focus:ring-black shadow-2xs"
+            className="flex-1 text-[11px] font-extrabold bg-white dark:bg-[#11192a] border border-gray-200 dark:border-white/10 rounded-lg px-2.5 py-1 text-gray-900 dark:text-white focus:outline-none shadow-2xs"
           >
             <option value="TODOS">Todos los roles ({contacts.length})</option>
             <option value="ASESORES">Asesores</option>
@@ -146,7 +146,7 @@ export default function ListChats({
 
         {/* Selector de Tiempo */}
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-black uppercase text-gray-500 tracking-wider shrink-0 mr-0.5">Tiempo:</span>
+          <span className="text-[10px] font-black uppercase text-gray-500 dark:text-slate-400 tracking-wider shrink-0 mr-0.5">Tiempo:</span>
           <div className="grid grid-cols-4 gap-1 flex-1">
             {[
               { id: 'TODOS', label: 'Todos' },
@@ -160,8 +160,8 @@ export default function ListChats({
                 onClick={() => setTimeFilter(tf.id)}
                 className={`text-[10px] py-1 rounded-md font-bold transition text-center shadow-2xs ${
                   timeFilter === tf.id
-                    ? 'bg-gray-950 text-white font-extrabold shadow-xs'
-                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                    ? 'bg-gray-950 dark:bg-sky-500 text-white font-extrabold shadow-xs'
+                    : 'bg-white dark:bg-[#11192a] text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-white/10 border border-gray-200 dark:border-white/10'
                 }`}
               >
                 {tf.label}
@@ -172,10 +172,10 @@ export default function ListChats({
       </div>
 
       {/* Action Button */}
-      <div className="px-3.5 py-2 border-b border-gray-100 bg-gray-50/50">
+      <div className="px-3 py-2 border-b border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-[#090e1a]">
         <button 
           onClick={onStartMassive}
-          className="w-full bg-[#111215] hover:bg-black text-white font-bold text-xs py-2 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 hover:shadow"
+          className="w-full bg-[#111215] dark:bg-sky-600 hover:bg-black dark:hover:bg-sky-500 text-white font-bold text-xs py-2 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 hover:shadow"
         >
           <Send className="w-3.5 h-3.5" />
           Generar envío masivo
@@ -183,75 +183,78 @@ export default function ListChats({
       </div>
 
       {/* Barra de Conteo */}
-      <div className="px-3.5 py-1.5 bg-gray-50/40 border-b border-gray-100 flex items-center justify-between text-[11px] font-bold text-gray-500">
+      <div className="px-3.5 py-1.5 bg-gray-50/40 dark:bg-[#0b1120] border-b border-gray-100 dark:border-white/10 flex items-center justify-between text-[11px] font-bold text-gray-500 dark:text-slate-400">
         <span>Conversaciones con mensajes:</span>
-        <span className="text-gray-900 font-extrabold bg-gray-200/80 px-2 py-0.5 rounded-full text-[10px]">
+        <span className="text-gray-900 dark:text-white font-extrabold bg-gray-200/80 dark:bg-white/10 px-2 py-0.5 rounded-full text-[10px]">
           {filteredContacts.length}
         </span>
       </div>
 
       {/* Contacts List */}
-      <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
+      <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-white/10">
         {filteredContacts.length === 0 ? (
-          <div className="p-8 text-center text-gray-400 text-xs">
+          <div className="p-8 text-center text-gray-400 dark:text-slate-500 text-xs">
             No se encontraron contactos que coincidan.
           </div>
         ) : (
           filteredContacts.map((c) => {
             const isPending = (c.estado_resolucion || '').toUpperCase() === 'PENDIENTE';
             const isActive = activeContact?.id === c.id;
+            const cleanPhone = String(c.telefono || c.phone || '').replace(/\D/g, '');
+            const formattedPhone = cleanPhone ? `+${cleanPhone}` : '';
+            const rawName = String(c.name || '').trim();
+            const isPlaceholder = !rawName || /^(Desconocido|Sin\s*nombre|Usuario|Lead\s*WA|Contacto\s*CRM)/i.test(rawName);
+            const primaryIdentity = !isPlaceholder ? rawName : (formattedPhone || 'Sin número');
+            const showSubPhone = !isPlaceholder && formattedPhone && primaryIdentity !== formattedPhone;
 
             return (
               <div 
                 key={c.id} 
                 onClick={() => onSelectContact(c)}
-                className={`relative flex items-center gap-3 p-3.5 cursor-pointer transition-all group ${
-                  isActive ? 'bg-indigo-50/50 border-l-4 border-indigo-600' : 'hover:bg-gray-50/80 border-l-4 border-transparent'
+                className={`relative flex items-start gap-3 p-3 cursor-pointer transition-all group ${
+                  isActive
+                    ? 'bg-indigo-50/70 dark:bg-indigo-950/40 border-l-4 border-indigo-600 dark:border-sky-400'
+                    : 'hover:bg-gray-50/80 dark:hover:bg-white/5 border-l-4 border-transparent'
                 }`}
               >
                 {/* Avatar with Status indicator */}
-                <div className="relative flex-shrink-0">
+                <div className="relative flex-shrink-0 mt-0.5">
                   <img 
-                    src={c.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name || 'User')}&background=0D8ABC&color=fff`} 
-                    alt={c.name} 
-                    className="w-11 h-11 rounded-full object-cover shadow-xs border border-gray-100" 
+                    src={c.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(primaryIdentity)}&background=0D8ABC&color=fff`} 
+                    alt={primaryIdentity} 
+                    className="w-11 h-11 rounded-full object-cover shadow-xs border border-gray-200 dark:border-white/15" 
                   />
-                  {c.online && (
-                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
-                  )}
+                  <span
+                    title={c.estado_bot === 'ACTIVO' ? 'IA Activa' : 'IA Desactivada (Modo Humano)'}
+                    className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white dark:border-[#070b14] rounded-full ${
+                      c.estado_bot === 'ACTIVO' ? 'bg-emerald-500' : 'bg-amber-500'
+                    }`}
+                  />
                 </div>
 
                 {/* Contact Main Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <h3 className="font-bold text-[13px] text-gray-900 truncate group-hover:text-black">
-                        {c.name}
+                  {/* Fila 1: Nombre de quien habla (o Número si no está agendado) + Fecha */}
+                  <div className="flex items-start justify-between gap-2 mb-0.5">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-extrabold text-[13.5px] text-gray-900 dark:text-white truncate leading-tight">
+                        {primaryIdentity}
                       </h3>
-                      {c.categoria && c.categoria.toLowerCase() !== 'general' && (
-                        <span className={`text-[9px] px-1.5 py-0.2 rounded-md font-extrabold border uppercase tracking-wider shrink-0 ${getRoleBadgeStyle(c.categoria)}`}>
-                          {c.categoria}
-                        </span>
-                      )}
-                      {c.linea_wa?.startsWith('WA_S') || c.canal === 'wasender' ? (
-                        <span className="text-[9px] px-1.5 py-0.2 rounded-md font-black bg-purple-100 text-purple-700 border border-purple-200 shrink-0 font-mono tracking-tight" title="Línea WASender API (Pruebas / Ads)">
-                          {c.linea_wa || 'WA_S***5239'}
-                        </span>
-                      ) : (
-                        <span className="text-[9px] px-1.5 py-0.2 rounded-md font-black bg-emerald-100 text-emerald-700 border border-emerald-200 shrink-0 font-mono tracking-tight" title="Línea Oficial WhatsApp Business">
-                          WA_B
-                        </span>
+                      {showSubPhone && (
+                        <p className="text-[11px] font-mono font-semibold text-sky-700 dark:text-sky-400 truncate leading-tight mt-0.5">
+                          {formattedPhone}
+                        </p>
                       )}
                     </div>
-                    <span className="text-[10px] font-medium text-gray-400 whitespace-nowrap ml-1 shrink-0">
+                    <span className="text-[10px] font-medium text-gray-400 dark:text-slate-400 whitespace-nowrap shrink-0 mt-0.5">
                       {c.time || ''}
                     </span>
                   </div>
 
-                  {/* Message & Status Row */}
-                  <div className="flex items-center justify-between gap-1 text-[12px]">
-                    <p className="text-gray-500 truncate text-[12px]">
-                      {c.lastMessage || c.phone || 'Sin mensajes'}
+                  {/* Fila 2: Último mensaje + Contador de no leídos */}
+                  <div className="flex items-center justify-between gap-1.5 text-[12px] my-1">
+                    <p className="text-gray-600 dark:text-slate-300 truncate text-[12px]">
+                      {c.lastMessage || formattedPhone || 'Sin mensajes'}
                     </p>
                     
                     {c.unread > 0 && (
@@ -261,8 +264,27 @@ export default function ListChats({
                     )}
                   </div>
 
-                  {/* NOTA FLOTANTE / BADGE DE PENDIENTE O RESUELTO */}
+                  {/* Fila 3: Badges de Rol, Estado IA, Resolución y Línea */}
                   <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                    {c.categoria && c.categoria.toLowerCase() !== 'general' && (
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-extrabold border uppercase tracking-wider shrink-0 ${getRoleBadgeStyle(c.categoria)}`}>
+                        {c.categoria}
+                      </span>
+                    )}
+
+                    {/* Indicador de IA Activa vs Modo Humano */}
+                    {c.estado_bot === 'ACTIVO' ? (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/50 text-[9px] font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        <span>IA Activa</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/50 text-[9px] font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                        <span>Modo Humano</span>
+                      </span>
+                    )}
+
                     {isPending ? (
                       <div 
                         className="relative inline-flex items-center"
@@ -270,8 +292,8 @@ export default function ListChats({
                         onMouseLeave={() => setHoveredNoteId(null)}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold cursor-pointer hover:bg-amber-100 transition shadow-xs">
-                          <Clock className="w-3 h-3 text-amber-600 animate-pulse" />
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-700/50 text-[10px] font-bold cursor-pointer hover:bg-amber-100 transition shadow-xs">
+                          <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400 animate-pulse" />
                           <span>Pendiente</span>
                         </span>
 
@@ -295,21 +317,21 @@ export default function ListChats({
                         )}
                       </div>
                     ) : (
-                      <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600">
+                      <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
                         <CheckCircle2 className="w-2.5 h-2.5" />
                         <span>Resuelto</span>
                       </span>
                     )}
 
-                    {/* Badge de Línea: WA_B vs WA_S***XXXX */}
+                    {/* Badge único de Línea: WA_B vs WA_S***XXXX */}
                     {c.linea_wa?.startsWith('WA_S') || c.canal === 'wasender' ? (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 border border-purple-200 text-[9px] font-black tracking-tight" title="Línea WASender API (Pruebas / Ads)">
-                        <span className="w-1 h-1 rounded-full bg-purple-600 animate-pulse"></span>
-                        <span>{c.linea_wa || 'WA_S***5239'}</span>
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700/50 text-[9px] font-black tracking-tight" title="Línea WASender API">
+                        <span className="w-1 h-1 rounded-full bg-purple-500 animate-pulse"></span>
+                        <span>{c.linea_wa || 'WA_S***5062'}</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-black tracking-tight" title="Línea WhatsApp Business Oficial">
-                        <span className="w-1 h-1 rounded-full bg-emerald-600"></span>
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/50 text-[9px] font-black tracking-tight" title="Línea WhatsApp Business Oficial">
+                        <span className="w-1 h-1 rounded-full bg-emerald-500"></span>
                         <span>WA_B</span>
                       </span>
                     )}
@@ -318,16 +340,16 @@ export default function ListChats({
                     {c.resumen_necesidad && (
                       <span 
                         title={`Resumen IA: ${c.resumen_necesidad}`}
-                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-black cursor-help shadow-xs"
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700/50 text-[10px] font-black cursor-help shadow-xs"
                       >
-                        <Sparkles className="w-2.5 h-2.5 text-purple-600" />
+                        <Sparkles className="w-2.5 h-2.5 text-purple-600 dark:text-purple-400" />
                         <span>Resumen IA</span>
                       </span>
                     )}
 
                     {/* Mención del líder o asesor si está asignado */}
                     {(c.lider_id || c.asesor_id) && (
-                      <span className="text-[9px] text-gray-400 font-medium">
+                      <span className="text-[9px] text-gray-400 dark:text-slate-400 font-medium">
                         • {c.lider_id ? 'Con Líder' : ''} {c.asesor_id ? 'Con Asesor' : ''}
                       </span>
                     )}
@@ -344,7 +366,7 @@ export default function ListChats({
                     codigoEmpresa={codigoEmpresa}
                     currentUser={currentUser}
                     onUpdated={onRefreshContacts}
-                    buttonClassName="p-1.5 text-gray-400 hover:text-black rounded-lg hover:bg-gray-100/80 transition"
+                    buttonClassName="p-1.5 text-gray-400 hover:text-black dark:hover:text-white rounded-lg hover:bg-gray-100/80 dark:hover:bg-white/10 transition"
                   />
                 </div>
               </div>
