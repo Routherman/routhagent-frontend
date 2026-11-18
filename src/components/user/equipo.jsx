@@ -38,7 +38,7 @@ export default function Equipo({ userData, privilegios }) {
     
     // Verificación estricta: Master, Main y Administradores pueden gestionar vistas y permisos
     const userRole = (userData?.rol_nombre || '').toLowerCase();
-    const isMasterOrMain = !userRole || ['master', 'main', 'admin', 'gerencia', 'director'].includes(userRole);
+    const isMasterOrMain = Boolean(userRole) && ['master', 'main', 'admin', 'gerencia', 'director'].includes(userRole);
 
     // Role form state
     const [showRoleForm, setShowRoleForm] = useState(false);

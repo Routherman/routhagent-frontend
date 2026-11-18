@@ -204,7 +204,7 @@ export default function Sidebar() {
   const setIsOpsOpen = (val) => setManualOpsOpen(val);
 
   // Master, Main, Admin y creadores de empresa ven todo. Otros roles ven según privilegios explícitos.
-  const isSuperAdmin = !userRole || ['master', 'main', 'admin', 'gerencia', 'director'].includes(userRole);
+  const isSuperAdmin = Boolean(userRole) && ['master', 'main', 'admin', 'gerencia', 'director'].includes(userRole);
   
   const filterPerm = (item) => isSectionVisible(userPrivs, item, { isSuper: isSuperAdmin });
 

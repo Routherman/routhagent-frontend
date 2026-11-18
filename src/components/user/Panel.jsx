@@ -69,7 +69,7 @@ export default function UserPanel() {
         { id: 'equipo', label: 'Equipo y Roles', icon: Users, requiredPrivilege: 'can_manage_users' }
     ];
 
-    const isSuperAdmin = !userData?.rol_nombre || ['master', 'main', 'admin', 'gerencia', 'director'].includes((userData?.rol_nombre || '').toLowerCase());
+    const isSuperAdmin = Boolean(userData?.rol_nombre) && ['master', 'main', 'admin', 'gerencia', 'director'].includes((userData?.rol_nombre || '').toLowerCase());
 
     const tabs = allTabs.filter(tab => {
         if (isSuperAdmin) return true;
